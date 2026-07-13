@@ -77,7 +77,7 @@ git clone https://github.com/gsj1225/household-chemical-safety.git
 cd household-chemical-safety
 ```
 
-该仓库当前为私有仓库，下载者需要先获得仓库访问权限。
+该仓库为公开仓库，任何人都可以查看和克隆代码；提交修改时建议创建分支并通过 Pull Request 合并。
 
 ### 2. 启动后端
 
