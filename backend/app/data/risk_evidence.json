@@ -1,0 +1,29 @@
+{
+  "rules": {
+    "RULE_001": {"status":"verified","level":"authoritative","reviewed_at":"2026-07-12","sources":[{"organization":"美国疾病控制与预防中心（CDC）","title":"Cleaning and Disinfecting with Bleach","url":"https://www.cdc.gov/hygiene/about/cleaning-and-disinfecting-with-bleach.html"}]},
+    "RULE_002": {"status":"verified","level":"authoritative","reviewed_at":"2026-07-12","sources":[{"organization":"美国疾病控制与预防中心（CDC）","title":"How to Safely Clean and Sanitize with Bleach","url":"https://www.cdc.gov/natural-disasters/safety/how-to-safely-clean-and-sanitize-with-bleach.html"}]},
+    "RULE_003": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "RULE_004": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "RULE_005": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "RULE_006": {"status":"verified","level":"authoritative","reviewed_at":"2026-07-12","sources":[{"organization":"美国环境保护署（EPA）","title":"DEET","url":"https://www.epa.gov/insect-repellents/deet"}]},
+    "RULE_007": {"status":"verified","level":"authoritative","reviewed_at":"2026-07-12","sources":[{"organization":"美国消费品安全委员会（CPSC）","title":"Phthalates Business Guidance","url":"https://www.cpsc.gov/Business--Manufacturing/Business-Education/Business-Guidance/Phthalates"}]},
+    "RULE_008": {"status":"verified","level":"authoritative","reviewed_at":"2026-07-12","sources":[{"organization":"美国食品药品监督管理局（FDA）","title":"FDA Warns Consumers of Skin Products Containing Mercury and/or Hydroquinone","url":"https://www.fda.gov/consumers/health-fraud-scams/fda-warns-consumers-skin-products-containing-mercury-andor-hydroquinone"}]},
+    "RULE_009": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "RULE_010": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "RULE_011": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "RULE_012": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "RULE_013": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "RULE_014": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "RULE_015": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]}
+  },
+  "products": {
+    "PROD_001": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "PROD_002": {"status":"verified","level":"authoritative","reviewed_at":"2026-07-12","sources":[{"organization":"美国食品药品监督管理局（FDA）","title":"FDA Warns Consumers of Skin Products Containing Mercury and/or Hydroquinone","url":"https://www.fda.gov/consumers/health-fraud-scams/fda-warns-consumers-skin-products-containing-mercury-andor-hydroquinone"}]},
+    "PROD_003": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "PROD_004": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "PROD_005": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]},
+    "PROD_006": {"status":"verified","level":"authoritative","reviewed_at":"2026-07-12","sources":[{"organization":"美国消费品安全委员会（CPSC）","title":"Phthalates Business Guidance","url":"https://www.cpsc.gov/Business--Manufacturing/Business-Education/Business-Guidance/Phthalates"}]},
+    "PROD_007": {"status":"verified","level":"authoritative","reviewed_at":"2026-07-12","sources":[{"organization":"美国疾病控制与预防中心（CDC）","title":"Cleaning and Disinfecting with Bleach","url":"https://www.cdc.gov/hygiene/about/cleaning-and-disinfecting-with-bleach.html"}]},
+    "PROD_008": {"status":"needs_review","level":"unverified","reviewed_at":"2026-07-12","sources":[]}
+  }
+}

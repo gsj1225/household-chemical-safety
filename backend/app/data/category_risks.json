@@ -1,0 +1,102 @@
+[
+  {
+    "category": "含氯消毒剂",
+    "default_risk": "medium",
+    "risk_note": "含氯消毒剂有腐蚀性和刺激性，需稀释后使用，不可与酸性产品或酒精混用。"
+  },
+  {
+    "category": "洁厕剂",
+    "default_risk": "medium",
+    "risk_note": "洁厕剂通常含强酸（盐酸），有腐蚀性，使用时戴手套，避免与含氯产品混用。"
+  },
+  {
+    "category": "驱蚊液",
+    "default_risk": "low",
+    "risk_note": "含DEET等有效成分的驱蚊产品应严格按标签使用；不要涂在儿童手部、眼口附近或受损皮肤上。"
+  },
+  {
+    "category": "洗衣液",
+    "default_risk": "safe",
+    "risk_note": ""
+  },
+  {
+    "category": "洗洁精",
+    "default_risk": "safe",
+    "risk_note": ""
+  },
+  {
+    "category": "除菌液",
+    "default_risk": "low",
+    "risk_note": "含对氯间二甲苯酚，有一定刺激性，使用时建议戴手套。"
+  },
+  {
+    "category": "管道疏通剂",
+    "default_risk": "high",
+    "risk_note": "通常含强碱（氢氧化钠），有严重灼伤风险。使用时必须戴手套，绝不可与酸性产品混用。"
+  },
+  {
+    "category": "漂白剂",
+    "default_risk": "medium",
+    "risk_note": "含次氯酸钠，有腐蚀性和刺激性。不可与洁厕灵、酒精、双氧水混用。"
+  },
+  {
+    "category": "美白化妆品",
+    "default_risk": "medium",
+    "risk_note": "部分非法或来源不明的美白产品曾被检出汞；不能仅凭产品名称判断，应核对正规备案和来源。"
+  },
+  {
+    "category": "指甲油",
+    "default_risk": "low",
+    "risk_note": "含挥发性有机物（甲醛、甲苯等），使用时保持通风，避免儿童接触。"
+  },
+  {
+    "category": "空气清新剂",
+    "default_risk": "low",
+    "risk_note": "含挥发性有机物，长期密闭空间使用可能影响呼吸道健康。建议通风代替。"
+  },
+  {
+    "category": "樟脑丸",
+    "default_risk": "medium",
+    "risk_note": "可能含对二氯苯（2B类致癌物）。建议使用天然防虫剂替代。"
+  },
+  {
+    "category": "杀虫剂",
+    "default_risk": "high",
+    "risk_note": "含菊酯类或其他杀虫成分，有一定毒性。使用时远离食物和儿童，注意通风。"
+  },
+  {
+    "category": "油漆",
+    "default_risk": "medium",
+    "risk_note": "含VOC和甲醛，使用时必须通风。孕妇和儿童避免接触。"
+  },
+  {
+    "category": "玻璃水",
+    "default_risk": "medium",
+    "risk_note": "部分劣质产品含甲醇，接触皮肤或吸入有害。选择正规品牌。"
+  },
+  {
+    "category": "洗手液",
+    "default_risk": "safe",
+    "risk_note": ""
+  },
+  {
+    "category": "衣物柔顺剂",
+    "default_risk": "safe",
+    "risk_note": ""
+  },
+  {
+    "category": "地板蜡",
+    "default_risk": "low",
+    "risk_note": "含挥发性有机物，使用时保持通风。"
+  },
+  {
+    "category": "儿童玩具",
+    "default_risk": "low",
+    "risk_note": "关注适用玩具安全标准和产品标识；仅凭PVC等材质名称不能判断邻苯二甲酸酯是否超限。"
+  },
+  {
+    "category": "塑料餐具",
+    "default_risk": "low",
+    "risk_note": "PC材质可能含双酚A，避免盛装热水或加热。选择PP或标注BPA Free的产品。"
+  }
+]

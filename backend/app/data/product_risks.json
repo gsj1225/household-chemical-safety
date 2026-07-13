@@ -1,0 +1,66 @@
+[
+  {
+    "id": "PROD_001",
+    "product_keyword": "捏捏乐",
+    "category": "儿童玩具",
+    "risk_level": "high",
+    "description": "部分捏捏乐产品曾被社会组织报告存在化学物质风险，但当前条目的原始报告和检测条件尚待复核，不能据此推断所有同类产品超标。",
+    "advice": "避免购买三无捏捏乐产品。购买前查看是否有3C认证，使用前通风散味。"
+  },
+  {
+    "id": "PROD_002",
+    "product_keyword": "美白",
+    "category": "美白化妆品",
+    "risk_level": "high",
+    "description": "监管机构曾在部分皮肤美白产品中检出高水平汞；反复使用含汞产品可能损伤肾脏、神经系统和皮肤。具体产品是否含汞需要检测确认。",
+    "advice": "立即停用来路不明的美白产品。通过国家药监局官网查询产品备案信息。"
+  },
+  {
+    "id": "PROD_003",
+    "product_keyword": "羊角球",
+    "category": "儿童玩具",
+    "risk_level": "medium",
+    "description": "该类充气玩具可能涉及邻苯二甲酸酯合规要求，但当前抽检来源尚待复核；具体产品是否超限需要合规文件或检测确认。",
+    "advice": "选择标注'不含邻苯二甲酸酯'的产品。避免购买PVC材质充气玩具。"
+  },
+  {
+    "id": "PROD_004",
+    "product_keyword": "跳跳马",
+    "category": "儿童玩具",
+    "risk_level": "medium",
+    "description": "该类充气玩具可能涉及邻苯二甲酸酯合规要求；不能仅凭PVC材质判定超标。",
+    "advice": "选择TPE或标注不含增塑剂的材质。购买后先通风放置再给孩子使用。"
+  },
+  {
+    "id": "PROD_005",
+    "product_keyword": "塑料书皮",
+    "category": "文具",
+    "risk_level": "low",
+    "description": "塑料书皮的化学物质合规情况取决于具体材料和生产控制，不能仅凭材质名称判断是否超限。",
+    "advice": "选择PP或PET材质书皮，避免PVC材质。或使用纸质书皮替代。"
+  },
+  {
+    "id": "PROD_006",
+    "product_keyword": "小黄鸭",
+    "category": "儿童玩具",
+    "risk_level": "medium",
+    "description": "柔软塑料洗澡玩具可能使用增塑剂，并受儿童产品相关法规约束；具体产品是否超限需要检测确认。",
+    "advice": "选择硅胶或天然橡胶材质的洗澡玩具。避免孩子长时间啃咬塑料玩具。"
+  },
+  {
+    "id": "PROD_007",
+    "product_keyword": "84",
+    "category": "含氯消毒剂",
+    "risk_level": "medium",
+    "description": "含次氯酸钠的消毒产品与酸性或含氨清洁剂混合可能释放危险气体，应严格按标签单独使用。",
+    "advice": "单独使用，稀释后使用。绝不与洁厕灵、酒精、双氧水混合。"
+  },
+  {
+    "id": "PROD_008",
+    "product_keyword": "管道疏通",
+    "category": "管道疏通剂",
+    "risk_level": "high",
+    "description": "管道疏通剂含强碱（氢氧化钠），有严重灼伤风险。儿童误饮后果严重。",
+    "advice": "存放在儿童绝对接触不到的地方。使用时戴手套护目镜，不可与酸性产品混用。"
+  }
+]
