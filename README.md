@@ -1,5 +1,7 @@
 # 家庭化学品排雷大挑战
 
+[![CI](https://github.com/gsj1225/household-chemical-safety/actions/workflows/ci.yml/badge.svg)](https://github.com/gsj1225/household-chemical-safety/actions/workflows/ci.yml)
+
 一个面向家庭场景的化学品安全扫描应用。用户可以拍摄或从相册选择全景照片，系统会在原图上标记建议细拍的位置；完成单品识别并由用户核对产品信息后，再由本地规则引擎给出风险提示和排雷报告。
 
 > 当前项目是可运行的 Demo，不是专业检测设备。识别结果和品类提示不能替代产品标签、实验室检测、医生诊断或专业安全意见。
@@ -62,7 +64,7 @@ flowchart LR
 
 - Git
 - Python 3.10 或更高版本
-- Node.js 20 或更高版本
+- Node.js 22.13 或更高版本（Expo SDK 57 的最低要求）
 - npm
 - 手机预览时安装与项目 SDK 兼容的 Expo Go，且手机与电脑处于同一局域网
 
@@ -211,6 +213,8 @@ npx expo export --platform web
 
 当前已验证：后端 19 项测试通过，TypeScript 类型检查和 Expo Web 构建通过。
 
+仓库已配置 GitHub Actions。推送到 `main`、向 `main` 提交 Pull Request 或手动触发时，云端会自动运行上述三项检查；工作流强制使用 Mock 模式，不需要 Qwen API Key，也不会消耗模型额度。
+
 ## 主要 API
 
 | 方法 | 路径 | 说明 |
@@ -258,4 +262,3 @@ npx expo export --platform web
 - [部署指南](./部署指南.md)
 - [开发日记](./开发日记.md)
 - [产品方案](./家庭化学品安全方案.md)
-
