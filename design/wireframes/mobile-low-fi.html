@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>家庭化学品排雷大挑战｜手机端低保真线框图</title>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #667085;
+      --line: #98a2b3;
+      --soft: #eaecf0;
+      --paper: #fff;
+      --canvas: #d0d5dd;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--canvas); font-family: Arial, "Microsoft YaHei", sans-serif; }
+    .intro { max-width: 1460px; margin: 0 auto; padding: 42px 28px 10px; }
+    .intro h1 { margin: 0 0 12px; font-size: 34px; }
+    .intro p { margin: 6px 0; color: #344054; font-size: 15px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 18px; font-size: 13px; }
+    .legend span { display: inline-flex; align-items: center; gap: 7px; }
+    .swatch { width: 22px; height: 14px; border: 1px solid var(--line); background: var(--paper); }
+    .swatch.dark { background: var(--ink); }
+    .swatch.dash { border-style: dashed; background: transparent; }
+    main { max-width: 1460px; margin: 0 auto; padding: 28px; display: grid; grid-template-columns: repeat(3, minmax(390px, 1fr)); gap: 44px 34px; align-items: start; }
+    .board { min-width: 0; }
+    .board-title { margin: 0 0 12px; font-size: 18px; }
+    .board-note { min-height: 38px; margin: 0 0 12px; color: #475467; font-size: 13px; line-height: 1.45; }
+    .phone { width: 390px; height: 844px; margin: 0 auto; border: 8px solid var(--ink); border-radius: 42px; background: var(--paper); overflow: hidden; box-shadow: 0 14px 28px rgba(16,24,40,.16); position: relative; }
+    .notch { position: absolute; z-index: 5; top: 8px; left: 50%; transform: translateX(-50%); width: 118px; height: 25px; border-radius: 16px; background: var(--ink); }
+    .status { height: 42px; padding: 14px 20px 0; display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; }
+    .appbar { height: 54px; padding: 0 17px; border-bottom: 1px solid var(--soft); display: grid; grid-template-columns: 60px 1fr 60px; align-items: center; }
+    .appbar .back { font-size: 13px; color: #344054; }
+    .appbar strong { text-align: center; font-size: 16px; }
+    .appbar .right { text-align: right; font-size: 12px; color: var(--muted); }
+    .screen { height: calc(100% - 96px); padding: 20px; overflow: hidden; display: flex; flex-direction: column; gap: 14px; }
+    .screen.home { height: calc(100% - 42px); padding-top: 30px; }
+    .eyebrow { font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: .08em; }
+    h3 { margin: 0; font-size: 28px; line-height: 1.25; }
+    h4 { margin: 0; font-size: 18px; }
+    p { margin: 0; }
+    .copy { font-size: 14px; line-height: 1.55; color: #475467; }
+    .tiny { font-size: 11px; line-height: 1.45; color: var(--muted); }
+    .center { text-align: center; }
+    .hero { height: 190px; border: 2px dashed var(--line); border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #f9fafb; }
+    .hero .circle { width: 88px; height: 88px; border: 2px solid var(--ink); border-radius: 50%; display: grid; place-items: center; font-size: 38px; }
+    .image { position: relative; width: 100%; height: 220px; border: 2px solid var(--line); border-radius: 14px; background: repeating-linear-gradient(135deg, #f2f4f7, #f2f4f7 12px, #e4e7ec 12px, #e4e7ec 24px); overflow: hidden; display: grid; place-items: center; color: #475467; font-size: 13px; }
+    .image.tall { height: 300px; }
+    .image.small { height: 150px; }
+    .scan-line { position: absolute; left: 8%; right: 8%; top: 48%; border-top: 3px solid var(--ink); }
+    .target { position: absolute; left: 18%; top: 26%; width: 44%; height: 42%; border: 3px solid var(--ink); }
+    .target::before { content: "1  请拍这里"; position: absolute; top: -27px; left: -3px; padding: 4px 8px; background: var(--ink); color: #fff; font-size: 11px; }
+    .future-target { position: absolute; right: 10%; bottom: 12%; width: 26%; height: 32%; border: 2px dashed #667085; }
+    .progress { display: flex; align-items: center; gap: 8px; }
+    .progress .bar { flex: 1; height: 7px; background: var(--soft); border-radius: 7px; overflow: hidden; }
+    .progress .fill { height: 100%; width: 34%; background: var(--ink); }
+    .progress span { font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .card { border: 1.5px solid var(--line); border-radius: 14px; padding: 14px; background: #fff; }
+    .card.soft { background: #f9fafb; }
+    .card.warning { border-width: 2px; border-color: var(--ink); }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .between { justify-content: space-between; }
+    .stack { display: flex; flex-direction: column; gap: 8px; }
+    .dot { width: 12px; height: 12px; border: 2px solid var(--ink); border-radius: 50%; flex: 0 0 auto; }
+    .badge { display: inline-flex; align-items: center; min-height: 26px; padding: 4px 9px; border: 1px solid var(--line); border-radius: 99px; font-size: 11px; font-weight: 700; }
+    .button { width: 100%; min-height: 52px; border: 2px solid var(--ink); border-radius: 14px; display: grid; place-items: center; font-size: 15px; font-weight: 700; }
+    .button.primary { color: #fff; background: var(--ink); }
+    .button.secondary { background: #fff; }
+    .button.text { border-color: transparent; min-height: 42px; color: #475467; font-weight: 600; }
+    .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .bottom-actions { margin-top: auto; display: flex; flex-direction: column; gap: 9px; padding-bottom: 4px; }
+    .steps { display: grid; gap: 8px; }
+    .step { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: center; font-size: 13px; }
+    .step b { width: 28px; height: 28px; border: 1.5px solid var(--ink); border-radius: 50%; display: grid; place-items: center; }
+    .loader { width: 66px; height: 66px; border: 7px solid var(--soft); border-top-color: var(--ink); border-radius: 50%; }
+    .field { display: grid; gap: 5px; }
+    .field label { font-size: 12px; font-weight: 700; }
+    .input { min-height: 42px; border: 1.5px solid var(--line); border-radius: 9px; padding: 10px; font-size: 13px; color: #344054; }
+    .input.multi { min-height: 66px; }
+    .score { width: 146px; height: 146px; margin: 2px auto 0; border: 10px solid var(--ink); border-radius: 50%; display: grid; place-items: center; text-align: center; }
+    .score strong { font-size: 45px; line-height: 1; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .metric { border: 1px solid var(--line); border-radius: 10px; padding: 10px 6px; text-align: center; }
+    .metric strong { display: block; font-size: 20px; }
+    .list { display: grid; gap: 9px; }
+    .list-item { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 7px; }
+    .lines { display: grid; gap: 7px; width: 100%; }
+    .line { height: 9px; border-radius: 6px; background: #d0d5dd; }
+    .line.w80 { width: 80%; } .line.w65 { width: 65%; } .line.w45 { width: 45%; }
+    .modal { position: absolute; inset: 0; background: rgba(17,24,39,.46); display: grid; place-items: center; padding: 30px; }
+    .dialog { width: 100%; background: #fff; border: 2px solid var(--ink); border-radius: 18px; padding: 20px; display: grid; gap: 14px; }
+    .annotation { border-left: 4px solid var(--ink); padding-left: 10px; font-size: 12px; color: #344054; }
+    footer { padding: 12px 28px 48px; text-align: center; color: #475467; font-size: 13px; }
+    @media (max-width: 1280px) { main { grid-template-columns: repeat(2, minmax(390px, 1fr)); } }
+    @media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 18px 8px; } .intro { padding: 28px 18px 8px; } }
+  </style>
+</head>
+<body>
+  <header class="intro">
+    <h1>家庭化学品排雷大挑战｜手机端低保真线框图</h1>
+    <p>版本 v1.0 · 390×844 基准视口 · 共 9 组核心页面</p>
+    <p>本图只评审信息层级、动作优先级和恢复路径；灰度不代表最终视觉设计。</p>
+    <div class="legend">
+      <span><i class="swatch dark"></i>唯一主操作</span>
+      <span><i class="swatch"></i>次操作 / 内容卡片</span>
+      <span><i class="swatch dash"></i>图片或素材占位</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="board">
+      <h2 class="board-title">01 首页｜理解价值并开始</h2>
+      <p class="board-note">先讲清“检查什么”，主按钮开始挑战；历史入口降一级。</p>
+      <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
+        <div class="screen home">
+          <span class="eyebrow">家庭化学品安全检查</span>
+          <h3>我家到底<br />有多少雷？</h3>
+          <p class="copy">拍照检查家中化学品，发现需要注意的存放与使用风险。</p>
+          <div class="hero"><div class="circle">◎</div><strong>插画 / 品牌视觉占位</strong><span class="tiny">视觉规范阶段再决定表现形式</span></div>
+          <div class="bottom-actions">
+            <div class="button primary">开始新挑战</div>
+            <div class="button secondary">查看历史报告</div>
+            <div class="card soft steps">
+              <div class="step"><b>1</b><span>拍摄化学品集中区域</span></div>
+              <div class="step"><b>2</b><span>按原图提示逐个细查</span></div>
+              <div class="step"><b>3</b><span>核对信息并查看报告</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">02 全景输入｜先建立拍摄预期</h2>
+      <p class="board-note">拍照和相册并列；示例框说明范围，隐私说明靠近输入动作。</p>
+      <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
+        <div class="appbar"><span class="back">‹ 退出</span><strong>开始排雷</strong><span class="right">1 / 3</span></div>
+        <div class="screen">
+          <div class="progress"><span>提供全景</span><div class="bar"><div class="fill"></div></div><span>步骤 1</span></div>
+          <h3>拍下化学品集中的区域</h3>
+          <p class="copy">对准水槽下、浴室柜或储物架，照片里尽量包含完整瓶罐与包装。</p>
+          <div class="image tall"><strong>正确拍摄示例</strong><span class="tiny">大范围、清晰、不遮挡</span></div>
+          <div class="card soft annotation">照片仅用于本次分析；当前版本不保存原图。</div>
+          <div class="bottom-actions">
+            <div class="button primary">拍一张全景照片</div>
+            <div class="button secondary">从相册选择</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">03 分析｜让用户看见正在分析哪张图</h2>
+      <p class="board-note">原图占主视觉，展示阶段与等待说明；退出不等于清空进度。</p>
+      <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
+        <div class="appbar"><span class="back">‹ 返回</span><strong>分析全景</strong><span class="right"></span></div>
+        <div class="screen">
+          <div class="image tall"><div class="scan-line"></div><div class="loader"></div><span style="position:absolute;bottom:16px">正在定位值得细查的位置</span></div>
+          <div class="card soft stack">
+            <strong>正在读取瓶罐、标签与包装位置</strong>
+            <span class="copy">通常需要十几秒，请不要关闭页面。</span>
+          </div>
+          <div class="steps">
+            <div class="step"><b>✓</b><span>图片已压缩并安全提交</span></div>
+            <div class="step"><b>2</b><span>正在分析可细查区域</span></div>
+            <div class="step"><b>3</b><span>稍后会在原图上标记位置</span></div>
+          </div>
+          <div class="bottom-actions"><div class="button text">返回并保留这张照片</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">04 零区域｜保留原图并给恢复路径</h2>
+      <p class="board-note">换图是主操作；重新拍照次之；再次调用模型明确标注成本。</p>
+      <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
+        <div class="appbar"><span class="back">‹ 返回</span><strong>没有定位到区域</strong><span class="right"></span></div>
+        <div class="screen">
+          <h4>这张照片里暂时没找到明确目标</h4>
+          <p class="copy">可能是范围太大、光线不足或包装被遮挡。原图已保留，你可以选择下一步。</p>
+          <div class="image tall"><strong>刚才的全景照片</strong></div>
+          <div class="card soft annotation">建议换一张更清晰、范围更集中的照片。</div>
+          <div class="bottom-actions">
+            <div class="button primary">从相册换一张</div>
+            <div class="button secondary">重新拍照</div>
+            <div class="button text">再次分析这张照片（会再次调用模型）</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">05 区域引导｜在原图上明确“拍哪里”</h2>
+      <p class="board-note">当前框强、后续框弱；顶部显示区域与雷点进度；退出用确认弹层。</p>
+      <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
+        <div class="appbar"><span class="back">‹ 退出</span><strong>检查第 1 个区域</strong><span class="right">1 / 3</span></div>
+        <div class="screen">
+          <div class="row between"><span class="badge">区域 1 / 3</span><span class="badge">已发现 0 个雷点</span></div>
+          <div class="image tall"><div class="target"></div><div class="future-target"></div></div>
+          <div class="card warning stack">
+            <strong>当前：水槽下方左侧</strong>
+            <span class="copy">请靠近拍清楚瓶身正面、背面标签或成分表。</span>
+          </div>
+          <div class="bottom-actions">
+            <div class="button primary">拍摄这个区域</div>
+            <div class="button secondary">从相册选择</div>
+            <div class="button text">跳过这个区域</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">06 识别确认｜用户先核对，再评估风险</h2>
+      <p class="board-note">图片、置信度与字段连续排列；产品名和品类必填；换图不丢旧草稿。</p>
+      <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
+        <div class="appbar"><span class="back">‹ 返回区域</span><strong>核对产品信息</strong><span class="right"></span></div>
+        <div class="screen" style="gap:10px">
+          <div class="image small"><strong>本次单品照片</strong></div>
+          <div class="card warning stack"><div class="row between"><strong>识别置信度：中</strong><span class="badge">请核对</span></div><span class="tiny">确认后才会进行风险评估并写入报告。</span></div>
+          <div class="field"><label>品牌</label><div class="input">识别结果，可修改</div></div>
+          <div class="field"><label>产品名 *</label><div class="input">必填</div></div>
+          <div class="field"><label>品类 *</label><div class="input">必填</div></div>
+          <div class="field"><label>成分</label><div class="input multi">用顿号或逗号分隔，可补充</div></div>
+          <div class="bottom-actions" style="margin-top:4px">
+            <div class="button primary">确认信息并评估风险</div>
+            <div class="button-row"><div class="button secondary">重新拍照</div><div class="button secondary">从相册换图</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">07 单品结果｜先说结论，再解释边界</h2>
+      <p class="board-note">不只靠颜色和表情；风险、建议、证据依次展开；主按钮随进度变化。</p>
+      <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
+        <div class="appbar"><span class="back">‹ 返回</span><strong>检查结果</strong><span class="right">1 / 3</span></div>
+        <div class="screen">
+          <div class="center stack"><span style="font-size:42px">!</span><h3>这个产品需要注意</h3><span class="copy">产品信息已经由你确认</span></div>
+          <div class="card stack"><strong>品牌 · 产品名称</strong><span class="copy">品类 / 已识别成分摘要</span></div>
+          <div class="card warning stack">
+            <div class="row between"><strong>风险标题</strong><span class="badge">中风险</span></div>
+            <span class="copy">用一至两句话解释为什么需要注意。</span>
+            <strong>建议怎么做</strong>
+            <span class="copy">给出具体、可执行且不夸大的操作建议。</span>
+          </div>
+          <div class="card soft row between"><span>证据状态</span><strong>权威资料支持 ›</strong></div>
+          <p class="tiny center">识别与规则提示不等于实验室检测结果。</p>
+          <div class="bottom-actions"><div class="button primary">继续检查下一区域</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">08 报告｜总览优先，详情向下阅读</h2>
+      <p class="board-note">分数、数量、风险列表形成三层；分享是主操作，再次挑战为次操作。</p>
+      <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
+        <div class="appbar"><span class="back">‹ 首页</span><strong>排雷报告</strong><span class="right"></span></div>
+        <div class="screen" style="gap:11px">
+          <div class="score"><div><strong>82</strong><br /><span class="tiny">家庭安全分</span></div></div>
+          <h4 class="center">整体不错，还有 2 处需要注意</h4>
+          <div class="metrics"><div class="metric"><strong>2</strong><span class="tiny">雷点</span></div><div class="metric"><strong>3</strong><span class="tiny">安全项</span></div><div class="metric"><strong>5</strong><span class="tiny">已检查</span></div></div>
+          <div class="list">
+            <div class="list-item"><div class="row between"><strong>风险产品 A</strong><span class="badge">中风险</span></div><div class="lines"><div class="line w80"></div><div class="line w65"></div></div><span class="tiny">权威资料支持 · 查看详情 ›</span></div>
+            <div class="list-item"><div class="row between"><strong>风险产品 B</strong><span class="badge">低风险</span></div><div class="line w80"></div></div>
+          </div>
+          <div class="bottom-actions"><div class="button primary">分享我的排雷成绩</div><div class="button text">再排一次</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">09 历史｜完成与未完成明确区分</h2>
+      <p class="board-note">完成报告可打开；未完成记录解释不可继续；错误和空数据留在本页恢复。</p>
+      <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
+        <div class="appbar"><span class="back">‹ 首页</span><strong>历史报告</strong><span class="right">刷新</span></div>
+        <div class="screen">
+          <div><h3>历史排雷记录</h3><p class="copy" style="margin-top:7px">完成后的报告会保存在这里。</p></div>
+          <div class="list">
+            <div class="list-item"><div class="row between"><strong>第 3 次排雷</strong><span class="badge">已完成</span></div><span class="tiny">07-15 21:35</span><div class="row between"><span><strong>82</strong> 安全分　<strong>2</strong> 雷点</span><strong>查看报告 ›</strong></div></div>
+            <div class="list-item"><div class="row between"><strong>第 2 次排雷</strong><span class="badge">已完成</span></div><span class="tiny">07-14 19:20</span><div class="row between"><span><strong>91</strong> 安全分　<strong>1</strong> 雷点</span><strong>查看报告 ›</strong></div></div>
+            <div class="list-item" style="border-style:dashed"><div class="row between"><strong>第 1 次排雷</strong><span class="badge">未完成</span></div><span class="tiny">本次没有生成报告，当前版本暂不支持继续。</span></div>
+          </div>
+          <div class="card soft stack"><strong>状态变体</strong><span class="tiny">空记录：说明原因 + 去开始挑战</span><span class="tiny">加载失败：保留页面 + 重新加载</span><span class="tiny">打开失败：保留列表 + 再次尝试</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>低保真线框图 v1.0 · 下一阶段：确认结构后建立视觉规范，不在本阶段拆分 React Native 组件。</footer>
+</body>
+</html>
