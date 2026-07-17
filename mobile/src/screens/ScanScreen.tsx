@@ -12,13 +12,14 @@ import { colors } from '../theme/colors';
 import { useChallengeStore } from '../store/challengeStore';
 import { api } from '../services/api';
 import { pickImageFromLibrary } from '../services/imagePicker';
-import CameraCapture from '../components/CameraCapture';
-import PanoramaView from '../components/views/PanoramaView';
+import CameraCaptureView from '../components/views/CameraCaptureView';
+import PanoramaInputView from '../components/views/PanoramaInputView';
 import GuideView from '../components/views/GuideView';
 import ResultView from '../components/views/ResultView';
-import EmptyPanoramaView from '../components/views/EmptyPanoramaView';
+import PanoramaEmptyView from '../components/views/PanoramaEmptyView';
 import IdentificationReviewView from '../components/views/IdentificationReviewView';
-import { AnalysisView, FinishingView } from '../components/views/ProcessingViews';
+import AnalysisView from '../components/views/AnalysisView';
+import ReportGeneratingView from '../components/views/ReportGeneratingView';
 import type { IdentificationDraft, ProductIdentification, RootStackParamList, ScanResult } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Scan'>;
@@ -152,7 +153,7 @@ export default function ScanScreen({ navigation }: Props) {
     const hint = pageStatus === 'panorama' || pageStatus === 'panorama_empty'
       ? '拍一张你家化学品集中的区域全景'
       : guideMessage || '靠近拍一下';
-    return <CameraCapture
+    return <CameraCaptureView
       onCapture={handleCapture}
       onSelectFromAlbum={handleSelectFromAlbum}
       onCancel={() => setShowCamera(false)}
@@ -161,7 +162,7 @@ export default function ScanScreen({ navigation }: Props) {
   }
 
   if (pageStatus === 'finishing') {
-    return <FinishingView />;
+    return <ReportGeneratingView />;
   }
 
   if (pageStatus === 'analyzing') {
@@ -171,7 +172,7 @@ export default function ScanScreen({ navigation }: Props) {
   if (pageStatus === 'panorama_empty' && panoramaImageUri) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.content}><EmptyPanoramaView
+        <View style={styles.content}><PanoramaEmptyView
           imageUri={panoramaImageUri}
           onRetry={() => void handleCapture(panoramaImageUri)}
           onStartCamera={() => setShowCamera(true)}
@@ -234,7 +235,7 @@ export default function ScanScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}><PanoramaView
+      <View style={styles.content}><PanoramaInputView
         onStartCamera={() => setShowCamera(true)}
         onSelectFromAlbum={handleSelectFromAlbum}
       /></View>

@@ -1,14 +1,15 @@
-/**
- * 放大镜小人动画组件
- * 识别等待期间显示——小人在物品上查来查去 + 趣味旁白
- */
-
 import React, { useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, Animated, Easing, ImageBackground,
+  Animated,
+  Easing,
+  ImageBackground,
+  Platform,
+  StyleSheet,
+  View,
 } from 'react-native';
-import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
+import useReducedMotion from '../hooks/useReducedMotion';
+import { rawTokens, semanticColors } from '../theme/tokens';
+import { AppText } from './primitives';
 import NarrationBubble from './NarrationBubble';
 
 interface MagnifierAnimationProps {
@@ -16,117 +17,93 @@ interface MagnifierAnimationProps {
   imageUri: string | null;
 }
 
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+
 export default function MagnifierAnimation({
-  narrations, imageUri,
+  narrations,
+  imageUri,
 }: MagnifierAnimationProps) {
+  const reducedMotion = useReducedMotion();
   const moveAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const scanAnim = useRef(new Animated.Value(0)).current;
 
-  // 小人左右移动 + 缓动
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(moveAnim, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(moveAnim, {
-          toValue: 0,
-          duration: 900,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [moveAnim]);
+    if (reducedMotion) {
+      moveAnim.setValue(0.5);
+      scaleAnim.setValue(1);
+      rotateAnim.setValue(0);
+      scanAnim.setValue(0.5);
+      return;
+    }
 
-  // 缩放（呼吸感）
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.2,
-          duration: 450,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 450,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [scaleAnim]);
+    const moveLoop = Animated.loop(Animated.sequence([
+      Animated.timing(moveAnim, {
+        toValue: 1,
+        duration: 900,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
+      Animated.timing(moveAnim, {
+        toValue: 0,
+        duration: 900,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
+    ]));
+    const scaleLoop = Animated.loop(Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 1.12,
+        duration: 500,
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
+    ]));
+    const rotateLoop = Animated.loop(Animated.sequence([
+      Animated.timing(rotateAnim, { toValue: 1, duration: 600, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(rotateAnim, { toValue: -1, duration: 1200, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(rotateAnim, { toValue: 0, duration: 600, useNativeDriver: USE_NATIVE_DRIVER }),
+    ]));
+    const scanLoop = Animated.loop(Animated.sequence([
+      Animated.timing(scanAnim, {
+        toValue: 1,
+        duration: 1600,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
+      Animated.timing(scanAnim, {
+        toValue: 0,
+        duration: 1600,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
+    ]));
 
-  // 轻微旋转（摇头晃脑）
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(rotateAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(rotateAnim, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(rotateAnim, {
-          toValue: -1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(rotateAnim, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [rotateAnim]);
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scanAnim, {
-          toValue: 1,
-          duration: 1600,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(scanAnim, {
-          toValue: 0,
-          duration: 1600,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [scanAnim]);
+    moveLoop.start();
+    scaleLoop.start();
+    rotateLoop.start();
+    scanLoop.start();
+    return () => {
+      moveLoop.stop();
+      scaleLoop.stop();
+      rotateLoop.stop();
+      scanLoop.stop();
+    };
+  }, [moveAnim, reducedMotion, rotateAnim, scaleAnim, scanAnim]);
 
   const translateX = moveAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [-50, 50],
   });
-
   const rotate = rotateAnim.interpolate({
     inputRange: [-1, 0, 1],
-    outputRange: ['-15deg', '0deg', '15deg'],
+    outputRange: ['-12deg', '0deg', '12deg'],
   });
-
   const scanTranslateY = scanAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [-125, 125],
@@ -138,36 +115,37 @@ export default function MagnifierAnimation({
       style={styles.container}
       imageStyle={styles.backgroundImage}
       resizeMode="cover"
+      accessibilityLabel="正在分析用户选择的照片"
     >
       <View style={styles.overlay} />
-      <View style={styles.content}>
+      <View
+        style={styles.content}
+        accessibilityLiveRegion="polite"
+        accessibilityRole="progressbar"
+        accessibilityLabel="正在识别照片中的物品和包装文字"
+      >
         <View style={styles.statusBadge}>
           <View style={styles.statusDot} />
-          <Text style={styles.statusText}>正在分析这张照片</Text>
+          <AppText variant="label">正在分析这张照片</AppText>
         </View>
 
-        {/* 动画区域 */}
-        <View style={styles.animationArea}>
+        <View
+          style={styles.animationArea}
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
+        >
           <Animated.View
             style={[styles.scanLine, { transform: [{ translateY: scanTranslateY }] }]}
           />
-
-          {/* 放大镜小人 */}
           <Animated.View
             style={[
-              styles.magnifierContainer,
-              {
-                transform: [
-                  { translateX },
-                  { scale: scaleAnim },
-                  { rotate },
-                ],
-              },
+              styles.magnifier,
+              { transform: [{ translateX }, { scale: scaleAnim }, { rotate }] },
             ]}
           >
-            <Text style={styles.magnifierEmoji}>🔍</Text>
+            <View style={styles.lens} />
+            <View style={styles.handle} />
           </Animated.View>
-
           <View style={styles.itemOutline} />
         </View>
 
@@ -175,7 +153,9 @@ export default function MagnifierAnimation({
           <NarrationBubble narrations={narrations} />
         </View>
 
-        <Text style={styles.loadingText}>正在识别物品和包装文字…</Text>
+        <AppText variant="label" color="inverse" align="center" style={styles.loadingText}>
+          正在识别物品和包装文字…
+        </AppText>
       </View>
     </ImageBackground>
   );
@@ -184,7 +164,7 @@ export default function MagnifierAnimation({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bgSecondary,
+    backgroundColor: semanticColors.surface.inverse,
   },
   backgroundImage: {
     opacity: 1,
@@ -195,34 +175,29 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: 'rgba(8, 16, 30, 0.48)',
+    backgroundColor: semanticColors.overlay.photo,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.xl,
+    padding: rawTokens.space[5],
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderRadius: 999,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.lg,
+    backgroundColor: semanticColors.surface.glass,
+    borderRadius: rawTokens.radius.round,
+    paddingVertical: rawTokens.space[2],
+    paddingHorizontal: rawTokens.space[4],
+    marginBottom: rawTokens.space[5],
   },
   statusDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.primary,
-    marginRight: spacing.sm,
-  },
-  statusText: {
-    color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '600',
+    backgroundColor: semanticColors.action.decorativeAccent,
+    marginRight: rawTokens.space[2],
   },
   animationArea: {
     width: '92%',
@@ -230,30 +205,46 @@ const styles = StyleSheet.create({
     height: 300,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: rawTokens.space[6],
     position: 'relative',
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.85)',
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: semanticColors.border.onInverse,
+    borderRadius: rawTokens.radius.xlarge,
+    backgroundColor: semanticColors.surface.glassSubtle,
   },
   scanLine: {
     position: 'absolute',
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: colors.primary,
-    borderRadius: 1,
-    shadowColor: colors.primary,
+    backgroundColor: semanticColors.action.decorativeAccent,
+    shadowColor: semanticColors.action.decorativeAccent,
     shadowOpacity: 0.9,
     shadowRadius: 8,
   },
-  magnifierContainer: {
+  magnifier: {
+    width: 72,
+    height: 72,
     zIndex: 2,
   },
-  magnifierEmoji: {
-    fontSize: 64,
+  lens: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 6,
+    borderColor: semanticColors.text.inverse,
+    backgroundColor: semanticColors.surface.lens,
+  },
+  handle: {
+    position: 'absolute',
+    width: 34,
+    height: 8,
+    borderRadius: 4,
+    right: -2,
+    bottom: 8,
+    backgroundColor: semanticColors.text.inverse,
+    transform: [{ rotate: '45deg' }],
   },
   itemOutline: {
     position: 'absolute',
@@ -261,21 +252,18 @@ const styles = StyleSheet.create({
     width: 130,
     height: 82,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.72)',
-    borderRadius: 12,
+    borderColor: semanticColors.border.onInverse,
+    borderRadius: rawTokens.radius.medium,
     borderStyle: 'dashed',
   },
   narrationArea: {
     minHeight: 80,
     justifyContent: 'center',
     width: '100%',
-    marginBottom: spacing.md,
+    marginBottom: rawTokens.space[3],
   },
   loadingText: {
-    fontSize: 14,
-    color: colors.textWhite,
-    marginTop: spacing.sm,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowColor: semanticColors.overlay.photoStrong,
     textShadowRadius: 4,
   },
 });

@@ -1,48 +1,55 @@
-/**
- * 趣味旁白气泡组件
- * 逐条显示旁白文本，带淡入效果
- */
-
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { colors } from '../theme/colors';
-import { fontSize, spacing, borderRadius } from '../theme/spacing';
+import { Animated, Platform, StyleSheet, View } from 'react-native';
+import useReducedMotion from '../hooks/useReducedMotion';
+import { rawTokens, semanticColors } from '../theme/tokens';
+import { AppText } from './primitives';
 
 interface NarrationBubbleProps {
   narrations: string[];
 }
 
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+
 export default function NarrationBubble({ narrations }: NarrationBubbleProps) {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (narrations.length === 0) return;
     setCurrentIndex(0);
-    fadeAnim.setValue(0);
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+
+    if (reducedMotion) {
+      fadeAnim.setValue(1);
+    } else {
+      fadeAnim.setValue(0);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }).start();
+    }
 
     const timers: ReturnType<typeof setTimeout>[] = [];
-    narrations.forEach((_, i) => {
-      if (i === 0) return;
-      timers.push(
-        setTimeout(() => {
-          fadeAnim.setValue(0);
-          setCurrentIndex(i);
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }).start();
-        }, i * 1200)
-      );
+    narrations.forEach((_, index) => {
+      if (index === 0) return;
+      timers.push(setTimeout(() => {
+        setCurrentIndex(index);
+        if (reducedMotion) {
+          fadeAnim.setValue(1);
+          return;
+        }
+        fadeAnim.setValue(0);
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }).start();
+      }, index * 1200));
     });
+
     return () => timers.forEach(clearTimeout);
-  }, [narrations]);
+  }, [fadeAnim, narrations, reducedMotion]);
 
   if (narrations.length === 0) return null;
 
@@ -50,10 +57,11 @@ export default function NarrationBubble({ narrations }: NarrationBubbleProps) {
     <View style={styles.container}>
       <Animated.View
         style={[styles.bubble, { opacity: fadeAnim }]}
+        accessibilityLiveRegion="polite"
       >
-        <Text style={styles.text}>
+        <AppText color="onAction" align="center">
           {narrations[currentIndex] || narrations[0]}
-        </Text>
+        </AppText>
       </Animated.View>
     </View>
   );
@@ -63,19 +71,13 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: rawTokens.space[5],
   },
   bubble: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    backgroundColor: semanticColors.action.primary,
+    borderRadius: rawTokens.radius.large,
+    paddingVertical: rawTokens.space[3],
+    paddingHorizontal: rawTokens.space[5],
     maxWidth: '90%',
-  },
-  text: {
-    color: colors.textWhite,
-    fontSize: fontSize.md,
-    textAlign: 'center',
-    lineHeight: 24,
   },
 });

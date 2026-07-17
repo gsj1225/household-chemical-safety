@@ -1,31 +1,31 @@
 /**
- * 颜色主题
+ * Legacy theme compatibility.
+ *
+ * New components use semanticColors/componentTokens from tokens.ts.
+ * Existing screens keep these exports until their migration slice.
  */
 
+import { rawTokens } from './tokens';
+
 export const colors = {
-  // 主色
-  primary: '#FF6B35',        // 活力橙——警示但不压抑
-  primaryDark: '#E5552B',
-  primaryLight: '#FFE5DC',
+  primary: rawTokens.palette.brand.legacy,
+  primaryDark: rawTokens.palette.brand.legacyDark,
+  primaryLight: rawTokens.palette.brand.legacyLight,
 
-  // 风险等级色
-  critical: '#E63946',       // 高危红
-  medium: '#F4A261',         // 中危橙
-  low: '#FFD23F',            // 低危黄
-  safe: '#06D6A0',           // 安全绿
+  critical: rawTokens.palette.legacyRisk.critical,
+  medium: rawTokens.palette.legacyRisk.medium,
+  low: rawTokens.palette.legacyRisk.low,
+  safe: rawTokens.palette.legacyRisk.safe,
 
-  // 背景色
-  bgPrimary: '#FFFFFF',
-  bgSecondary: '#F8F9FA',
+  bgPrimary: rawTokens.palette.neutral[0],
+  bgSecondary: rawTokens.palette.neutral[50],
   bgDark: '#1A1A2E',
 
-  // 文字色
   textPrimary: '#1A1A2E',
   textSecondary: '#6C757D',
   textLight: '#ADB5BD',
-  textWhite: '#FFFFFF',
+  textWhite: rawTokens.palette.neutral[0],
 
-  // 功能色
   border: '#E9ECEF',
   overlay: 'rgba(0, 0, 0, 0.6)',
   shadow: 'rgba(0, 0, 0, 0.1)',
@@ -36,5 +36,5 @@ export const riskLevelColor: Record<string, string> = {
   medium: colors.medium,
   low: colors.low,
   safe: colors.safe,
-  high: colors.critical, // 兼容全景照风险预判
+  high: colors.critical,
 };
