@@ -10,6 +10,8 @@ interface PhotoInputActionsProps {
   cameraLabel?: string;
   albumLabel?: string;
   privacyText?: string;
+  cameraHint?: string;
+  albumHint?: string;
 }
 
 export default function PhotoInputActions({
@@ -19,6 +21,8 @@ export default function PhotoInputActions({
   cameraLabel = '开始拍照',
   albumLabel = '从相册选择照片',
   privacyText = '照片仅用于本次分析，当前版本不保存原图',
+  cameraHint = '打开相机拍摄照片',
+  albumHint = '打开系统相册选择一张照片',
 }: PhotoInputActionsProps) {
   return (
     <View style={styles.container}>
@@ -26,14 +30,14 @@ export default function PhotoInputActions({
         label={cameraLabel}
         onPress={onStartCamera}
         disabled={disabled}
-        accessibilityHint="打开相机拍摄家庭化学品集中区域"
+        accessibilityHint={cameraHint}
       />
       <AppButton
         label={albumLabel}
         variant="secondary"
         onPress={onSelectFromAlbum}
         disabled={disabled}
-        accessibilityHint="打开系统相册选择一张照片"
+        accessibilityHint={albumHint}
       />
       <AppText variant="caption" color="secondary" align="center">
         {privacyText}

@@ -14,7 +14,7 @@ import { api } from '../services/api';
 import { pickImageFromLibrary } from '../services/imagePicker';
 import CameraCaptureView from '../components/views/CameraCaptureView';
 import PanoramaInputView from '../components/views/PanoramaInputView';
-import GuideView from '../components/views/GuideView';
+import AreaGuideView from '../components/views/AreaGuideView';
 import ResultView from '../components/views/ResultView';
 import PanoramaEmptyView from '../components/views/PanoramaEmptyView';
 import IdentificationReviewView from '../components/views/IdentificationReviewView';
@@ -41,6 +41,8 @@ export default function ScanScreen({ navigation }: Props) {
   const [pendingDraft, setPendingDraft] = useState<IdentificationDraft | null>(null);
   const [pendingDetailImageUri, setPendingDetailImageUri] = useState<string | null>(null);
   const [confirmingIdentification, setConfirmingIdentification] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [confirmationError, setConfirmationError] = useState<string | null>(null);
 
   // 拍照处理
   const handleCapture = async (uri: string) => {
@@ -49,6 +51,10 @@ export default function ScanScreen({ navigation }: Props) {
     const isPanorama = pageStatus === 'panorama' || pageStatus === 'panorama_empty';
     const wasIdentificationReview = pageStatus === 'identification_review';
     if (isPanorama) setPanoramaImageUri(uri);
+    if (!isPanorama) {
+      setDetailError(null);
+      setConfirmationError(null);
+    }
     setPageStatus('analyzing');
     void fetchNarrations();
 
@@ -68,13 +74,23 @@ export default function ScanScreen({ navigation }: Props) {
         );
         setPendingDraft(draft);
         setPendingDetailImageUri(uri);
+        setDetailError(null);
+        setConfirmationError(null);
         setPageStatus('identification_review');
       }
     } catch (err) {
-      Alert.alert('扫描失败', err instanceof Error ? err.message : '请重试');
-      setPageStatus(
-        isPanorama ? 'panorama' : (wasIdentificationReview ? 'identification_review' : 'guide')
-      );
+      const message = err instanceof Error ? err.message : '请重试';
+      if (isPanorama) {
+        Alert.alert('扫描失败', message);
+        setPageStatus('panorama');
+      } else {
+        setDetailError(
+          wasIdentificationReview
+            ? `新照片识别失败，仍显示上一次草稿。${message}`
+            : message,
+        );
+        setPageStatus(wasIdentificationReview ? 'identification_review' : 'guide');
+      }
     } finally {
       setAnalysisImageUri(null);
     }
@@ -83,6 +99,7 @@ export default function ScanScreen({ navigation }: Props) {
   const handleConfirmIdentification = async (product: ProductIdentification) => {
     if (!pendingDraft || confirmingIdentification) return;
     setConfirmingIdentification(true);
+    setConfirmationError(null);
     try {
       const result = await api.confirmProduct(
         challengeId!, pendingDraft.draft_id, product
@@ -90,9 +107,10 @@ export default function ScanScreen({ navigation }: Props) {
       setLastResult(result);
       setPendingDraft(null);
       setPendingDetailImageUri(null);
+      setDetailError(null);
       addScanResult(result);
     } catch (err) {
-      Alert.alert('确认失败', err instanceof Error ? err.message : '请重试');
+      setConfirmationError(err instanceof Error ? err.message : '请重试');
     } finally {
       setConfirmingIdentification(false);
     }
@@ -103,7 +121,11 @@ export default function ScanScreen({ navigation }: Props) {
       const uri = await pickImageFromLibrary();
       if (uri) await handleCapture(uri);
     } catch {
-      Alert.alert('选择照片失败', '无法打开相册，请稍后重试。');
+      if (pageStatus === 'guide' || pageStatus === 'identification_review') {
+        setDetailError('无法打开相册，请稍后重试或使用相机拍摄。');
+      } else {
+        Alert.alert('选择照片失败', '无法打开相册，请稍后重试。');
+      }
     }
   };
 
@@ -141,6 +163,8 @@ export default function ScanScreen({ navigation }: Props) {
     setLastResult(null);
     setPendingDraft(null);
     setPendingDetailImageUri(null);
+    setDetailError(null);
+    setConfirmationError(null);
     const isLastArea = currentAreaIndex + 1 >= areas.length;
     if (isLastArea) {
       handleFinish();
@@ -193,6 +217,7 @@ export default function ScanScreen({ navigation }: Props) {
           draft={pendingDraft}
           imageUri={pendingDetailImageUri}
           submitting={confirmingIdentification}
+          errorMessage={confirmationError ?? detailError}
           onConfirm={handleConfirmIdentification}
           onRetake={() => setShowCamera(true)}
           onSelectFromAlbum={handleSelectFromAlbum}
@@ -218,13 +243,14 @@ export default function ScanScreen({ navigation }: Props) {
   if (pageStatus === 'guide') {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.content}><GuideView
+        <View style={styles.content}><AreaGuideView
           areas={areas}
           currentAreaIndex={currentAreaIndex}
           guideMessage={guideMessage}
           mineCount={mineCount}
           scanResults={scanResults}
           panoramaImageUri={panoramaImageUri}
+          errorMessage={detailError}
           onStartCamera={() => setShowCamera(true)}
           onSelectFromAlbum={handleSelectFromAlbum}
           onSkip={handleContinue}

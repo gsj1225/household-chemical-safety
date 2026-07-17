@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, type ViewProps } from 'react-native';
-import { componentTokens } from '../../theme/tokens';
+import { componentTokens, semanticColors } from '../../theme/tokens';
 import AppText from './AppText';
 import Surface from './Surface';
 
@@ -28,7 +28,12 @@ export default function StateMessage({
       {...props}
       variant={tone === 'neutral' ? 'subtle' : 'outlined'}
       accessibilityLiveRegion={accessibilityLiveRegion}
-      style={[styles.container, style]}
+      style={[
+        styles.container,
+        tone === 'error' ? styles.error : undefined,
+        tone === 'permission' ? styles.permission : undefined,
+        style,
+      ]}
     >
       <AppText variant="titleSmall" align="center">{title}</AppText>
       {description ? (
@@ -48,5 +53,13 @@ const styles = StyleSheet.create({
   actions: {
     gap: componentTokens.stateMessage.gap,
     marginTop: componentTokens.stateMessage.gap,
+  },
+  error: {
+    backgroundColor: semanticColors.surface.errorSubtle,
+    borderColor: semanticColors.border.error,
+  },
+  permission: {
+    backgroundColor: semanticColors.surface.infoSubtle,
+    borderColor: semanticColors.status.info,
   },
 });
