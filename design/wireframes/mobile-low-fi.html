@@ -59,6 +59,8 @@
     .card { border: 1.5px solid var(--line); border-radius: 14px; padding: 14px; background: #fff; }
     .card.soft { background: #f9fafb; }
     .card.warning { border-width: 2px; border-color: var(--ink); }
+    .profile-card { padding: 14px; border-radius: 14px; color: #fff; background: var(--ink); display: grid; gap: 6px; }
+    .profile-card .tiny { color: #d0d5dd; }
     .row { display: flex; gap: 10px; align-items: center; }
     .between { justify-content: space-between; }
     .stack { display: flex; flex-direction: column; gap: 8px; }
@@ -92,6 +94,29 @@
     .dialog { width: 100%; background: #fff; border: 2px solid var(--ink); border-radius: 18px; padding: 20px; display: grid; gap: 14px; }
     .annotation { border-left: 4px solid var(--ink); padding-left: 10px; font-size: 12px; color: #344054; }
     footer { padding: 12px 28px 48px; text-align: center; color: #475467; font-size: 13px; }
+    body.review-affected .intro,
+    body.review-affected footer { display: none; }
+    body.review-affected main {
+      max-width: none;
+      padding: 8px;
+      grid-template-columns: repeat(6, 97.5px);
+      gap: 7px;
+    }
+    body.review-affected .board { display: none; width: 97.5px; }
+    body.review-affected .board:nth-child(1),
+    body.review-affected .board:nth-child(2),
+    body.review-affected .board:nth-child(5),
+    body.review-affected .board:nth-child(6),
+    body.review-affected .board:nth-child(9),
+    body.review-affected .board:nth-child(10) { display: block; }
+    body.review-affected .board-title { min-height: 16px; margin-bottom: 3px; font-size: 6px; line-height: 1.3; }
+    body.review-affected .board-note { display: none; }
+    body.review-affected .phone {
+      margin: 0;
+      transform: scale(.25);
+      transform-origin: top left;
+      box-shadow: none;
+    }
     @media (max-width: 1280px) { main { grid-template-columns: repeat(2, minmax(390px, 1fr)); } }
     @media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 18px 8px; } .intro { padding: 28px 18px 8px; } }
   </style>
@@ -99,7 +124,7 @@
 <body>
   <header class="intro">
     <h1>家庭化学品排雷大挑战｜手机端低保真线框图</h1>
-    <p>版本 v1.0 · 390×844 基准视口 · 共 9 组核心页面</p>
+    <p>版本 v1.1 · 390×844 基准视口 · 9 组核心页面 + 1 个证据不足恢复变体</p>
     <p>本图只评审信息层级、动作优先级和恢复路径；灰度不代表最终视觉设计。</p>
     <div class="legend">
       <span><i class="swatch dark"></i>唯一主操作</span>
@@ -111,20 +136,20 @@
   <main>
     <section class="board">
       <h2 class="board-title">01 首页｜理解价值并开始</h2>
-      <p class="board-note">先讲清“检查什么”，主按钮开始挑战；历史入口降一级。</p>
+      <p class="board-note">先讲清“一次只检查一个场景”，主按钮开始本次场景检查；历史入口降一级。</p>
       <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
         <div class="screen home">
           <span class="eyebrow">家庭化学品安全检查</span>
           <h3>我家到底<br />有多少雷？</h3>
-          <p class="copy">拍照检查家中化学品，发现需要注意的存放与使用风险。</p>
+          <p class="copy">一次选择一个场景，拍照检查其中需要注意的化学品存放与使用风险。</p>
           <div class="hero"><div class="circle">◎</div><strong>插画 / 品牌视觉占位</strong><span class="tiny">视觉规范阶段再决定表现形式</span></div>
           <div class="bottom-actions">
-            <div class="button primary">开始新挑战</div>
+            <div class="button primary">开始场景检查</div>
             <div class="button secondary">查看历史报告</div>
             <div class="card soft steps">
-              <div class="step"><b>1</b><span>拍摄化学品集中区域</span></div>
-              <div class="step"><b>2</b><span>按原图提示逐个细查</span></div>
-              <div class="step"><b>3</b><span>核对信息并查看报告</span></div>
+              <div class="step"><b>1</b><span>拍一张当前场景全景图</span></div>
+              <div class="step"><b>2</b><span>按原图提示细拍最多三处</span></div>
+              <div class="step"><b>3</b><span>核对并查看本场景报告</span></div>
             </div>
           </div>
         </div>
@@ -133,17 +158,17 @@
 
     <section class="board">
       <h2 class="board-title">02 全景输入｜先建立拍摄预期</h2>
-      <p class="board-note">拍照和相册并列；示例框说明范围，隐私说明靠近输入动作。</p>
+      <p class="board-note">拍照和相册并列；只给一个场景示例，避免把多个房间理解成待办清单。</p>
       <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
-        <div class="appbar"><span class="back">‹ 退出</span><strong>开始排雷</strong><span class="right">1 / 3</span></div>
+        <div class="appbar"><span class="back">‹ 退出</span><strong>场景检查</strong><span class="right">1 / 3</span></div>
         <div class="screen">
           <div class="progress"><span>提供全景</span><div class="bar"><div class="fill"></div></div><span>步骤 1</span></div>
-          <h3>拍下化学品集中的区域</h3>
-          <p class="copy">对准水槽下、浴室柜或储物架，照片里尽量包含完整瓶罐与包装。</p>
-          <div class="image tall"><strong>正确拍摄示例</strong><span class="tiny">大范围、清晰、不遮挡</span></div>
-          <div class="card soft annotation">照片仅用于本次分析；当前版本不保存原图。</div>
+          <h3>一次只拍一个场景</h3>
+          <p class="copy">例如只拍厨房水槽下方，照片里尽量包含这个场景中的完整瓶罐与包装。</p>
+          <div class="image tall"><strong>单个场景拍摄示例</strong><span class="tiny">完整、清晰、不遮挡</span></div>
+          <div class="card soft annotation">这张照片只生成一份本场景报告；当前版本不保存原图。</div>
           <div class="bottom-actions">
-            <div class="button primary">拍一张全景照片</div>
+            <div class="button primary">拍摄这个场景</div>
             <div class="button secondary">从相册选择</div>
           </div>
         </div>
@@ -158,13 +183,13 @@
         <div class="screen">
           <div class="image tall"><div class="scan-line"></div><div class="loader"></div><span style="position:absolute;bottom:16px">正在定位值得细查的位置</span></div>
           <div class="card soft stack">
-            <strong>正在读取瓶罐、标签与包装位置</strong>
+            <strong>只分析这张照片里的瓶罐与包装</strong>
             <span class="copy">通常需要十几秒，请不要关闭页面。</span>
           </div>
           <div class="steps">
             <div class="step"><b>✓</b><span>图片已压缩并安全提交</span></div>
-            <div class="step"><b>2</b><span>正在分析可细查区域</span></div>
-            <div class="step"><b>3</b><span>稍后会在原图上标记位置</span></div>
+            <div class="step"><b>2</b><span>筛选最多 3 个细查区域</span></div>
+            <div class="step"><b>3</b><span>稍后在这张原图上标记</span></div>
           </div>
           <div class="bottom-actions"><div class="button text">返回并保留这张照片</div></div>
         </div>
@@ -192,9 +217,9 @@
 
     <section class="board">
       <h2 class="board-title">05 区域引导｜在原图上明确“拍哪里”</h2>
-      <p class="board-note">当前框强、后续框弱；顶部显示区域与雷点进度；退出用确认弹层。</p>
+      <p class="board-note">当前框强、后续框弱；顶部显示本场景 1～3 个区域进度；不出现下一房间。</p>
       <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
-        <div class="appbar"><span class="back">‹ 退出</span><strong>检查第 1 个区域</strong><span class="right">1 / 3</span></div>
+        <div class="appbar"><span class="back">‹ 退出</span><strong>本场景第 1 处</strong><span class="right">1 / 3</span></div>
         <div class="screen">
           <div class="row between"><span class="badge">区域 1 / 3</span><span class="badge">已发现 0 个雷点</span></div>
           <div class="image tall"><div class="target"></div><div class="future-target"></div></div>
@@ -205,7 +230,28 @@
           <div class="bottom-actions">
             <div class="button primary">拍摄这个区域</div>
             <div class="button secondary">从相册选择</div>
-            <div class="button text">跳过这个区域</div>
+            <div class="button text">跳过本图这一区域</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">05B 全部跳过｜证据不足，不生成分数</h2>
+      <p class="board-note">保留原图与区域标记；主操作回去补拍，避免把“没有证据”误写成 100 分。</p>
+      <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
+        <div class="appbar"><span class="back">‹ 退出</span><strong>本场景无法评分</strong><span class="right">3 / 3</span></div>
+        <div class="screen">
+          <div class="row between"><span class="badge">本图 3 处已处理</span><span class="badge">确认结果 0 个</span></div>
+          <div class="image tall"><div class="target"></div><div class="future-target"></div></div>
+          <div class="card warning stack">
+            <strong>证据不足，暂时无法评分</strong>
+            <span class="copy">你跳过了本图全部 3 个区域。没有确认过的产品信息，不能把这个场景显示为低风险或 100 分。</span>
+          </div>
+          <div class="bottom-actions">
+            <div class="button primary">返回原图补拍</div>
+            <div class="button secondary">换一张全景图</div>
+            <div class="button text">退出本次检查</div>
           </div>
         </div>
       </div>
@@ -247,25 +293,30 @@
           </div>
           <div class="card soft row between"><span>证据状态</span><strong>权威资料支持 ›</strong></div>
           <p class="tiny center">识别与规则提示不等于实验室检测结果。</p>
-          <div class="bottom-actions"><div class="button primary">继续检查下一区域</div></div>
+          <div class="bottom-actions"><div class="button primary">继续检查本图下一处</div></div>
         </div>
       </div>
     </section>
 
     <section class="board">
-      <h2 class="board-title">08 报告｜总览优先，详情向下阅读</h2>
-      <p class="board-note">分数、数量、风险列表形成三层；分享是主操作，再次挑战为次操作。</p>
+      <h2 class="board-title">08 本场景报告｜总览优先，详情向下阅读</h2>
+      <p class="board-note">分数只对应当前全景图；分享是主操作，检查其他场景必须返回首页新建。</p>
       <div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div>
-        <div class="appbar"><span class="back">‹ 首页</span><strong>排雷报告</strong><span class="right"></span></div>
+        <div class="appbar"><span class="back">‹ 首页</span><strong>本场景报告</strong><span class="right">已完成</span></div>
         <div class="screen" style="gap:11px">
-          <div class="score"><div><strong>82</strong><br /><span class="tiny">家庭安全分</span></div></div>
-          <h4 class="center">整体不错，还有 2 处需要注意</h4>
-          <div class="metrics"><div class="metric"><strong>2</strong><span class="tiny">雷点</span></div><div class="metric"><strong>3</strong><span class="tiny">安全项</span></div><div class="metric"><strong>5</strong><span class="tiny">已检查</span></div></div>
+          <div class="score"><div><strong>82</strong><br /><span class="tiny">本场景抽查分</span></div></div>
+          <h4 class="center">厨房水槽场景有 2 处需要注意</h4>
+          <div class="profile-card">
+            <span class="tiny">YOUR CHEMICAL TYPE</span>
+            <strong>家庭炼金术预备役</strong>
+            <span class="tiny">清洁效果想叠 Buff，化学反应也准备叠 Buff。</span>
+          </div>
+          <div class="metrics"><div class="metric"><strong>2</strong><span class="tiny">雷点</span></div><div class="metric"><strong>1</strong><span class="tiny">未命中规则</span></div><div class="metric"><strong>3</strong><span class="tiny">已确认</span></div></div>
           <div class="list">
             <div class="list-item"><div class="row between"><strong>风险产品 A</strong><span class="badge">中风险</span></div><div class="lines"><div class="line w80"></div><div class="line w65"></div></div><span class="tiny">权威资料支持 · 查看详情 ›</span></div>
-            <div class="list-item"><div class="row between"><strong>风险产品 B</strong><span class="badge">低风险</span></div><div class="line w80"></div></div>
           </div>
-          <div class="bottom-actions"><div class="button primary">分享我的排雷成绩</div><div class="button text">再排一次</div></div>
+          <p class="tiny center">本报告只代表这张全景图中的抽查结果，不代表整套住宅。</p>
+          <div class="bottom-actions"><div class="button primary">分享本场景报告</div><div class="button text">检查另一个场景</div></div>
         </div>
       </div>
     </section>
@@ -278,9 +329,9 @@
         <div class="screen">
           <div><h3>历史排雷记录</h3><p class="copy" style="margin-top:7px">完成后的报告会保存在这里。</p></div>
           <div class="list">
-            <div class="list-item"><div class="row between"><strong>第 3 次排雷</strong><span class="badge">已完成</span></div><span class="tiny">07-15 21:35</span><div class="row between"><span><strong>82</strong> 安全分　<strong>2</strong> 雷点</span><strong>查看报告 ›</strong></div></div>
-            <div class="list-item"><div class="row between"><strong>第 2 次排雷</strong><span class="badge">已完成</span></div><span class="tiny">07-14 19:20</span><div class="row between"><span><strong>91</strong> 安全分　<strong>1</strong> 雷点</span><strong>查看报告 ›</strong></div></div>
-            <div class="list-item" style="border-style:dashed"><div class="row between"><strong>第 1 次排雷</strong><span class="badge">未完成</span></div><span class="tiny">本次没有生成报告，当前版本暂不支持继续。</span></div>
+            <div class="list-item"><div class="row between"><strong>厨房水槽场景</strong><span class="badge">已完成</span></div><span class="tiny">07-19 21:35 · 一张全景图</span><div class="row between"><span><strong>82</strong> 场景分　<strong>2</strong> 雷点</span><strong>查看报告 ›</strong></div></div>
+            <div class="list-item"><div class="row between"><strong>浴室柜场景</strong><span class="badge">已完成</span></div><span class="tiny">07-18 19:20 · 一张全景图</span><div class="row between"><span><strong>91</strong> 场景分　<strong>1</strong> 雷点</span><strong>查看报告 ›</strong></div></div>
+            <div class="list-item" style="border-style:dashed"><div class="row between"><strong>储物柜场景</strong><span class="badge">未完成</span></div><span class="tiny">本场景没有生成报告，当前版本暂不支持继续。</span></div>
           </div>
           <div class="card soft stack"><strong>状态变体</strong><span class="tiny">空记录：说明原因 + 去开始挑战</span><span class="tiny">加载失败：保留页面 + 重新加载</span><span class="tiny">打开失败：保留列表 + 再次尝试</span></div>
         </div>
@@ -288,6 +339,11 @@
     </section>
   </main>
 
-  <footer>低保真线框图 v1.0 · 下一阶段：确认结构后建立视觉规范，不在本阶段拆分 React Native 组件。</footer>
+  <footer>低保真线框图 v1.1 · 确认结构后修订组件边界与架构方案；本阶段不修改 React Native 业务代码。</footer>
+  <script>
+    if (new URLSearchParams(location.search).get('review') === 'affected') {
+      document.body.classList.add('review-affected');
+    }
+  </script>
 </body>
 </html>

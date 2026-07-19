@@ -25,6 +25,14 @@ class NarrationPayload(BaseModel):
     narrations: list[str] = Field(min_length=1, max_length=3)
 
 
+class PanoramaPayload(BaseModel):
+    """模型原始候选；最终 PanoramaResult 会再收紧为最多 3 个区域。"""
+
+    scene_label: str = "当前场景"
+    areas: list[PanoramaArea] = Field(default_factory=list, max_length=10)
+    guide_message: str
+
+
 class QwenAI(AIProvider):
     """模型负责观察/OCR，本地规则引擎负责安全结论。"""
 
@@ -42,29 +50,36 @@ class QwenAI(AIProvider):
     async def analyze_panorama(self, image_bytes: bytes) -> PanoramaResult:
         prompt = """
 你是家庭化学品照片观察助手。只找出真正值得用户靠近细拍的区域，不要为了凑数返回普通物品。
-普通场景优先选择2到3个信息价值最高的区域；只有存在4个以上明确高风险化学品区域时才可返回4到5个。
+只返回1到3个信息价值最高的区域；即使画面中候选很多，也必须合并和排序后保留最多3个。
 同一组物品、距离很近的物品或范围高度重叠的目标必须合并成一个区域。
 只要画面中看到瓶罐、喷雾、清洁用品、化妆品、药盒、塑料包装或其他疑似家庭化学品容器，
 就必须返回1到3个最值得检查的候选区域，即使暂时看不清具体品牌。
 只描述画面可见内容，不判断产品是否安全，不虚构看不清的文字。
 为每个区域返回准确的二维边界框 bbox_2d=[x1,y1,x2,y2]。坐标以图片左上角为原点，
 按 Qwen3-VL 规范归一化到 0-999，必须满足 x2>x1、y2>y1，边界框应包住需要细拍的物品。
+同时根据画面中可见环境生成不超过20个汉字的 scene_label，例如“厨房水槽场景”；
+无法可靠判断时写“当前场景”，不要猜测画面之外的房间。
 返回 JSON：
-{"areas":[{"description":"位置","items_hint":"可见物品","risk_level":"high|medium|low","guide_message":"简短细拍引导","bbox_2d":[x1,y1,x2,y2]}],"guide_message":"整体引导"}
+{"scene_label":"当前场景","areas":[{"description":"位置","items_hint":"可见物品","risk_level":"high|medium|low","guide_message":"简短细拍引导","bbox_2d":[x1,y1,x2,y2]}],"guide_message":"整体引导"}
 只有图片模糊、严重遮挡、纯空场景或完全没有上述容器时，areas 才返回空数组。
 """.strip()
         payload = await self._vision_json("panorama", image_bytes, prompt)
-        result = self._validate(payload, PanoramaResult, "panorama")
-        selected = self._select_panorama_areas(result.areas)
+        candidate = self._validate(payload, PanoramaPayload, "panorama")
+        selected = self._select_panorama_areas(candidate.areas)
         logger.info(
             "qwen_panorama_regions raw_count=%d selected_count=%d",
-            len(result.areas), len(selected),
+            len(candidate.areas), len(selected),
         )
         if not selected:
             guide = "没有发现明确需要细拍的化学品，请换个角度重新拍摄。"
         else:
             guide = f"我标出了{len(selected)}个最值得检查的区域，请按顺序靠近拍摄。"
-        return result.model_copy(update={"areas": selected, "guide_message": guide})
+        scene_label = candidate.scene_label.strip()[:20] or "当前场景"
+        return PanoramaResult(
+            scene_label=scene_label,
+            areas=selected,
+            guide_message=guide,
+        )
 
     @classmethod
     def _select_panorama_areas(
@@ -78,9 +93,7 @@ class QwenAI(AIProvider):
                 continue
             unique.append(area)
 
-        high_count = sum(area.risk_level == "high" for area in unique)
-        limit = 5 if high_count >= 4 else 3
-        return unique[:limit]
+        return unique[:3]
 
     @staticmethod
     def _bbox_iou(
@@ -139,9 +152,12 @@ class QwenAI(AIProvider):
         return [item[:30] for item in result.narrations]
 
     async def generate_report(
-        self, scan_results: list[dict], total_mines: int
+        self,
+        scan_results: list[dict],
+        total_mines: int,
+        scene_label: str = "当前场景",
     ) -> ReportData:
-        return build_report(scan_results, total_mines)
+        return build_report(scan_results, total_mines, scene_label)
 
     async def _vision_json(
         self, operation: str, image_bytes: bytes, prompt: str

@@ -19,6 +19,7 @@ class MineSummary(BaseModel):
 
 class ReportData(BaseModel):
     """排雷报告"""
+    scene_label: str = Field(default="当前场景", description="本次抽查的场景标签")
     score: int = Field(description="排雷评分 0-100")
     level: str = Field(description="评级文案")
     total_mines: int = Field(description="总雷点数")

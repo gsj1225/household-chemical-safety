@@ -76,7 +76,13 @@ class PanoramaArea(BaseModel):
 class PanoramaResult(BaseModel):
     """全景照分析结果"""
     scan_id: str = Field(default_factory=lambda: f"scan-{uuid.uuid4().hex[:8]}")
-    areas: list[PanoramaArea] = Field(default_factory=list, max_length=5)
+    scene_label: str = Field(
+        default="当前场景",
+        min_length=1,
+        max_length=20,
+        description="根据画面可见环境生成的简短场景标签，仅用于展示",
+    )
+    areas: list[PanoramaArea] = Field(default_factory=list, max_length=3)
     guide_message: str = Field(description="整体引导话术")
 
 

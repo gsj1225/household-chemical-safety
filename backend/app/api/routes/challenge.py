@@ -42,6 +42,7 @@ async def get_history(
             total_mines=state.total_mines,
             is_completed=state.is_completed,
             score=state.report.get("score") if state.report else None,
+            scene_label=state.scene_label or "历史场景",
         )
         for state in states
     ]

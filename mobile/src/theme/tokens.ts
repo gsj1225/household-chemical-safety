@@ -1,27 +1,30 @@
 /**
  * Design tokens are split into raw values, semantic roles, and component recipes.
- * Exact brand styling remains provisional until the final visual-polish stage.
+ * Exact palette values can change, but screens must keep using semantic roles.
  */
 
 export const rawTokens = {
   palette: {
     brand: {
-      legacy: '#FF6B35',
-      legacyDark: '#E5552B',
-      legacyLight: '#FFE5DC',
-      500: '#E95320',
-      600: '#C83E13',
-      700: '#A93212',
+      legacy: '#08090A',
+      legacyDark: '#282B30',
+      legacyLight: '#F4F5F7',
+      500: '#08090A',
+      600: '#08090A',
+      700: '#282B30',
     },
     neutral: {
       0: '#FFFFFF',
-      50: '#F8F9FA',
-      100: '#F2F4F7',
-      200: '#E4E7EC',
-      300: '#D0D5DD',
-      500: '#667085',
-      600: '#475467',
-      900: '#101828',
+      25: '#FAFAFB',
+      50: '#F4F5F7',
+      100: '#E7E9ED',
+      200: '#DDE0E5',
+      300: '#C8CCD3',
+      500: '#686D76',
+      600: '#484C54',
+      700: '#282B30',
+      900: '#08090A',
+      1000: '#000000',
     },
     risk: {
       critical: '#B42318',
@@ -74,10 +77,10 @@ export const rawTokens = {
     display: 44,
   },
   radius: {
-    small: 8,
-    medium: 12,
-    large: 16,
-    xlarge: 24,
+    small: 6,
+    medium: 10,
+    large: 12,
+    xlarge: 16,
     round: 999,
   },
   size: {
@@ -86,9 +89,9 @@ export const rawTokens = {
     primaryControl: 52,
   },
   duration: {
-    fast: 160,
-    normal: 240,
-    scan: 800,
+    fast: 120,
+    normal: 200,
+    scan: 650,
   },
 } as const;
 
@@ -98,7 +101,7 @@ export const semanticColors = {
     subtle: rawTokens.palette.neutral[50],
     muted: rawTokens.palette.neutral[100],
     inverse: rawTokens.palette.neutral[900],
-    accentSubtle: '#FFF4ED',
+    accentSubtle: rawTokens.palette.neutral[50],
     errorSubtle: rawTokens.palette.statusSurface.error,
     warningSubtle: rawTokens.palette.statusSurface.warning,
     infoSubtle: rawTokens.palette.statusSurface.info,
@@ -111,7 +114,7 @@ export const semanticColors = {
     primary: rawTokens.palette.neutral[900],
     secondary: rawTokens.palette.neutral[600],
     muted: rawTokens.palette.neutral[500],
-    action: rawTokens.palette.brand[600],
+    action: rawTokens.palette.neutral[900],
     inverse: rawTokens.palette.neutral[0],
     onAction: rawTokens.palette.neutral[0],
     error: rawTokens.palette.risk.critical,
@@ -120,17 +123,18 @@ export const semanticColors = {
     success: rawTokens.palette.risk.noRuleHit,
   },
   action: {
-    primary: rawTokens.palette.brand[600],
-    primaryPressed: rawTokens.palette.brand[700],
-    secondaryPressed: '#FFF4ED',
-    decorativeAccent: rawTokens.palette.brand[500],
+    primary: rawTokens.palette.neutral[900],
+    primaryPressed: rawTokens.palette.neutral[700],
+    secondaryPressed: rawTokens.palette.neutral[50],
+    decorativeAccent: rawTokens.palette.neutral[900],
     disabledBackground: rawTokens.palette.neutral[200],
     disabledForeground: rawTokens.palette.neutral[500],
   },
   border: {
+    strong: rawTokens.palette.neutral[900],
     default: rawTokens.palette.neutral[300],
     subtle: rawTokens.palette.neutral[200],
-    focus: rawTokens.palette.brand[600],
+    focus: rawTokens.palette.neutral[900],
     onInverse: 'rgba(255, 255, 255, 0.82)',
     error: rawTokens.palette.risk.critical,
     warning: rawTokens.palette.risk.medium,
@@ -148,11 +152,11 @@ export const semanticColors = {
     noRuleHit: rawTokens.palette.risk.noRuleHit,
   },
   overlay: {
-    photo: 'rgba(8, 16, 30, 0.56)',
-    photoStrong: 'rgba(8, 16, 30, 0.72)',
-    label: 'rgba(16, 24, 40, 0.88)',
-    annotationCurrent: 'rgba(200, 62, 19, 0.16)',
-    annotationUpcoming: 'rgba(8, 16, 30, 0.12)',
+    photo: 'rgba(8, 9, 10, 0.58)',
+    photoStrong: 'rgba(8, 9, 10, 0.74)',
+    label: 'rgba(8, 9, 10, 0.92)',
+    annotationCurrent: 'rgba(8, 9, 10, 0.10)',
+    annotationUpcoming: 'rgba(104, 109, 118, 0.14)',
   },
 } as const;
 
@@ -200,6 +204,8 @@ export const componentTokens = {
   surface: {
     radius: rawTokens.radius.large,
     padding: rawTokens.space[4],
+    borderWidth: 1,
+    strongBorderWidth: 2,
   },
   input: {
     minHeight: rawTokens.size.inputMinimum,
@@ -236,5 +242,26 @@ export const componentTokens = {
   stateMessage: {
     gap: rawTokens.space[3],
     padding: rawTokens.space[5],
+  },
+  recoveryPanel: {
+    gap: rawTokens.space[3],
+    padding: rawTokens.space[4],
+    iconSize: rawTokens.size.touchMinimum,
+    borderWidth: 2,
+  },
+  analysis: {
+    maxWidth: 520,
+    frameHeight: 264,
+    targetWidth: 176,
+    targetHeight: 112,
+    statusIndexSize: rawTokens.space[8],
+    scanLineWidth: 2,
+  },
+  report: {
+    scoreRingSize: 96,
+    scoreRingBorderWidth: 9,
+    statMinHeight: 72,
+    summaryBorderWidth: 2,
+    summaryAccentWidth: 5,
   },
 } as const;

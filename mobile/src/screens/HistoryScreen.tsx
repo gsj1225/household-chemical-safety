@@ -72,8 +72,8 @@ export default function HistoryScreen({ navigation }: Props) {
           <RefreshControl refreshing={refreshing} onRefresh={() => void loadHistory(true)} />
         }
       >
-        <Text style={styles.title}>历史排雷记录</Text>
-        <Text style={styles.subtitle}>完成挑战后，报告会自动保存在这里</Text>
+        <Text style={styles.title}>历史场景报告</Text>
+        <Text style={styles.subtitle}>每张全景图独立成一份报告，不代表整套住宅已经检查</Text>
 
         {loading ? (
           <ActivityIndicator style={styles.state} size="large" color={colors.primary} />
@@ -89,9 +89,9 @@ export default function HistoryScreen({ navigation }: Props) {
           <View style={styles.stateCard}>
             <Text style={styles.emptyEmoji}>📋</Text>
             <Text style={styles.stateTitle}>还没有历史报告</Text>
-            <Text style={styles.stateText}>完成第一次排雷挑战后，就能在这里重新查看。</Text>
+            <Text style={styles.stateText}>完成第一次单场景检查后，就能在这里重新查看。</Text>
             <TouchableOpacity style={styles.retryButton} onPress={() => navigation.navigate('Home')}>
-              <Text style={styles.retryText}>去开始挑战</Text>
+              <Text style={styles.retryText}>去检查一个场景</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -105,7 +105,14 @@ export default function HistoryScreen({ navigation }: Props) {
                 disabled={!available || openingId !== null}
               >
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>第 {items.length - index} 次排雷</Text>
+                  <View style={styles.cardHeading}>
+                    <Text style={styles.cardTitle}>
+                      {item.scene_label || '历史场景'}
+                    </Text>
+                    <Text style={styles.cardSequence}>
+                      第 {items.length - index} 次检查
+                    </Text>
+                  </View>
                   <Text style={[styles.badge, available ? styles.doneBadge : styles.progressBadge]}>
                     {available ? '已完成' : '未完成'}
                   </Text>
@@ -140,7 +147,9 @@ const styles = StyleSheet.create({
   card: { backgroundColor: colors.bgSecondary, borderRadius: borderRadius.lg, padding: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
   cardDisabled: { opacity: 0.62 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardHeading: { flex: 1 },
   cardTitle: { fontSize: fontSize.md, fontWeight: 'bold', color: colors.textPrimary },
+  cardSequence: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: spacing.xs },
   badge: { overflow: 'hidden', borderRadius: borderRadius.round, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, fontSize: fontSize.xs },
   doneBadge: { color: colors.safe, backgroundColor: '#DDF8EF' },
   progressBadge: { color: colors.textSecondary, backgroundColor: colors.border },

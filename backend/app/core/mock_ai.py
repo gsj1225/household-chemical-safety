@@ -101,6 +101,7 @@ class MockAI(AIProvider):
             ),
         ]
         return PanoramaResult(
+            scene_label="厨房水槽场景",
             areas=areas,
             guide_message="我看到了3个需要检查的区域，我们逐个靠近拍一下。",
         )
@@ -144,6 +145,7 @@ class MockAI(AIProvider):
         self,
         scan_results: list[dict],
         total_mines: int,
+        scene_label: str = "当前场景",
     ) -> ReportData:
         """使用确定性逻辑生成排雷报告。"""
-        return build_report(scan_results, total_mines)
+        return build_report(scan_results, total_mines, scene_label)

@@ -19,6 +19,8 @@ from app.core.exceptions import (
     ChallengeCompletedError,
     ChallengeNotFoundError,
     IdentificationDraftNotFoundError,
+    PanoramaReplacementNotAllowedError,
+    ReportEvidenceRequiredError,
     ScanLimitExceededError,
 )
 from app.core.rate_limit import rate_limiter
@@ -161,6 +163,30 @@ async def draft_not_found_handler(
     return error_response(
         request, 409, "IDENTIFICATION_DRAFT_INVALID",
         "识别草稿已失效，请重新拍摄或选择照片",
+    )
+
+
+@app.exception_handler(ReportEvidenceRequiredError)
+async def report_evidence_required_handler(
+    request: Request, exc: ReportEvidenceRequiredError
+):
+    return error_response(
+        request,
+        409,
+        "REPORT_EVIDENCE_REQUIRED",
+        "至少确认一个近景识别结果后才能生成本场景报告",
+    )
+
+
+@app.exception_handler(PanoramaReplacementNotAllowedError)
+async def panorama_replacement_not_allowed_handler(
+    request: Request, exc: PanoramaReplacementNotAllowedError
+):
+    return error_response(
+        request,
+        409,
+        "PANORAMA_LOCKED",
+        "当前场景已有确认结果，不能再替换全景图",
     )
 
 

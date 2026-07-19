@@ -15,7 +15,6 @@ import {
   StatusBadge,
   Surface,
 } from '../primitives';
-import type { StatusBadgeTone } from '../primitives/StatusBadge';
 
 interface AreaGuideViewProps {
   areas: PanoramaArea[];
@@ -30,10 +29,10 @@ interface AreaGuideViewProps {
   onSkip: () => void;
 }
 
-const priorityMeta: Record<string, { label: string; tone: StatusBadgeTone }> = {
-  high: { label: '拍摄优先级：高', tone: 'warning' },
-  medium: { label: '拍摄优先级：中', tone: 'info' },
-  low: { label: '拍摄优先级：低', tone: 'neutral' },
+const priorityMeta: Record<string, string> = {
+  high: '拍摄优先级：高',
+  medium: '拍摄优先级：中',
+  low: '拍摄优先级：低',
 };
 
 export default function AreaGuideView({
@@ -92,10 +91,7 @@ export default function AreaGuideView({
       tone: index === currentAreaIndex ? 'current' : 'upcoming',
       labelPlacement: area.bbox_2d![0] > 650 ? 'end' : 'start',
     }));
-  const priority = priorityMeta[currentArea.risk_level] ?? {
-    label: '拍摄优先级：待确认',
-    tone: 'neutral' as const,
-  };
+  const priority = priorityMeta[currentArea.risk_level] ?? '拍摄优先级：待确认';
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -116,6 +112,12 @@ export default function AreaGuideView({
 
       {panoramaImageUri ? (
         <View style={styles.photoWrap}>
+          <View style={styles.photoHeading}>
+            <AppText variant="titleSmall">按原图黑框位置靠近拍摄</AppText>
+            <AppText variant="caption" color="secondary">
+              实线是当前区域，虚线是后续区域
+            </AppText>
+          </View>
           <PhotoFrame
             uri={panoramaImageUri}
             aspectRatio={aspectRatio}
@@ -131,7 +133,7 @@ export default function AreaGuideView({
       ) : null}
 
       <Surface variant="outlined" style={styles.areaCard}>
-        <StatusBadge label={priority.label} tone={priority.tone} />
+        <StatusBadge label={priority} tone="neutral" />
         <AppText variant="titleSmall">{currentArea.description}</AppText>
         <AppText color="secondary">{currentArea.items_hint}</AppText>
       </Surface>
@@ -152,7 +154,7 @@ export default function AreaGuideView({
         label="跳过这个区域"
         variant="quiet"
         onPress={onSkip}
-        accessibilityHint="不识别当前区域，继续下一个区域或生成报告"
+        accessibilityHint="不识别当前区域；如果本场景全部跳过，将进入证据不足提示"
       />
 
       {scanResults.length > 0 ? (
@@ -186,7 +188,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: componentTokens.photo.wideMaxWidth,
     alignSelf: 'center',
-    gap: rawTokens.space[2],
+    gap: rawTokens.space[3],
+  },
+  photoHeading: {
+    gap: rawTokens.space[1],
   },
   areaCard: {
     gap: rawTokens.space[2],

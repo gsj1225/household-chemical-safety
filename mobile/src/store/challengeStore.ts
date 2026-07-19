@@ -18,6 +18,7 @@ interface ChallengeState {
   pageStatus: ScanPageStatus;
 
   // 全景扫描结果
+  sceneLabel: string;
   areas: PanoramaArea[];
   currentAreaIndex: number;
 
@@ -33,9 +34,15 @@ interface ChallengeState {
 
   // Actions
   setChallengeId: (id: string) => void;
-  setPanoramaAreas: (areas: PanoramaArea[], guideMessage: string) => void;
+  setPanoramaAreas: (
+    areas: PanoramaArea[],
+    guideMessage: string,
+    sceneLabel: string,
+  ) => void;
   addScanResult: (result: ScanResult) => void;
   nextArea: () => void;
+  reviewAreas: () => void;
+  replacePanorama: () => void;
   setPageStatus: (status: ScanPageStatus) => void;
   setGuideMessage: (msg: string) => void;
   setReport: (report: ReportData) => void;
@@ -45,6 +52,7 @@ interface ChallengeState {
 const initialState = {
   challengeId: null,
   pageStatus: 'panorama' as ScanPageStatus,
+  sceneLabel: '',
   areas: [] as PanoramaArea[],
   currentAreaIndex: 0,
   scanResults: [] as ScanResult[],
@@ -58,8 +66,9 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
 
   setChallengeId: (id) => set({ challengeId: id }),
 
-  setPanoramaAreas: (areas, guideMessage) =>
+  setPanoramaAreas: (areas, guideMessage, sceneLabel) =>
     set({
+      sceneLabel,
       areas,
       guideMessage,
       pageStatus: 'guide',
@@ -90,6 +99,31 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
     } else {
       set({ pageStatus: 'done' });
     }
+  },
+
+  reviewAreas: () => {
+    const state = get();
+    if (state.areas.length === 0) {
+      set({ pageStatus: 'panorama' });
+      return;
+    }
+    set({
+      currentAreaIndex: 0,
+      pageStatus: 'guide',
+      guideMessage: state.areas[0].guide_message,
+    });
+  },
+
+  replacePanorama: () => {
+    const state = get();
+    if (state.scanResults.length > 0) return;
+    set({
+      sceneLabel: '',
+      areas: [],
+      currentAreaIndex: 0,
+      pageStatus: 'panorama',
+      guideMessage: '',
+    });
   },
 
   setPageStatus: (status) => set({ pageStatus: status }),

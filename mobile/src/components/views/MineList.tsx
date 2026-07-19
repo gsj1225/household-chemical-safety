@@ -3,9 +3,14 @@
  */
 
 import React from 'react';
-import { Linking, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors, riskLevelColor } from '../../theme/colors';
-import { fontSize, spacing, borderRadius } from '../../theme/spacing';
+import { StyleSheet, View } from 'react-native';
+import { RiskCard } from '../composites';
+import { AppText, Surface } from '../primitives';
+import {
+  componentTokens,
+  rawTokens,
+  semanticColors,
+} from '../../theme/tokens';
 import type { MineSummary } from '../../types';
 
 interface MineListProps {
@@ -15,83 +20,98 @@ interface MineListProps {
 
 export default function MineList({ mines, breakdown }: MineListProps) {
   return (
-    <>
-      <View style={styles.breakdownCard}>
-        <Text style={styles.sectionTitle}>雷点分布</Text>
+    <View style={styles.container}>
+      <Surface variant="outlined" style={styles.breakdownCard}>
+        <AppText variant="titleSmall">雷点分布</AppText>
         <View style={styles.breakdownRow}>
-          <BreakdownItem label="高危" count={breakdown.critical} color={colors.critical} />
-          <BreakdownItem label="中危" count={breakdown.medium} color={colors.medium} />
-          <BreakdownItem label="低危" count={breakdown.low} color={colors.low} />
+          <BreakdownItem code="H" label="高危" count={breakdown.critical} />
+          <BreakdownItem code="M" label="中危" count={breakdown.medium} />
+          <BreakdownItem code="L" label="低危" count={breakdown.low} />
         </View>
-      </View>
+      </Surface>
 
       <View style={styles.mineListSection}>
-        <Text style={styles.sectionTitle}>雷点详情</Text>
+        <View style={styles.sectionHeading}>
+          <AppText variant="titleSmall">雷点详情</AppText>
+          <AppText variant="caption" color="secondary">
+            共 {mines.length} 条档案
+          </AppText>
+        </View>
         {mines.map((mine, i) => (
-          <View key={i} style={styles.mineItem}>
-            <View style={[styles.mineLevelDot, { backgroundColor: riskLevelColor[mine.level] || colors.medium }]} />
-            <View style={styles.mineInfo}>
-              <Text style={styles.mineType}>{mine.type}</Text>
-              <Text style={styles.mineProducts}>{mine.products.join(' + ')}</Text>
-              {mine.confirmed_by_user && (
-                <Text style={styles.confirmedText}>✓ 产品信息经用户确认</Text>
-              )}
-              <Text style={styles.mineDesc}>{mine.description}</Text>
-              <Text style={styles.mineAdvice}>建议：{mine.advice}</Text>
-              <Text style={[styles.evidenceStatus, mine.evidence_status === 'verified' ? styles.verified : styles.review]}>
-                {mine.evidence_status === 'verified' ? '✓ 权威资料支持' : '△ 资料待复核'}
-              </Text>
-              {(mine.sources ?? []).map((source) => (
-                <TouchableOpacity key={source.url} onPress={() => void Linking.openURL(source.url)}>
-                  <Text style={styles.sourceLink}>{source.organization}：{source.title}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          <RiskCard
+            key={`${mine.type}-${i}`}
+            index={i + 1}
+            level={mine.level}
+            type={mine.type}
+            products={mine.products}
+            description={mine.description}
+            advice={mine.advice}
+            evidenceStatus={mine.evidence_status}
+            sources={mine.sources}
+            confirmedByUser={mine.confirmed_by_user}
+          />
         ))}
       </View>
-    </>
+    </View>
   );
 }
 
-function BreakdownItem({ label, count, color }: { label: string; count: number; color: string }) {
+function BreakdownItem({
+  code,
+  label,
+  count,
+}: {
+  code: string;
+  label: string;
+  count: number;
+}) {
   return (
     <View style={styles.breakdownItem}>
-      <View style={[styles.breakdownDot, { backgroundColor: color }]} />
-      <Text style={styles.breakdownCount}>{count}</Text>
-      <Text style={styles.breakdownLabel}>{label}</Text>
+      <View style={styles.breakdownCode}>
+        <AppText variant="caption">{code}</AppText>
+      </View>
+      <AppText variant="titleSmall">{count}</AppText>
+      <AppText variant="caption" color="secondary">{label}</AppText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    gap: rawTokens.space[5],
+  },
   breakdownCard: {
-    backgroundColor: colors.bgSecondary, borderRadius: borderRadius.lg,
-    padding: spacing.lg, marginBottom: spacing.lg,
+    gap: rawTokens.space[4],
   },
-  sectionTitle: {
-    fontSize: fontSize.md, fontWeight: 'bold',
-    color: colors.textPrimary, marginBottom: spacing.md,
+  breakdownRow: {
+    flexDirection: 'row',
+    gap: rawTokens.space[3],
   },
-  breakdownRow: { flexDirection: 'row', justifyContent: 'space-around' },
-  breakdownItem: { alignItems: 'center' },
-  breakdownDot: { width: 16, height: 16, borderRadius: 8, marginBottom: spacing.xs },
-  breakdownCount: { fontSize: fontSize.xl, fontWeight: 'bold', color: colors.textPrimary },
-  breakdownLabel: { fontSize: fontSize.xs, color: colors.textSecondary },
-  mineListSection: { marginBottom: spacing.lg },
-  mineItem: {
-    flexDirection: 'row', backgroundColor: colors.bgSecondary,
-    borderRadius: borderRadius.lg, padding: spacing.lg, marginBottom: spacing.sm,
+  breakdownItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: rawTokens.space[1],
+    paddingVertical: rawTokens.space[3],
+    borderWidth: componentTokens.surface.borderWidth,
+    borderColor: semanticColors.border.default,
+    borderRadius: componentTokens.surface.radius,
   },
-  mineLevelDot: { width: 10, height: 10, borderRadius: 5, marginTop: 6, marginRight: spacing.md },
-  mineInfo: { flex: 1 },
-  mineType: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-  mineProducts: { fontSize: fontSize.md, fontWeight: 'bold', color: colors.textPrimary, marginTop: 2 },
-  confirmedText: { color: colors.safe, fontSize: fontSize.xs, fontWeight: '600', marginTop: spacing.xs },
-  mineDesc: { fontSize: fontSize.sm, color: colors.textPrimary, lineHeight: 22, marginTop: spacing.xs },
-  mineAdvice: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: spacing.xs, lineHeight: 20 },
-  evidenceStatus: { fontSize: fontSize.xs, fontWeight: 'bold', marginTop: spacing.sm },
-  verified: { color: colors.safe },
-  review: { color: colors.medium },
-  sourceLink: { color: colors.primary, fontSize: fontSize.xs, lineHeight: 18, marginTop: spacing.xs },
+  breakdownCode: {
+    minWidth: rawTokens.space[6],
+    height: rawTokens.space[6],
+    borderRadius: rawTokens.radius.round,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: componentTokens.surface.borderWidth,
+    borderColor: semanticColors.border.strong,
+  },
+  mineListSection: {
+    gap: rawTokens.space[4],
+  },
+  sectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: rawTokens.space[3],
+  },
 });

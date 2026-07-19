@@ -10,3 +10,9 @@ output/
 *.db
 *.db-shm
 *.db-wal
+*.log
+
+# Local previews and generated exploration assets
+preview/
+preview_*.html
+images/generated*.jpg

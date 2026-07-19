@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   },
   outlined: {
     backgroundColor: semanticColors.surface.page,
-    borderWidth: 1,
+    borderWidth: componentTokens.surface.borderWidth,
     borderColor: semanticColors.border.default,
   },
   inverse: {

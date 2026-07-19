@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>高对比检验系统｜核心页面视觉稿</title>
+  <style>
+    :root {
+      --ink: #08090a;
+      --ink-2: #282b30;
+      --muted: #686d76;
+      --line: #c8ccd3;
+      --line-soft: #e7e9ed;
+      --paper: #ffffff;
+      --paper-soft: #f4f5f7;
+      --critical: #08090a;
+      --critical-bg: #ffffff;
+      --success: #08090a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #eef0f4;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    .board {
+      width: 1500px;
+      min-height: 1100px;
+      margin: 0 auto;
+      padding: 42px 54px 54px;
+      background: #eef0f4;
+    }
+    .board-head {
+      height: 142px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--ink);
+      margin-bottom: 28px;
+    }
+    .kicker {
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 10px 0 8px;
+      font-size: 38px;
+      line-height: 1.1;
+      letter-spacing: -.04em;
+    }
+    .sub {
+      margin: 0;
+      color: var(--ink-2);
+      font-size: 15px;
+    }
+    .legend {
+      width: 370px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--ink);
+      background: var(--paper);
+    }
+    .legend div {
+      padding: 14px 12px;
+      min-height: 76px;
+      border-right: 1px solid var(--ink);
+    }
+    .legend div:last-child { border-right: 0; }
+    .legend b { display: block; font-size: 13px; margin-bottom: 8px; }
+    .legend span { color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .phones {
+      display: grid;
+      grid-template-columns: repeat(3, 390px);
+      gap: 48px;
+      justify-content: center;
+    }
+    .column-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+    .column-title strong { font-size: 15px; }
+    .column-title span { color: var(--muted); font-size: 12px; }
+    .phone {
+      width: 390px;
+      height: 844px;
+      overflow: hidden;
+      border: 7px solid var(--ink);
+      border-radius: 42px;
+      background: var(--paper);
+      box-shadow: 0 16px 34px rgba(17,17,15,.16);
+      position: relative;
+    }
+    .screen {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: var(--paper);
+    }
+    .statusbar {
+      height: 36px;
+      padding: 12px 20px 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .island {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      width: 102px;
+      height: 25px;
+      transform: translateX(-50%);
+      border-radius: 99px;
+      background: var(--ink);
+    }
+    .nav {
+      height: 54px;
+      padding: 0 18px;
+      display: grid;
+      grid-template-columns: 72px 1fr 72px;
+      align-items: center;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 14px;
+    }
+    .nav strong { text-align: center; font-size: 16px; }
+    .nav .right { text-align: right; color: var(--muted); font-size: 12px; }
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 20px 18px;
+      min-height: 0;
+    }
+    .eyebrow {
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .hero-title {
+      margin: 12px 0 12px;
+      font-size: 39px;
+      line-height: 1.04;
+      letter-spacing: -.055em;
+    }
+    .lead {
+      margin: 0;
+      color: var(--ink-2);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+    .audit-visual {
+      margin-top: 22px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--paper);
+    }
+    .audit-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--ink);
+    }
+    .audit-mark {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      color: white;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: var(--ink);
+      font-size: 26px;
+      font-weight: 900;
+    }
+    .audit-code {
+      font: 700 11px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+      text-align: right;
+    }
+    .audit-row {
+      display: grid;
+      grid-template-columns: 24px 1fr 18px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+    .audit-row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .num {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--ink);
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .check { color: var(--ink); font-weight: 900; text-align: center; }
+    .actions { margin-top: auto; display: grid; gap: 10px; }
+    button {
+      width: 100%;
+      min-height: 52px;
+      border: 0;
+      border-radius: 12px;
+      font: 800 16px/1 inherit;
+    }
+    .primary { color: white; background: var(--ink); }
+    .secondary { color: var(--ink); background: white; border: 1.5px solid var(--ink); }
+    .quiet { color: var(--ink-2); background: transparent; min-height: 44px; font-size: 14px; }
+    .privacy {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+      text-align: center;
+    }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .pill {
+      min-height: 26px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 10px;
+      border: 1px solid var(--ink);
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 800;
+      background: white;
+    }
+    .pill.current {
+      color: var(--ink);
+      border-color: var(--ink);
+      border-width: 2px;
+    }
+    .photo {
+      height: 292px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid var(--ink);
+      border-radius: 12px;
+      background: #dde1e7;
+    }
+    .photo svg { width: 100%; height: 100%; display: block; }
+    .annotation {
+      position: absolute;
+      border: 3px solid var(--ink);
+    }
+    .annotation.current { left: 26px; top: 94px; width: 170px; height: 126px; }
+    .annotation.next {
+      right: 18px;
+      top: 48px;
+      width: 98px;
+      height: 98px;
+      border: 2px dashed #77776f;
+    }
+    .annotation-label {
+      position: absolute;
+      top: -29px;
+      left: -3px;
+      padding: 5px 8px;
+      color: white;
+      background: var(--ink);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .area-card {
+      margin-top: 14px;
+      padding: 15px 16px;
+      border: 2px solid var(--ink);
+      border-radius: 12px;
+    }
+    .area-card h3 { margin: 7px 0 5px; font-size: 19px; }
+    .area-card p { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
+    .guide-actions { margin-top: 14px; display: grid; gap: 8px; }
+    .report-content { padding-top: 18px; }
+    .report-head {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+    .score {
+      width: 96px;
+      height: 96px;
+      display: grid;
+      place-items: center;
+      border: 9px solid var(--ink);
+      border-radius: 50%;
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: -.04em;
+    }
+    .report-head h2 { margin: 6px 0 5px; font-size: 23px; line-height: 1.15; }
+    .report-head p { margin: 0; color: var(--ink-2); font-size: 12px; line-height: 1.5; }
+    .humor {
+      margin-top: 16px;
+      padding: 15px 16px;
+      color: white;
+      border-radius: 12px;
+      background: var(--ink);
+    }
+    .humor small { display: block; opacity: .72; font-size: 10px; letter-spacing: .1em; }
+    .humor strong { display: block; margin: 7px 0 5px; font-size: 20px; }
+    .humor span { font-size: 12px; line-height: 1.5; opacity: .86; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-top: 14px;
+      border: 1px solid var(--ink);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .stat { padding: 11px 6px; text-align: center; border-right: 1px solid var(--ink); }
+    .stat:last-child { border-right: 0; }
+    .stat b { display: block; font-size: 21px; }
+    .stat span { color: var(--muted); font-size: 10px; }
+    .risk-card {
+      margin-top: 14px;
+      padding: 14px 14px 13px;
+      border: 2px solid var(--ink);
+      border-left-width: 5px;
+      border-radius: 10px;
+      background: var(--paper);
+    }
+    .risk-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 900;
+    }
+    .risk-card p { margin: 8px 0 0; color: var(--ink-2); font-size: 12px; line-height: 1.5; }
+    .risk-card b { display: block; margin-top: 8px; color: var(--ink); font-size: 12px; }
+    .report-actions { margin-top: auto; }
+    .stamp {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--success);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .board-foot {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      padding-top: 14px;
+      border-top: 1px solid rgba(17,17,15,.35);
+      color: var(--ink-2);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <main class="board">
+    <header class="board-head">
+      <div>
+        <div class="kicker">Visual refinement · v2.2</div>
+        <h1>高对比检验系统</h1>
+        <p class="sub">纯白、冷灰与近黑建立现代感；不依赖品牌色，幽默不替代化学安全结论。</p>
+      </div>
+      <div class="legend" aria-label="视觉规则摘要">
+        <div><b>100% 黑白</b><span>纯白、近黑文字、黑色主按钮</span></div>
+        <div><b>冷灰分层</b><span>只用于背景、分割和后续区域</span></div>
+        <div><b>0% 装饰色</b><span>状态依靠文字、图形和层级表达</span></div>
+      </div>
+    </header>
+
+    <section class="phones">
+      <article>
+        <div class="column-title"><strong>01 首页</strong><span>理解价值并开始</span></div>
+        <div class="phone">
+          <div class="island"></div>
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>●●●　▰</span></div>
+            <div class="content">
+              <div class="eyebrow">Household chemical audit · 001</div>
+              <h2 class="hero-title">我家到底<br />有多少雷？</h2>
+              <p class="lead">拍照检查家中化学品，发现需要注意的混用、包装与使用风险。</p>
+
+              <div class="audit-visual">
+                <div class="audit-top">
+                  <div class="audit-mark">!</div>
+                  <div class="audit-code">CHECK / PHOTO<br />FACT / ADVICE</div>
+                </div>
+                <div class="audit-row"><span class="num">1</span><span>拍下化学品集中的区域</span><span class="check">✓</span></div>
+                <div class="audit-row"><span class="num">2</span><span>按原图提示逐个细查</span><span class="check">✓</span></div>
+                <div class="audit-row"><span class="num">3</span><span>核对信息并查看报告</span><span class="check">✓</span></div>
+              </div>
+
+              <div class="actions">
+                <button class="primary">开始新挑战</button>
+                <button class="secondary">查看历史报告</button>
+                <p class="privacy">照片仅用于本次分析，当前版本不保存原图</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <div class="column-title"><strong>02 区域引导</strong><span>直接在原图上告诉用户拍哪里</span></div>
+        <div class="phone">
+          <div class="island"></div>
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>●●●　▰</span></div>
+            <div class="nav"><span>‹ 退出</span><strong>检查第 1 个区域</strong><span class="right">1 / 3</span></div>
+            <div class="content">
+              <div class="meta-row">
+                <span class="pill current">区域 1 / 3</span>
+                <span class="pill">已发现 0 个雷点</span>
+              </div>
+
+              <div class="photo" aria-label="全景原图上的区域标记示意">
+                <svg viewBox="0 0 350 292" role="img" aria-label="水槽下方化学品柜示意">
+                  <rect width="350" height="292" fill="#dfe3ea"/>
+                  <rect x="15" y="18" width="320" height="256" rx="4" fill="#f5f6f8" stroke="#5e636c" stroke-width="3"/>
+                  <rect x="28" y="38" width="294" height="18" fill="#c3c8d0"/>
+                  <rect x="28" y="161" width="294" height="12" fill="#9ba1ab"/>
+                  <path d="M150 38v44c0 25 15 37 38 37s37-12 37-37V38" fill="none" stroke="#747a84" stroke-width="9"/>
+                  <rect x="45" y="102" width="38" height="58" rx="7" fill="#ffffff" stroke="#5e636c" stroke-width="2"/>
+                  <rect x="55" y="86" width="18" height="18" rx="3" fill="#5e636c"/>
+                  <rect x="96" y="91" width="42" height="70" rx="6" fill="#c8cdd5" stroke="#5e636c" stroke-width="2"/>
+                  <path d="M107 91v-17h22" fill="none" stroke="#5e636c" stroke-width="6"/>
+                  <rect x="218" y="84" width="46" height="76" rx="7" fill="#ffffff" stroke="#5e636c" stroke-width="2"/>
+                  <rect x="230" y="67" width="22" height="20" rx="3" fill="#747a84"/>
+                  <rect x="271" y="108" width="33" height="52" rx="5" fill="#adb3bd" stroke="#5e636c" stroke-width="2"/>
+                  <rect x="53" y="196" width="50" height="62" rx="6" fill="#c8cdd5" stroke="#5e636c" stroke-width="2"/>
+                  <rect x="117" y="185" width="39" height="73" rx="6" fill="#ffffff" stroke="#5e636c" stroke-width="2"/>
+                  <rect x="181" y="203" width="54" height="55" rx="5" fill="#adb3bd" stroke="#5e636c" stroke-width="2"/>
+                  <rect x="252" y="188" width="45" height="70" rx="6" fill="#ffffff" stroke="#5e636c" stroke-width="2"/>
+                </svg>
+                <div class="annotation current"><span class="annotation-label">1 · 请拍这里</span></div>
+                <div class="annotation next"></div>
+              </div>
+
+              <div class="area-card">
+                <span class="eyebrow">当前区域</span>
+                <h3>水槽下方左侧</h3>
+                <p>请靠近拍清楚瓶身正面、背面标签或成分表。</p>
+              </div>
+
+              <div class="guide-actions">
+                <button class="primary">拍摄这个区域</button>
+                <button class="secondary">从相册选择</button>
+                <button class="quiet">跳过这个区域</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <div class="column-title"><strong>03 排雷报告</strong><span>幽默结论 + 严肃事实</span></div>
+        <div class="phone">
+          <div class="island"></div>
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>●●●　▰</span></div>
+            <div class="nav"><span>‹ 首页</span><strong>排雷报告</strong><span class="right">已完成</span></div>
+            <div class="content report-content">
+              <div class="report-head">
+                <div class="score">82</div>
+                <div>
+                  <span class="stamp">✓ 检查完成</span>
+                  <h2>还有 2 处<br />需要注意</h2>
+                  <p>基于本次照片识别与现有规则生成</p>
+                </div>
+              </div>
+
+              <div class="humor">
+                <small>YOUR CHEMICAL TYPE</small>
+                <strong>家庭炼金术预备役</strong>
+                <span>清洁效果想叠 Buff，化学反应也准备叠 Buff。</span>
+              </div>
+
+              <div class="stats">
+                <div class="stat"><b>2</b><span>雷点</span></div>
+                <div class="stat"><b>3</b><span>当前未命中</span></div>
+                <div class="stat"><b>5</b><span>已检查</span></div>
+              </div>
+
+              <div class="risk-card">
+                <div class="risk-title"><span>! 不要混合使用</span><span>高风险</span></div>
+                <p>检测到可能发生危险反应的产品组合，应立即分开放置。</p>
+                <b>建议：停止混用并保持通风</b>
+              </div>
+
+              <div class="report-actions">
+                <button class="primary">生成隐私分享卡</button>
+                <button class="quiet">查看全部风险详情</button>
+                <p class="privacy">分享卡不包含原始照片、产品名称和家庭地址</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <footer class="board-foot">
+      <span>390×844 手机基准 · 系统字体 · 4pt 网格 · WCAG AA</span>
+      <span>最终视觉方向，不改变已确认用户流程与组件边界</span>
+    </footer>
+  </main>
+</body>
+</html>

@@ -7,6 +7,7 @@ from app.core.ai_provider import AIProvider
 from app.core.exceptions import (
     ChallengeCompletedError,
     IdentificationDraftNotFoundError,
+    PanoramaReplacementNotAllowedError,
     ScanLimitExceededError,
 )
 from app.data.repository import ChallengeRepository
@@ -31,7 +32,16 @@ class ScanService:
     async def panorama(self, challenge_id: str, image_bytes: bytes) -> PanoramaResult:
         challenge = self._challenges.require(challenge_id)
         self._ensure_active(challenge.is_completed)
-        return await self._ai.analyze_panorama(image_bytes)
+        if challenge.scan_results:
+            raise PanoramaReplacementNotAllowedError()
+        result = await self._ai.analyze_panorama(image_bytes)
+        challenge.scene_label = result.scene_label
+        challenge.panorama_areas = [
+            area.model_dump(mode="json") for area in result.areas
+        ]
+        challenge.pending_identifications = {}
+        self._repository.save(challenge)
+        return result
 
     async def identify(
         self, challenge_id: str, area_id: str, image_bytes: bytes

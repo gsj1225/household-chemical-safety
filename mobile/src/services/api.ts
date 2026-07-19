@@ -4,6 +4,7 @@
  */
 
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import type {
   ChallengeInfo,
@@ -28,10 +29,17 @@ export class ApiError extends Error {
     public readonly status?: number,
     public readonly code?: string,
     public readonly requestId?: string,
+    public readonly retryAfterSeconds?: number,
   ) {
-    super(requestId ? `${message}（追踪号：${requestId.slice(0, 8)}）` : message);
+    super(message);
     this.name = 'ApiError';
   }
+}
+
+function parseRetryAfter(value?: string | null): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  return Number.isFinite(seconds) && seconds >= 0 ? Math.ceil(seconds) : undefined;
 }
 
 async function request<T>(
@@ -50,6 +58,7 @@ async function request<T>(
       let detail = `请求失败 (${response.status})`;
       let code: string | undefined;
       let requestId = response.headers.get('X-Request-ID') ?? undefined;
+      const retryAfterSeconds = parseRetryAfter(response.headers.get('Retry-After'));
       try {
         const body = await response.json();
         if (typeof body?.error?.message === 'string') detail = body.error.message;
@@ -60,15 +69,29 @@ async function request<T>(
       } catch {
         // 非 JSON 错误响应使用状态码文案。
       }
-      throw new ApiError(detail, response.status, code, requestId);
+      throw new ApiError(
+        detail,
+        response.status,
+        code,
+        requestId,
+        retryAfterSeconds,
+      );
     }
     return response.json() as Promise<T>;
   } catch (error) {
     if (error instanceof ApiError) throw error;
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new ApiError('请求超时，请检查网络后重试');
+      throw new ApiError(
+        '请求超时，请检查网络后重试',
+        undefined,
+        'REQUEST_TIMEOUT',
+      );
     }
-    throw new ApiError('无法连接服务器，请检查网络和 API 地址');
+    throw new ApiError(
+      '无法连接检查服务，请检查网络后重试',
+      undefined,
+      'NETWORK_UNAVAILABLE',
+    );
   } finally {
     clearTimeout(timeout);
   }
@@ -78,17 +101,35 @@ async function request<T>(
  * 压缩图片，返回适合 FormData 的对象
  */
 async function compressImage(uri: string): Promise<{ uri: string; type: string; name: string }> {
-  const manipResult = await ImageManipulator.manipulateAsync(
-    uri,
-    [{ resize: { width: 1280 } }],
-    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-  );
+  try {
+    const manipResult = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 1280 } }],
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+    );
 
-  return {
-    uri: manipResult.uri,
-    type: 'image/jpeg',
-    name: 'photo.jpg',
-  };
+    return {
+      uri: manipResult.uri,
+      type: 'image/jpeg',
+      name: 'photo.jpg',
+    };
+  } catch {
+    // A few Android/Expo Go combinations can return a camera URI before the
+    // image manipulator is ready. The camera itself already produces JPEG, so
+    // keep the inspection moving instead of dropping the upload entirely.
+    if (Platform.OS !== 'web' && (uri.startsWith('file:') || uri.startsWith('content:'))) {
+      return {
+        uri,
+        type: 'image/jpeg',
+        name: 'camera-photo.jpg',
+      };
+    }
+    throw new ApiError(
+      '无法处理这张照片，请重新拍摄或从相册选择',
+      undefined,
+      'IMAGE_PROCESSING_FAILED',
+    );
+  }
 }
 
 async function appendImage(formData: FormData, uri: string): Promise<void> {
@@ -99,6 +140,86 @@ async function appendImage(formData: FormData, uri: string): Promise<void> {
     return;
   }
   formData.append('image', photo as any);
+}
+
+function apiErrorFromUpload(
+  status: number,
+  body: string,
+  headers: Record<string, string>,
+): ApiError {
+  let detail = `请求失败 (${status})`;
+  let code: string | undefined;
+  let requestId = headers['X-Request-ID'] ?? headers['x-request-id'];
+  const retryAfterSeconds = parseRetryAfter(
+    headers['Retry-After'] ?? headers['retry-after'],
+  );
+  try {
+    const payload = JSON.parse(body);
+    if (typeof payload?.error?.message === 'string') detail = payload.error.message;
+    if (typeof payload?.error?.code === 'string') code = payload.error.code;
+    if (typeof payload?.error?.request_id === 'string') requestId = payload.error.request_id;
+    if (typeof payload?.detail === 'string') detail = payload.detail;
+  } catch {
+    // Keep the status-based fallback for non-JSON responses.
+  }
+  return new ApiError(detail, status, code, requestId, retryAfterSeconds);
+}
+
+async function uploadImage<T>(
+  path: string,
+  imageUri: string,
+  parameters: Record<string, string>,
+  timeoutMs: number,
+): Promise<T> {
+  if (Platform.OS === 'web') {
+    const formData = new FormData();
+    await appendImage(formData, imageUri);
+    for (const [key, value] of Object.entries(parameters)) {
+      formData.append(key, value);
+    }
+    return request<T>(path, {
+      method: 'POST',
+      body: formData,
+    }, timeoutMs);
+  }
+
+  const photo = await compressImage(imageUri);
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const upload = FileSystem.uploadAsync(`${API_BASE}${path}`, photo.uri, {
+      httpMethod: 'POST',
+      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+      fieldName: 'image',
+      mimeType: photo.type,
+      parameters,
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    const result = await Promise.race([
+      upload,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new ApiError('请求超时，请检查网络后重试', undefined, 'REQUEST_TIMEOUT')),
+          timeoutMs,
+        );
+      }),
+    ]);
+
+    if (result.status < 200 || result.status >= 300) {
+      throw apiErrorFromUpload(result.status, result.body, result.headers);
+    }
+    return JSON.parse(result.body) as T;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(
+      '照片上传失败，请检查网络后重试',
+      undefined,
+      'IMAGE_UPLOAD_FAILED',
+    );
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 export const api = {
@@ -119,14 +240,12 @@ export const api = {
    * 全景扫描
    */
   async scanPanorama(imageUri: string, challengeId: string): Promise<PanoramaResult> {
-    const formData = new FormData();
-    await appendImage(formData, imageUri);
-    formData.append('challenge_id', challengeId);
-
-    return request<PanoramaResult>('/scan/panorama', {
-      method: 'POST',
-      body: formData,
-    }, AI_SCAN_TIMEOUT_MS);
+    return uploadImage<PanoramaResult>(
+      '/scan/panorama',
+      imageUri,
+      { challenge_id: challengeId },
+      AI_SCAN_TIMEOUT_MS,
+    );
   },
 
   /**
@@ -137,15 +256,15 @@ export const api = {
     challengeId: string,
     areaId: string
   ): Promise<IdentificationDraft> {
-    const formData = new FormData();
-    await appendImage(formData, imageUri);
-    formData.append('challenge_id', challengeId);
-    formData.append('area_id', areaId);
-
-    return request<IdentificationDraft>('/scan/identify', {
-      method: 'POST',
-      body: formData,
-    }, AI_SCAN_TIMEOUT_MS);
+    return uploadImage<IdentificationDraft>(
+      '/scan/identify',
+      imageUri,
+      {
+        challenge_id: challengeId,
+        area_id: areaId,
+      },
+      AI_SCAN_TIMEOUT_MS,
+    );
   },
 
   async confirmProduct(

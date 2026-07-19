@@ -28,6 +28,10 @@ class ChallengeState(BaseModel):
     """已识别的产品列表，用于交叉风险评估"""
     scan_results: list[dict] = Field(default_factory=list)
     """所有扫描结果"""
+    scene_label: str | None = None
+    """当前全景图的展示标签；旧记录缺失时保持为空"""
+    panorama_areas: list[dict] = Field(default_factory=list)
+    """当前全景图对应的细拍区域，不包含原始图片"""
     pending_identifications: dict[str, dict] = Field(default_factory=dict)
     """等待用户确认的识别草稿，不含图片"""
     total_mines: int = 0
@@ -44,3 +48,4 @@ class ChallengeHistoryItem(BaseModel):
     total_mines: int
     is_completed: bool
     score: int | None = None
+    scene_label: str = "历史场景"

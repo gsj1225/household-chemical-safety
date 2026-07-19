@@ -22,6 +22,7 @@ export interface ChallengeHistoryItem {
   total_mines: number;
   is_completed: boolean;
   score: number | null;
+  scene_label?: string;
 }
 
 // ============ 扫描 ============
@@ -59,6 +60,7 @@ export interface PanoramaArea {
 
 export interface PanoramaResult {
   scan_id: string;
+  scene_label: string;
   areas: PanoramaArea[];
   guide_message: string;
 }
@@ -109,6 +111,7 @@ export interface MineSummary {
 }
 
 export interface ReportData {
+  scene_label: string;
   score: number;
   level: string;
   total_mines: number;
@@ -131,6 +134,7 @@ export interface NarrationResponse {
 export type ScanPageStatus =
   | 'panorama'    // 拍全景
   | 'panorama_empty' // 全景未定位到可细拍区域
+  | 'evidence_insufficient' // 本场景所有区域均跳过，不能生成评分
   | 'guide'       // 引导细拍
   | 'analyzing'   // 识别中
   | 'identification_review' // 用户核对产品识别草稿

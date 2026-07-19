@@ -30,6 +30,7 @@ def fake_client(content: str | None = None, error: Exception | None = None):
 
 def test_analyze_panorama_uses_structured_multimodal_request():
     content = json.dumps({
+        "scene_label": "厨房水槽场景",
         "areas": [{
             "description": "水槽下方",
             "items_hint": "两瓶清洁剂",
@@ -45,13 +46,15 @@ def test_analyze_panorama_uses_structured_multimodal_request():
 
     assert result.areas[0].description == "水槽下方"
     assert result.areas[0].bbox_2d == (120, 240, 560, 880)
+    assert result.scene_label == "厨房水槽场景"
     kwargs = client.chat.completions.create.await_args.kwargs
     assert kwargs["response_format"] == {"type": "json_object"}
     assert kwargs["extra_body"] == {"enable_thinking": False}
     image_url = kwargs["messages"][0]["content"][0]["image_url"]["url"]
     assert image_url.startswith("data:image/jpeg;base64,")
     prompt = kwargs["messages"][0]["content"][1]["text"]
-    assert "优先选择2到3个" in prompt
+    assert "最多3个" in prompt
+    assert "scene_label" in prompt
 
 
 def test_panorama_keeps_three_normal_areas_and_removes_overlap():
@@ -71,12 +74,39 @@ def test_panorama_keeps_three_normal_areas_and_removes_overlap():
             [650, 10, 800, 200],
         ])
     ]
-    client = fake_client(json.dumps({"areas": areas, "guide_message": "共5个"}))
+    client = fake_client(json.dumps({
+        "scene_label": "储物柜场景",
+        "areas": areas,
+        "guide_message": "共5个",
+    }))
 
     result = asyncio.run(QwenAI(client=client).analyze_panorama(b"image"))
 
     assert len(result.areas) == 3
+    assert result.scene_label == "储物柜场景"
     assert result.guide_message == "我标出了3个最值得检查的区域，请按顺序靠近拍摄。"
+
+
+def test_panorama_never_returns_more_than_three_high_risk_areas():
+    areas = [
+        {
+            "description": f"高风险区域{i}",
+            "items_hint": "清洁用品",
+            "risk_level": "high",
+            "guide_message": "靠近拍摄",
+            "bbox_2d": [i * 150, 20, i * 150 + 100, 180],
+        }
+        for i in range(5)
+    ]
+    client = fake_client(json.dumps({
+        "scene_label": "厨房场景",
+        "areas": areas,
+        "guide_message": "候选较多",
+    }))
+
+    result = asyncio.run(QwenAI(client=client).analyze_panorama(b"image"))
+
+    assert len(result.areas) == 3
 
 
 def test_identify_product_validates_json_schema():

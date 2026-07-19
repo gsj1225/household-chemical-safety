@@ -67,6 +67,7 @@ def test_complete_challenge_flow(client):
     )
     assert panorama.status_code == 200
     assert len(panorama.json()["areas"]) == 3
+    assert panorama.json()["scene_label"] == "厨房水槽场景"
 
     results = []
     for index in range(3):
@@ -83,6 +84,7 @@ def test_complete_challenge_flow(client):
     )
     assert report.status_code == 200
     assert report.json()["total_mines"] == 2
+    assert report.json()["scene_label"] == "厨房水槽场景"
 
     rejected = client.post(
         "/api/scan/identify",
@@ -105,6 +107,46 @@ def test_rejects_invalid_upload_and_unknown_narration_challenge(client):
         "/api/narration/generate", params={"challenge_id": "missing"}
     )
     assert_error(narration, 404, "CHALLENGE_NOT_FOUND")
+
+
+def test_report_requires_confirmed_closeup_evidence(client):
+    challenge_id = client.post("/api/challenge/start").json()["challenge_id"]
+    panorama = client.post(
+        "/api/scan/panorama",
+        files=IMAGE,
+        data={"challenge_id": challenge_id},
+    )
+    assert panorama.status_code == 200
+
+    report = client.post(
+        "/api/challenge/result", params={"challenge_id": challenge_id}
+    )
+
+    assert_error(report, 409, "REPORT_EVIDENCE_REQUIRED")
+    state = app.state.test_repository.get(challenge_id)
+    assert state is not None
+    assert state.is_completed is False
+    assert state.report is None
+
+
+def test_panorama_replacement_is_locked_after_confirmation(client):
+    challenge_id = client.post("/api/challenge/start").json()["challenge_id"]
+    first = client.post(
+        "/api/scan/panorama",
+        files=IMAGE,
+        data={"challenge_id": challenge_id},
+    )
+    assert first.status_code == 200
+    _, confirmed = identify_and_confirm(client, challenge_id, "area-0")
+    assert confirmed.status_code == 200
+
+    replacement = client.post(
+        "/api/scan/panorama",
+        files=IMAGE,
+        data={"challenge_id": challenge_id},
+    )
+
+    assert_error(replacement, 409, "PANORAMA_LOCKED")
 
 
 def test_validation_and_unknown_errors_are_safe_and_traceable(client):
@@ -213,3 +255,4 @@ def test_history_survives_repository_recreation(client, tmp_path):
     history = client.get("/api/challenge/history")
     assert history.status_code == 200
     assert history.json()[0]["challenge_id"] == challenge_id
+    assert history.json()[0]["scene_label"] == "历史场景"

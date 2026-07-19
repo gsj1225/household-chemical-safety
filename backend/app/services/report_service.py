@@ -1,6 +1,7 @@
 """报告生成服务。"""
 
 from app.core.ai_provider import AIProvider
+from app.core.exceptions import ReportEvidenceRequiredError
 from app.data.repository import ChallengeRepository
 from app.models.report import ReportData
 from app.services.challenge_service import ChallengeService
@@ -16,8 +17,12 @@ class ReportService:
         challenge = self._challenges.require(challenge_id)
         if challenge.report is not None:
             return ReportData.model_validate(challenge.report)
+        if not challenge.scan_results:
+            raise ReportEvidenceRequiredError()
         report = await self._ai.generate_report(
-            challenge.scan_results, challenge.total_mines
+            challenge.scan_results,
+            challenge.total_mines,
+            challenge.scene_label or "当前场景",
         )
         challenge.report = report.model_dump(mode="json")
         challenge.is_completed = True

@@ -3,10 +3,10 @@
  */
 
 import React from 'react';
-import { ActivityIndicator, View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { colors } from '../../theme/colors';
-import { fontSize, spacing, borderRadius } from '../../theme/spacing';
-import MineCard from '../MineCard';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { RiskCard } from '../composites';
+import { AppButton, AppText, StatusBadge, Surface } from '../primitives';
+import { rawTokens } from '../../theme/tokens';
 import type { ScanResult } from '../../types';
 
 interface ResultViewProps {
@@ -18,64 +18,88 @@ interface ResultViewProps {
 
 export default function ResultView({ result, hasNextArea, onContinue, submitting = false }: ResultViewProps) {
   const isMine = result.status === 'mine';
+  const conclusion = isMine ? '发现雷点' : '当前规则未发现雷点';
+  const archiveNote = isMine
+    ? '档案备注：说明书看过了，配伍关系可能还没互相认识。'
+    : '档案备注：这轮没命中规则，先别急着给自己发安全证书。';
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.statusEmoji}>{isMine ? '💣' : '✅'}</Text>
-      <Text style={[styles.statusText, { color: isMine ? colors.critical : colors.safe }]}>
-        {isMine ? '踩雷了！' : '安全'}
-      </Text>
-
-      <View style={styles.productCard}>
-        {result.confirmed_by_user && (
-          <Text style={styles.confirmedBadge}>✓ 产品信息已由你确认</Text>
-        )}
-        <Text style={styles.productName}>
-          {result.product.brand} {result.product.name}
-        </Text>
-        <Text style={styles.productCategory}>{result.product.category}</Text>
-        {result.product.ingredients.length > 0 && (
-          <Text style={styles.productIngredients}>
-            成分：{result.product.ingredients.join('、')}
-          </Text>
-        )}
+    <ScrollView
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.heading}>
+        <AppText variant="label" style={styles.eyebrow}>
+          单品档案 / SCAN RESULT
+        </AppText>
+        <AppText variant="display">{conclusion}</AppText>
+        <AppText color="secondary">{archiveNote}</AppText>
       </View>
 
-      {isMine && result.risk && <MineCard risk={result.risk} />}
-
-      <Text style={styles.guideText}>{result.guide_message}</Text>
-
-      <TouchableOpacity style={[styles.primaryBtn, submitting && styles.disabledBtn]} onPress={onContinue} disabled={submitting}>
-        {submitting ? <ActivityIndicator color={colors.textWhite} /> : (
-          <Text style={styles.primaryBtnText}>
-            {hasNextArea ? '继续排雷' : '查看排雷报告'}
-          </Text>
+      <Surface variant="outlined" style={styles.productCard}>
+        {result.confirmed_by_user && (
+          <StatusBadge label="产品信息已经你确认" tone="neutral" />
         )}
-      </TouchableOpacity>
+        <AppText variant="titleSmall">
+          {result.product.brand} {result.product.name}
+        </AppText>
+        <AppText color="secondary">{result.product.category}</AppText>
+        {result.product.ingredients.length > 0 && (
+          <AppText variant="caption" color="secondary">
+            成分：{result.product.ingredients.join('、')}
+          </AppText>
+        )}
+      </Surface>
+
+      {isMine && result.risk ? (
+        <RiskCard
+          level={result.risk.level}
+          type={result.risk.type}
+          title={result.risk.title}
+          description={result.risk.description}
+          advice={result.risk.advice}
+          evidenceStatus={result.risk.evidence_status}
+          sources={result.risk.sources}
+        />
+      ) : null}
+
+      <Surface variant="subtle" style={styles.nextStep}>
+        <AppText variant="label">下一步</AppText>
+        <AppText>{result.guide_message}</AppText>
+      </Surface>
+
+      <View style={styles.actions}>
+        <AppButton
+          label={hasNextArea ? '继续检查下一区域' : '查看最终报告'}
+          loading={submitting}
+          onPress={onContinue}
+        />
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, padding: spacing.xl, justifyContent: 'center' },
-  statusEmoji: { fontSize: 64, textAlign: 'center', marginBottom: spacing.sm },
-  statusText: { fontSize: fontSize.xl, fontWeight: 'bold', textAlign: 'center', marginBottom: spacing.lg },
+  content: {
+    flexGrow: 1,
+    padding: rawTokens.space[5],
+    paddingBottom: rawTokens.space[8],
+    gap: rawTokens.space[5],
+  },
+  heading: {
+    gap: rawTokens.space[3],
+  },
+  eyebrow: {
+    letterSpacing: 0.5,
+  },
   productCard: {
-    backgroundColor: colors.bgSecondary, borderRadius: borderRadius.lg,
-    padding: spacing.lg, marginBottom: spacing.md,
+    gap: rawTokens.space[2],
   },
-  confirmedBadge: { color: colors.safe, fontSize: fontSize.xs, fontWeight: 'bold', marginBottom: spacing.sm },
-  productName: { fontSize: fontSize.lg, fontWeight: 'bold', color: colors.textPrimary },
-  productCategory: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 4 },
-  productIngredients: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: spacing.sm },
-  guideText: {
-    fontSize: fontSize.md, color: colors.textPrimary,
-    textAlign: 'center', lineHeight: 24, marginVertical: spacing.lg,
+  nextStep: {
+    gap: rawTokens.space[2],
   },
-  primaryBtn: {
-    backgroundColor: colors.primary, paddingVertical: spacing.lg,
-    borderRadius: borderRadius.xl, alignItems: 'center', marginVertical: spacing.md,
+  actions: {
+    marginTop: 'auto',
+    paddingTop: rawTokens.space[3],
   },
-  primaryBtnText: { color: colors.textWhite, fontSize: fontSize.lg, fontWeight: 'bold' },
-  disabledBtn: { opacity: 0.7 },
 });

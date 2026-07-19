@@ -4,7 +4,11 @@ from app.models.report import MineSummary, ReportData
 from app.utils.scoring import calculate_score, generate_share_text, get_score_level
 
 
-def build_report(scan_results: list[dict], total_mines: int) -> ReportData:
+def build_report(
+    scan_results: list[dict],
+    total_mines: int,
+    scene_label: str = "当前场景",
+) -> ReportData:
     mine_list: list[MineSummary] = []
     breakdown = {"critical": 0, "medium": 0, "low": 0}
     safe_count = 0
@@ -34,6 +38,7 @@ def build_report(scan_results: list[dict], total_mines: int) -> ReportData:
         breakdown["critical"], breakdown["medium"], breakdown["low"]
     )
     return ReportData(
+        scene_label=scene_label,
         score=score,
         level=get_score_level(score),
         total_mines=total_mines,

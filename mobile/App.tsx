@@ -12,7 +12,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import ScanScreen from './src/screens/ScanScreen';
 import ResultScreen from './src/screens/ResultScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
-import { colors } from './src/theme/colors';
+import { semanticColors } from './src/theme/tokens';
 import type { RootStackParamList } from './src/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -24,12 +24,13 @@ export default function App() {
         <StatusBar style="dark" />
         <Stack.Navigator
           screenOptions={{
-            headerStyle: { backgroundColor: colors.bgPrimary },
+            headerStyle: { backgroundColor: semanticColors.surface.page },
             headerTitleStyle: {
               fontWeight: 'bold',
-              color: colors.textPrimary,
+              color: semanticColors.text.primary,
             },
-            headerTintColor: colors.primary,
+            headerTintColor: semanticColors.text.primary,
+            headerShadowVisible: false,
           }}
         >
           <Stack.Screen
@@ -45,12 +46,12 @@ export default function App() {
           <Stack.Screen
             name="Scan"
             component={ScanScreen}
-            options={{ title: '排雷中' }}
+            options={{ title: '本场景检查' }}
           />
           <Stack.Screen
             name="Result"
             component={ResultScreen}
-            options={{ title: '排雷报告' }}
+            options={{ title: '本场景报告' }}
           />
         </Stack.Navigator>
       </NavigationContainer>

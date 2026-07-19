@@ -5,30 +5,30 @@
  * Existing screens keep these exports until their migration slice.
  */
 
-import { rawTokens } from './tokens';
+import { rawTokens, semanticColors } from './tokens';
 
 export const colors = {
-  primary: rawTokens.palette.brand.legacy,
-  primaryDark: rawTokens.palette.brand.legacyDark,
-  primaryLight: rawTokens.palette.brand.legacyLight,
+  primary: semanticColors.action.primary,
+  primaryDark: semanticColors.action.primaryPressed,
+  primaryLight: semanticColors.surface.subtle,
 
   critical: rawTokens.palette.legacyRisk.critical,
   medium: rawTokens.palette.legacyRisk.medium,
   low: rawTokens.palette.legacyRisk.low,
   safe: rawTokens.palette.legacyRisk.safe,
 
-  bgPrimary: rawTokens.palette.neutral[0],
-  bgSecondary: rawTokens.palette.neutral[50],
-  bgDark: '#1A1A2E',
+  bgPrimary: semanticColors.surface.page,
+  bgSecondary: semanticColors.surface.subtle,
+  bgDark: semanticColors.surface.inverse,
 
-  textPrimary: '#1A1A2E',
-  textSecondary: '#6C757D',
-  textLight: '#ADB5BD',
-  textWhite: rawTokens.palette.neutral[0],
+  textPrimary: semanticColors.text.primary,
+  textSecondary: semanticColors.text.secondary,
+  textLight: semanticColors.text.muted,
+  textWhite: semanticColors.text.inverse,
 
-  border: '#E9ECEF',
-  overlay: 'rgba(0, 0, 0, 0.6)',
-  shadow: 'rgba(0, 0, 0, 0.1)',
+  border: semanticColors.border.default,
+  overlay: semanticColors.overlay.photo,
+  shadow: 'rgba(8, 9, 10, 0.12)',
 };
 
 export const riskLevelColor: Record<string, string> = {

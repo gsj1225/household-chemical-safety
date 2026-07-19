@@ -71,5 +71,8 @@ jobs:
       - name: Check TypeScript
         run: npx tsc --noEmit
 
+      - name: Test recovery mappings
+        run: npm run test:recovery
+
       - name: Build Expo web
         run: npx expo export --platform web

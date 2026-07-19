@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
-    "version": "1.0.0",
+    "name": "家庭化学品安全检查",
+    "slug": "home-chemical-safety-check",
+    "version": "1.0.1",
     "orientation": "portrait",
     "plugins": [
       [
@@ -19,7 +19,8 @@
           "cameraPermission": "允许排雷挑战使用相机拍摄家庭化学品",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

@@ -3,64 +3,119 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../../theme/colors';
-import { fontSize, spacing, borderRadius } from '../../theme/spacing';
+import { StyleSheet, View } from 'react-native';
+import { AppText } from '../primitives';
+import { ChemicalProfileCard } from '../composites';
+import { selectChemicalProfile } from '../../utils/chemicalProfile';
+import {
+  componentTokens,
+  rawTokens,
+  semanticColors,
+} from '../../theme/tokens';
 
 interface ScoreDisplayProps {
   score: number;
-  level: string;
   totalMines: number;
   safeItems: number;
+  sceneLabel: string;
 }
 
-export default function ScoreDisplay({ score, level, totalMines, safeItems }: ScoreDisplayProps) {
-  const scoreColor =
-    score >= 70 ? colors.safe :
-    score >= 50 ? colors.medium :
-    colors.critical;
+export default function ScoreDisplay({
+  score,
+  totalMines,
+  safeItems,
+  sceneLabel,
+}: ScoreDisplayProps) {
+  const profile = selectChemicalProfile(score, totalMines);
+  const conclusion = totalMines === 0
+    ? '本轮没有\n命中规则'
+    : `还有 ${totalMines} 处\n需要注意`;
+  const totalChecked = totalMines + safeItems;
 
   return (
-    <>
-      <View style={styles.scoreArea}>
-        <View style={[styles.scoreCircle, { borderColor: scoreColor }]}>
-          <Text style={[styles.scoreNumber, { color: scoreColor }]}>{score}</Text>
-          <Text style={styles.scoreLabel}>排雷评分</Text>
+    <View style={styles.container}>
+      <View style={styles.reportHead}>
+        <View
+          style={styles.scoreRing}
+          accessible
+          accessibilityLabel={`规则评分 ${score} 分，满分 100 分`}
+        >
+          <AppText variant="display">{score}</AppText>
         </View>
-        <Text style={styles.levelText}>{level}</Text>
+        <View style={styles.conclusion}>
+          <AppText variant="caption" style={styles.completed}>
+            ✓ 检查完成
+          </AppText>
+          <AppText variant="titleSmall">{conclusion}</AppText>
+          <AppText variant="caption" color="secondary">
+            {sceneLabel || '当前场景'} · 基于本次照片识别与现有规则生成
+          </AppText>
+        </View>
       </View>
 
+      <ChemicalProfileCard label={profile.label} note={profile.note} />
+
       <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{totalMines}</Text>
-          <Text style={styles.statLabel}>雷点</Text>
+        <View style={styles.statItem}>
+          <AppText variant="titleSmall">{totalMines}</AppText>
+          <AppText variant="caption" color="secondary">雷点</AppText>
         </View>
-        <View style={styles.statCard}>
-          <Text style={[styles.statNumber, { color: colors.safe }]}>{safeItems}</Text>
-          <Text style={styles.statLabel}>安全物品</Text>
+        <View style={styles.statItem}>
+          <AppText variant="titleSmall">{safeItems}</AppText>
+          <AppText variant="caption" color="secondary">当前未命中</AppText>
+        </View>
+        <View style={[styles.statItem, styles.statItemLast]}>
+          <AppText variant="titleSmall">{totalChecked}</AppText>
+          <AppText variant="caption" color="secondary">已检查</AppText>
         </View>
       </View>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scoreArea: { alignItems: 'center', marginVertical: spacing.xl },
-  scoreCircle: {
-    width: 160, height: 160, borderRadius: 80,
-    borderWidth: 6, justifyContent: 'center', alignItems: 'center',
+  container: {
+    gap: rawTokens.space[4],
   },
-  scoreNumber: { fontSize: fontSize.mega, fontWeight: 'bold' },
-  scoreLabel: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs },
-  levelText: {
-    fontSize: fontSize.lg, fontWeight: '600',
-    color: colors.textPrimary, textAlign: 'center', marginTop: spacing.lg,
+  reportHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rawTokens.space[4],
   },
-  statsRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
-  statCard: {
-    flex: 1, backgroundColor: colors.bgSecondary,
-    borderRadius: borderRadius.lg, padding: spacing.lg, alignItems: 'center',
+  scoreRing: {
+    width: componentTokens.report.scoreRingSize,
+    height: componentTokens.report.scoreRingSize,
+    borderRadius: rawTokens.radius.round,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: componentTokens.report.scoreRingBorderWidth,
+    borderColor: semanticColors.border.strong,
   },
-  statNumber: { fontSize: fontSize.xxl, fontWeight: 'bold', color: colors.critical },
-  statLabel: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 4 },
+  conclusion: {
+    flex: 1,
+    gap: rawTokens.space[2],
+  },
+  completed: {
+    fontWeight: '700',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    overflow: 'hidden',
+    borderWidth: componentTokens.surface.borderWidth,
+    borderColor: semanticColors.border.strong,
+    borderRadius: componentTokens.surface.radius,
+  },
+  statItem: {
+    flex: 1,
+    minHeight: componentTokens.report.statMinHeight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: rawTokens.space[1],
+    paddingHorizontal: rawTokens.space[1],
+    borderRightWidth: componentTokens.surface.borderWidth,
+    borderRightColor: semanticColors.border.strong,
+  },
+  statItemLast: {
+    borderRightWidth: 0,
+  },
 });

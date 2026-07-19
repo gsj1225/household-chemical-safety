@@ -33,7 +33,7 @@ export default function ProgressSummary({
       </View>
       <StatusBadge
         label={`已发现 ${mineCount} 个雷点`}
-        tone={mineCount > 0 ? 'error' : 'neutral'}
+        tone="neutral"
       />
     </Surface>
   );

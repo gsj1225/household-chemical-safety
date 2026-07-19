@@ -44,6 +44,7 @@ class AIProvider(ABC):
         self,
         scan_results: list[dict],
         total_mines: int,
+        scene_label: str = "当前场景",
     ) -> ReportData:
         """生成最终排雷报告。"""
         pass

@@ -8,7 +8,7 @@ import React, { useState, useCallback } from 'react';
 import { StyleSheet, Alert, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { semanticColors } from '../theme/tokens';
 import { useChallengeStore } from '../store/challengeStore';
 import { api } from '../services/api';
 import { pickImageFromLibrary } from '../services/imagePicker';
@@ -20,16 +20,24 @@ import PanoramaEmptyView from '../components/views/PanoramaEmptyView';
 import IdentificationReviewView from '../components/views/IdentificationReviewView';
 import AnalysisView from '../components/views/AnalysisView';
 import ReportGeneratingView from '../components/views/ReportGeneratingView';
+import EvidenceInsufficientView from '../components/views/EvidenceInsufficientView';
+import PanoramaRecoveryView from '../components/views/PanoramaRecoveryView';
+import { toAppFailure, type AppFailure } from '../utils/recovery';
 import type { IdentificationDraft, ProductIdentification, RootStackParamList, ScanResult } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Scan'>;
 
+interface PanoramaRecoveryState {
+  failure: AppFailure;
+  imageUri: string;
+}
+
 export default function ScanScreen({ navigation }: Props) {
   const {
-    challengeId, pageStatus, areas, currentAreaIndex,
+    challengeId, pageStatus, sceneLabel, areas, currentAreaIndex,
     scanResults, mineCount, guideMessage,
-    setPanoramaAreas, addScanResult, nextArea,
-    setPageStatus, setReport,
+    setPanoramaAreas, addScanResult, nextArea, reviewAreas, replacePanorama,
+    setPageStatus, setReport, reset,
   } = useChallengeStore();
 
   const [showCamera, setShowCamera] = useState(false);
@@ -43,6 +51,8 @@ export default function ScanScreen({ navigation }: Props) {
   const [confirmingIdentification, setConfirmingIdentification] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [confirmationError, setConfirmationError] = useState<string | null>(null);
+  const [panoramaRecovery, setPanoramaRecovery] =
+    useState<PanoramaRecoveryState | null>(null);
 
   // 拍照处理
   const handleCapture = async (uri: string) => {
@@ -50,7 +60,10 @@ export default function ScanScreen({ navigation }: Props) {
     setAnalysisImageUri(uri);
     const isPanorama = pageStatus === 'panorama' || pageStatus === 'panorama_empty';
     const wasIdentificationReview = pageStatus === 'identification_review';
-    if (isPanorama) setPanoramaImageUri(uri);
+    if (isPanorama) {
+      setPanoramaImageUri(uri);
+      setPanoramaRecovery(null);
+    }
     if (!isPanorama) {
       setDetailError(null);
       setConfirmationError(null);
@@ -65,7 +78,11 @@ export default function ScanScreen({ navigation }: Props) {
           setPageStatus('panorama_empty');
         } else {
           setPanoramaImageUri(uri);
-          setPanoramaAreas(result.areas, result.guide_message);
+          setPanoramaAreas(
+            result.areas,
+            result.guide_message,
+            result.scene_label || '当前场景',
+          );
         }
       } else {
         const currentArea = areas[currentAreaIndex];
@@ -81,7 +98,10 @@ export default function ScanScreen({ navigation }: Props) {
     } catch (err) {
       const message = err instanceof Error ? err.message : '请重试';
       if (isPanorama) {
-        Alert.alert('扫描失败', message);
+        setPanoramaRecovery({
+          failure: toAppFailure(err),
+          imageUri: uri,
+        });
         setPageStatus('panorama');
       } else {
         setDetailError(
@@ -167,10 +187,50 @@ export default function ScanScreen({ navigation }: Props) {
     setConfirmationError(null);
     const isLastArea = currentAreaIndex + 1 >= areas.length;
     if (isLastArea) {
-      handleFinish();
+      if (scanResults.length > 0) {
+        handleFinish();
+      } else {
+        setPageStatus('evidence_insufficient');
+      }
     } else {
       nextArea();
     }
+  };
+
+  const clearTransientDetailState = () => {
+    setLastResult(null);
+    setPendingDraft(null);
+    setPendingDetailImageUri(null);
+    setDetailError(null);
+    setConfirmationError(null);
+  };
+
+  const handleReviewAreas = () => {
+    clearTransientDetailState();
+    reviewAreas();
+  };
+
+  const handleReplacePanorama = () => {
+    clearTransientDetailState();
+    setPanoramaImageUri(null);
+    setPanoramaRecovery(null);
+    replacePanorama();
+  };
+
+  const handleExitIncompleteScene = () => {
+    clearTransientDetailState();
+    setPanoramaImageUri(null);
+    setPanoramaRecovery(null);
+    reset();
+    navigation.navigate('Home');
+  };
+
+  const handleRestartExpiredChallenge = () => {
+    clearTransientDetailState();
+    setPanoramaImageUri(null);
+    setPanoramaRecovery(null);
+    reset();
+    navigation.navigate('Home');
   };
 
   if (showCamera) {
@@ -201,6 +261,22 @@ export default function ScanScreen({ navigation }: Props) {
           onRetry={() => void handleCapture(panoramaImageUri)}
           onStartCamera={() => setShowCamera(true)}
           onSelectFromAlbum={handleSelectFromAlbum}
+        /></View>
+      </SafeAreaView>
+    );
+  }
+
+  if (pageStatus === 'evidence_insufficient' && panoramaImageUri) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}><EvidenceInsufficientView
+          imageUri={panoramaImageUri}
+          sceneLabel={sceneLabel}
+          areas={areas}
+          skippedCount={areas.length}
+          onReviewAreas={handleReviewAreas}
+          onReplacePanorama={handleReplacePanorama}
+          onExit={handleExitIncompleteScene}
         /></View>
       </SafeAreaView>
     );
@@ -259,6 +335,22 @@ export default function ScanScreen({ navigation }: Props) {
     );
   }
 
+  if (pageStatus === 'panorama' && panoramaRecovery) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}><PanoramaRecoveryView
+          imageUri={panoramaRecovery.imageUri}
+          failure={panoramaRecovery.failure}
+          busy={false}
+          onRetrySamePhoto={() => void handleCapture(panoramaRecovery.imageUri)}
+          onRetake={() => setShowCamera(true)}
+          onSelectFromAlbum={handleSelectFromAlbum}
+          onRestart={handleRestartExpiredChallenge}
+        /></View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}><PanoramaInputView
@@ -270,6 +362,6 @@ export default function ScanScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bgPrimary },
+  container: { flex: 1, backgroundColor: semanticColors.surface.page },
   content: { flex: 1, width: '100%', maxWidth: 720, alignSelf: 'center' },
 });

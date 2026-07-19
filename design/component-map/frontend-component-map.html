@@ -10,7 +10,7 @@
       --token:#6d5bd0;--primitive:#247ba0;--composite:#168f78;--feature:#cc7a00;--screen:#c74747;
       --soft-purple:#f1efff;--soft-blue:#eaf7fc;--soft-green:#eaf8f3;--soft-orange:#fff5e6;--soft-red:#fff0f0;
     }
-    *{box-sizing:border-box} body{margin:0;background:var(--canvas);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+    *{box-sizing:border-box} html{scrollbar-width:none} html::-webkit-scrollbar{display:none} body{margin:0;background:var(--canvas);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
     .page{width:1536px;margin:0 auto;padding:52px 64px 80px}
     .cover{min-height:360px;border-radius:32px;padding:52px 56px;background:#111c2d;color:#fff;position:relative;overflow:hidden}
     .cover:after{content:"";position:absolute;width:390px;height:390px;border-radius:50%;right:-80px;top:-150px;background:linear-gradient(135deg,#6d5bd0,#247ba0)}
@@ -27,14 +27,28 @@
     .slices{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.slice{border:1px solid var(--line);border-radius:16px;padding:18px;min-height:150px;position:relative}.slice b{display:block;margin-bottom:8px}.num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#142033;color:#fff;font-weight:800;margin-bottom:12px}.slice p{margin:0;color:var(--muted);line-height:1.55}
     .rules{display:grid;grid-template-columns:1fr 1fr;gap:18px}.rule{border-radius:18px;padding:22px}.yes{background:#eaf8f3;border:1px solid #9bd7c6}.no{background:#fff0f0;border:1px solid #e7aaaa}.rule h3{margin:0 0 10px}.rule ul{margin:0;padding-left:20px;line-height:1.8}
     footer{text-align:center;color:var(--muted);padding:36px 0 0;font-size:14px}
+    body.review-single .page{width:640px;margin:0;padding:12px}
+    body.review-single .cover,
+    body.review-single section,
+    body.review-single footer{display:none}
+    body.review-single section:nth-of-type(3),
+    body.review-single section:nth-of-type(7){display:block;margin-top:12px;padding:20px;border-radius:18px}
+    body.review-single h2{font-size:24px}
+    body.review-single .desc{font-size:14px;margin-bottom:14px}
+    body.review-single .catalog{grid-template-columns:repeat(2,1fr);gap:10px}
+    body.review-single .catalog-card{padding:14px}
+    body.review-single .catalog-card h3{margin-bottom:8px}
+    body.review-single .tag{font-size:11px;padding:6px 7px}
+    body.review-single .slices{grid-template-columns:repeat(3,1fr);gap:8px}
+    body.review-single .slice{min-height:132px;padding:12px;font-size:12px}
   </style>
 </head>
 <body><main class="page">
   <header class="cover">
-    <div class="eyebrow">FRONTEND COMPONENT ARCHITECTURE · V1.0</div>
+    <div class="eyebrow">FRONTEND COMPONENT ARCHITECTURE · V1.2</div>
     <h1>前端组件图与<br />设计令牌映射</h1>
     <p>页面负责流程，视图负责状态，组件负责稳定交互。组件只绑定语义令牌，让最终视觉能在功能完成后整体替换。</p>
-    <div class="chips"><span class="chip">390×844 手机优先</span><span class="chip">五层结构</span><span class="chip">三层令牌</span><span class="chip">渐进式迁移</span></div>
+    <div class="chips"><span class="chip">异常就地恢复</span><span class="chip">保留照片与结果</span><span class="chip">语义错误模型</span><span class="chip">小切片迁移</span></div>
   </header>
 
   <section>
@@ -43,8 +57,8 @@
     <div class="layers">
       <article class="layer token"><h3>Tokens</h3><small>值与语义</small><ul><li>Raw primitives</li><li>Semantic roles</li><li>Component recipes</li><li>最终视觉替换点</li></ul></article>
       <article class="layer primitive"><h3>Primitives</h3><small>稳定交互</small><ul><li>AppText</li><li>AppButton</li><li>TextField</li><li>StatusBadge</li><li>StateMessage</li></ul></article>
-      <article class="layer composite"><h3>Composites</h3><small>组合语义</small><ul><li>PhotoFrame</li><li>PhotoInputActions</li><li>RiskCard</li><li>ProgressSummary</li><li>ConfirmExitDialog</li></ul></article>
-      <article class="layer feature"><h3>Feature Views</h3><small>流程状态 UI</small><ul><li>Camera / Panorama</li><li>Analysis / Area Guide</li><li>Identification Review</li><li>Single Result</li><li>Report / History</li></ul></article>
+      <article class="layer composite"><h3>Composites</h3><small>组合语义</small><ul><li>PhotoFrame</li><li>PhotoInputActions</li><li>RiskCard</li><li>ProgressSummary</li><li>ChemicalProfileCard</li></ul></article>
+      <article class="layer feature"><h3>Feature Views</h3><small>流程状态 UI</small><ul><li>Panorama / Area Guide</li><li>Evidence Insufficient</li><li>Identification Review</li><li>Single Result</li><li>Report / History</li></ul></article>
       <article class="layer screen"><h3>Screens</h3><small>页面控制器</small><ul><li>HomeScreen</li><li>ScanScreen</li><li>ResultScreen</li><li>HistoryScreen</li><li>导航 / API / Store</li></ul></article>
     </div>
     <div class="arrow-row"><span>提供值</span><span>组成</span><span>组成</span><span>由页面驱动</span><span>控制流程</span></div>
@@ -60,22 +74,33 @@
       <div class="flow-arrow">→</div>
       <div class="flow-box controller">ScanScreen · 流程控制器<div class="services"><div class="service">Camera / Picker</div><div class="service">API Client</div><div class="service">Challenge Store</div></div></div>
     </div>
-    <div class="note" style="margin-top:22px"><b>边界：</b>识别表单输入值归 `IdentificationReviewView`；挑战 ID、区域、已确认结果和报告归 store；相机开关、上传中和草稿归页面短生命周期状态。先完成一条切片，再判断是否需要 `useScanController`。</div>
+    <div class="note" style="margin-top:22px"><b>边界：</b>挑战 ID、场景、区域、已确认结果和报告归 store；失败操作、失败照片和重试动作只由页面短期持有。Feature View 与 `RecoveryPanel` 只展示上下文并发出恢复事件，不读取 store、不导航、不调用 API。</div>
   </section>
 
   <section>
-    <h2>03 目标组件目录</h2>
+    <h2>03 异常恢复的新增边界</h2>
+    <p class="desc">错误协议、页面状态和恢复 UI 分层；照片与结果留在原任务里，恢复视图只发语义事件。</p>
+    <div class="catalog">
+      <article class="catalog-card"><h3>Error Contract</h3><div class="tags"><span class="tag">ApiError fields</span><span class="tag">toAppFailure()</span><span class="tag">getRecoveryCopy()</span></div><p class="desc" style="margin:14px 0 0">协议事实、错误分类和用户文案分离；追踪号不再拼进错误消息。</p></article>
+      <article class="catalog-card"><h3>Screen Controller</h3><div class="tags"><span class="tag">ScanRecoveryState</span><span class="tag">request mutex</span><span class="tag">retry snapshot</span></div><p class="desc" style="margin:14px 0 0">页面短期持有失败操作和照片引用，决定重试、换图、跳过或重新开始。</p></article>
+      <article class="catalog-card"><h3>Recovery Feature Views</h3><div class="tags"><span class="tag">PanoramaRecoveryView</span><span class="tag">DetailRecoveryView</span><span class="tag">ReportRecoveryView</span></div><p class="desc" style="margin:14px 0 0">分别保留全景、区域定位、失败细拍、表单或确认结果，只发 typed callbacks。</p></article>
+      <article class="catalog-card"><h3>RecoveryPanel</h3><div class="tags"><span class="tag">one primary action</span><span class="tag">traceId</span><span class="tag">live region</span></div><p class="desc" style="margin:14px 0 0">统一错误符号、解释、动作层级和可访问性，不读取错误码或调用 API。</p></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>04 目标组件目录</h2>
     <p class="desc">名称表达稳定语义，不以当前页面或候选颜色命名。</p>
     <div class="catalog">
       <article class="catalog-card"><h3 style="color:var(--primitive)">Primitives</h3><div class="tags"><span class="tag">AppText</span><span class="tag">AppButton</span><span class="tag">IconButton</span><span class="tag">TextField</span><span class="tag">StatusBadge</span><span class="tag">Surface</span><span class="tag">ProgressBar</span><span class="tag">StateMessage</span></div></article>
-      <article class="catalog-card"><h3 style="color:var(--composite)">Composites</h3><div class="tags"><span class="tag">PageHeader</span><span class="tag">PhotoInputActions</span><span class="tag">PhotoFrame</span><span class="tag">ProgressSummary</span><span class="tag">ProductSummary</span><span class="tag">RiskCard</span><span class="tag">EvidenceStatus</span><span class="tag">ConfirmExitDialog</span></div></article>
-      <article class="catalog-card"><h3 style="color:var(--feature)">Feature Views</h3><div class="tags"><span class="tag">CameraCaptureView</span><span class="tag">PanoramaInputView</span><span class="tag">AnalysisView</span><span class="tag">PanoramaEmptyView</span><span class="tag">AreaGuideView</span><span class="tag">IdentificationReviewView</span><span class="tag">SingleResultView</span><span class="tag">ReportGeneratingView</span><span class="tag">ReportView</span><span class="tag">HistoryList</span></div></article>
+      <article class="catalog-card"><h3 style="color:var(--composite)">Composites</h3><div class="tags"><span class="tag">PageHeader</span><span class="tag">PhotoInputActions</span><span class="tag">PhotoFrame</span><span class="tag">ProgressSummary</span><span class="tag">ProductSummary</span><span class="tag">RiskCard</span><span class="tag">RecoveryPanel</span><span class="tag">ChemicalProfileCard</span><span class="tag">ConfirmExitDialog</span></div></article>
+      <article class="catalog-card"><h3 style="color:var(--feature)">Feature Views</h3><div class="tags"><span class="tag">CameraCaptureView</span><span class="tag">PanoramaInputView</span><span class="tag">AnalysisView</span><span class="tag">PanoramaRecoveryView</span><span class="tag">AreaGuideView</span><span class="tag">DetailRecoveryView</span><span class="tag">IdentificationReviewView</span><span class="tag">EvidenceInsufficientView</span><span class="tag">SingleResultView</span><span class="tag">ReportGeneratingView</span><span class="tag">ReportRecoveryView</span></div></article>
       <article class="catalog-card"><h3 style="color:var(--screen)">Screens / Services</h3><div class="tags"><span class="tag">HomeScreen</span><span class="tag">ScanScreen</span><span class="tag">ResultScreen</span><span class="tag">HistoryScreen</span><span class="tag">challengeStore</span><span class="tag">api</span><span class="tag">imagePicker</span></div></article>
     </div>
   </section>
 
   <section>
-    <h2>04 三层设计令牌</h2>
+    <h2>05 三层设计令牌</h2>
     <p class="desc">组件绑定角色，不绑定候选色值。最终视觉精修时，优先替换语义指向和组件配方。</p>
     <div class="token-flow">
       <div class="token-box"><h3>Raw · 原始值</h3><div class="code">palette.orange.600<br />palette.neutral.900<br />space.4<br />font.size.body<br />radius.md</div></div>
@@ -87,7 +112,7 @@
   </section>
 
   <section>
-    <h2>05 当前实现到目标边界</h2>
+    <h2>06 当前实现到目标边界</h2>
     <p class="desc">保留已验证业务行为，逐步替换重复外观和不清晰职责。</p>
     <table>
       <thead><tr><th>当前实现</th><th>目标</th><th>核心变化</th></tr></thead>
@@ -100,39 +125,48 @@
         <tr><td><code>Magnifier / Narration</code></td><td><code>AnalysisView</code></td><td>反馈不控制流程，支持减少动态</td></tr>
         <tr><td>内部 <code>Field</code></td><td><code>TextField</code></td><td>统一标签、帮助和错误</td></tr>
         <tr><td><code>ResultView</code></td><td><code>SingleResultView</code></td><td>组合 ProductSummary + RiskCard</td></tr>
+        <tr><td>全部跳过直接出报告</td><td><code>EvidenceInsufficientView</code></td><td>保留原图，补拍 / 换图 / 退出</td></tr>
         <tr><td><code>MineCard / MineList</code></td><td><code>RiskCard</code> + 列表</td><td>风险与证据语义一致</td></tr>
         <tr><td><code>ProcessingViews</code></td><td><code>Analysis / ReportGenerating</code></td><td>拆开无关的处理中状态</td></tr>
-        <tr><td><code>ScoreDisplay</code></td><td><code>ScoreSummary</code></td><td>只展示，不计算评分</td></tr>
+        <tr><td><code>ScoreDisplay.getProfile</code></td><td><code>selectChemicalProfile</code> + <code>ChemicalProfileCard</code></td><td>受控模板选择与展示分离</td></tr>
         <tr><td>页面重复按钮/状态卡</td><td><code>AppButton / StateMessage</code></td><td>统一加载、禁用、恢复和朗读</td></tr>
+        <tr><td><code>Alert.alert</code> 可恢复错误</td><td><code>RecoveryPanel</code></td><td>错误就地呈现并保留当前上下文</td></tr>
+        <tr><td><code>ApiError.message</code> 混合协议与文案</td><td><code>AppFailure</code> + 文案映射</td><td>错误码、追踪号与用户解释分离</td></tr>
+        <tr><td>全景失败回空白入口</td><td><code>PanoramaRecoveryView</code></td><td>保留并优先重试原全景图</td></tr>
+        <tr><td>细拍失败只显示文字</td><td><code>DetailRecoveryView</code></td><td>同时保留全景定位和失败细拍</td></tr>
+        <tr><td>报告失败退回单品结果</td><td><code>ReportRecoveryView</code></td><td>停留报告阶段，只重新汇总报告</td></tr>
       </tbody>
     </table>
   </section>
 
   <section>
-    <h2>06 渐进式迁移切片</h2>
-    <p class="desc">第一条代表性切片选择“全景输入 → 分析 → 零区域恢复”，最早验证照片、加载、错误和双入口汇合。</p>
+    <h2>07 v1.2 异常恢复迁移切片</h2>
+    <p class="desc">先建立错误契约兼容层，再按入口迁移；全景恢复是代表性切片，不一次性重写 ScanScreen。</p>
     <div class="slices">
-      <article class="slice"><span class="num">1</span><b>令牌兼容层</b><p>三层结构与旧别名，不改变可见行为。</p></article>
-      <article class="slice"><span class="num">2</span><b>基础组件</b><p>文字、按钮、输入、标签、表面、状态。</p></article>
-      <article class="slice"><span class="num">3</span><b>全景输入链路</b><p>输入、分析、零区域和失败恢复。</p></article>
-      <article class="slice"><span class="num">4</span><b>区域与确认</b><p>进度、标注照片、产品事实表单。</p></article>
-      <article class="slice"><span class="num">5</span><b>结果与报告</b><p>产品摘要、风险、证据和评分。</p></article>
-      <article class="slice"><span class="num">6</span><b>历史与首页</b><p>入口、记录、刷新、加载空错。</p></article>
-      <article class="slice"><span class="num">7</span><b>异常与退出</b><p>权限、超时、退出确认与恢复。</p></article>
-      <article class="slice"><span class="num">8</span><b>清理与全量验证</b><p>删除重复样式，运行 CI 与构建。</p></article>
-      <article class="slice"><span class="num">9</span><b>最终视觉精修</b><p>真实页面上替换令牌值和组件配方。</p></article>
+      <article class="slice"><span class="num">1</span><b>错误契约</b><p>AppFailure、错误码映射、追踪号和用户文案分离。</p></article>
+      <article class="slice"><span class="num">2</span><b>恢复组合</b><p>RecoveryPanel、语义令牌、播报和触控测试。</p></article>
+      <article class="slice"><span class="num">3</span><b>全景代表切片</b><p>首页与全景错误就地恢复，保留并重试原图。</p></article>
+      <article class="slice"><span class="num">4</span><b>细拍与确认</b><p>保留全景定位、失败细拍、草稿和编辑字段。</p></article>
+      <article class="slice"><span class="num">5</span><b>报告恢复</b><p>保留确认摘要，只重新生成本场景报告。</p></article>
+      <article class="slice"><span class="num">6</span><b>清理与真机 QA</b><p>移除旧 Alert，完成异常注入、Android 和截图回归。</p></article>
     </div>
   </section>
 
   <section>
-    <h2>07 复用规则</h2>
+    <h2>08 复用规则</h2>
     <p class="desc">复用以语义、行为和可访问性为依据，不以“看起来差不多”为依据。</p>
     <div class="rules">
-      <div class="rule yes"><h3>应该做</h3><ul><li>页面只编排流程与数据</li><li>事件使用 onConfirm / onRetry 等语义名称</li><li>组件通过语义令牌获得外观</li><li>加载、禁用、错误有统一行为</li></ul></div>
-      <div class="rule no"><h3>不应该做</h3><ul><li>万能 Card + 大量布尔属性</li><li>允许页面任意传颜色和间距</li><li>基础组件读取 store 或调用 API</li><li>以 homeOrange、scanShadow 命名令牌</li></ul></div>
+      <div class="rule yes"><h3>应该做</h3><ul><li>页面持有短期失败与重试上下文</li><li>事件使用 onRetrySamePhoto 等语义名称</li><li>错误协议、文案和 UI 三层分离</li><li>组件通过语义令牌获得外观</li></ul></div>
+      <div class="rule no"><h3>不应该做</h3><ul><li>万能错误页 + 页面布尔属性</li><li>RecoveryPanel 读取错误码或调用接口</li><li>把照片 URI、异常或闭包写入 store</li><li>失败后清空草稿、结果或重新识别</li></ul></div>
     </div>
   </section>
 
-  <footer>前端组件图 v1.0 · 当前只供结构评审 · 确认后才进入第一条功能垂直切片</footer>
-</main></body>
+  <footer>前端组件图 v1.2 · 异常恢复架构修订 · 确认组件与架构后才进入功能编码</footer>
+</main>
+<script>
+  if (new URLSearchParams(location.search).get('review') === 'single') {
+    document.body.classList.add('review-single');
+  }
+</script>
+</body>
 </html>

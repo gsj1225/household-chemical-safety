@@ -1,7 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Platform, StyleSheet, View } from 'react-native';
 import useReducedMotion from '../hooks/useReducedMotion';
-import { rawTokens, semanticColors } from '../theme/tokens';
+import {
+  componentTokens,
+  rawTokens,
+  semanticColors,
+} from '../theme/tokens';
 import { AppText } from './primitives';
 
 interface NarrationBubbleProps {
@@ -59,7 +63,7 @@ export default function NarrationBubble({ narrations }: NarrationBubbleProps) {
         style={[styles.bubble, { opacity: fadeAnim }]}
         accessibilityLiveRegion="polite"
       >
-        <AppText color="onAction" align="center">
+        <AppText align="center">
           {narrations[currentIndex] || narrations[0]}
         </AppText>
       </Animated.View>
@@ -74,7 +78,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: rawTokens.space[5],
   },
   bubble: {
-    backgroundColor: semanticColors.action.primary,
+    backgroundColor: semanticColors.surface.glass,
+    borderWidth: componentTokens.surface.borderWidth,
+    borderColor: semanticColors.border.onInverse,
     borderRadius: rawTokens.radius.large,
     paddingVertical: rawTokens.space[3],
     paddingHorizontal: rawTokens.space[5],
