@@ -148,7 +148,7 @@ flowchart LR
 | 风险判断 | 本地 JSON 规则库 | 确定性风险判断、证据关联和评分 |
 | 数据存储 | SQLite | 挑战状态和历史报告，不保存原始图片 |
 
-模型只负责“看见了什么”，本地规则负责“如何判断”。完整设计见 [架构方案](./架构方案.md)。
+模型只负责“看见了什么”，本地规则负责“如何判断”。完整设计见 [架构方案](./docs/architecture/架构方案.md)。
 
 更多可视化说明见 [架构图集](./docs/architecture/README.md)，其中包含系统上下文、单场景时序、后端分层、移动端组件边界和异常恢复架构。
 
@@ -164,11 +164,15 @@ flowchart LR
 │  └─ tests/                pytest 测试
 ├─ mobile/                  Expo React Native 应用
 │  └─ src/                  页面、组件、状态与 API 客户端
-├─ design/                  线框图、视觉规范、组件图与真实页面验收图
-├─ docs/architecture/       GitHub 可直接渲染的 Mermaid 架构图集
-├─ 架构方案.md              技术设计与变更约束
-├─ 部署指南.md              本地、Docker、APK 部署说明
-└─ 开发日记.md              开发记录与验证结果
+├─ design/                  可视化源文件、PNG 与真实页面验收图
+├─ docs/                    产品、设计、架构、实施、运维与历史文档
+│  ├─ product/              产品背景与用户流程
+│  ├─ design/               线框图、视觉规范与组件边界
+│  ├─ architecture/         架构图集与完整架构方案
+│  ├─ implementation/       功能切片实施计划
+│  ├─ operations/           部署和运行说明
+│  └─ history/              开发日记
+└─ README.md                项目入口
 ```
 
 ## 环境要求
@@ -376,14 +380,14 @@ npx expo export --platform web
 ## 更多文档
 
 - [后端说明](./backend/README.md)
+- [文档总目录](./docs/README.md)
 - [架构图集](./docs/architecture/README.md)
-- [架构方案](./架构方案.md)
-- [用户流程](./用户流程.md)
-- [手机端页面线框图](./手机端页面线框图.md)
-- [移动端视觉基础约束（最终视觉待定）](./移动端视觉规范.md)
-- [前端组件图与设计令牌映射](./前端组件图与设计令牌映射.md)
-- [第一条功能垂直切片实施计划](./第一条功能垂直切片实施计划.md)
-- [第二条功能垂直切片实施计划](./第二条功能垂直切片实施计划.md)
-- [部署指南](./部署指南.md)
-- [开发日记](./开发日记.md)
-- [早期产品方案与比赛背景](./家庭化学品安全方案.md)
+- [架构方案](./docs/architecture/架构方案.md)
+- [用户流程](./docs/product/用户流程.md)
+- [手机端页面线框图](./docs/design/手机端页面线框图.md)
+- [移动端视觉规范](./docs/design/移动端视觉规范.md)
+- [前端组件图与设计令牌映射](./docs/design/前端组件图与设计令牌映射.md)
+- [实施计划目录](./docs/implementation/)
+- [部署指南](./docs/operations/部署指南.md)
+- [开发日记](./docs/history/开发日记.md)
+- [早期产品方案与比赛背景](./docs/product/家庭化学品安全方案.md)
