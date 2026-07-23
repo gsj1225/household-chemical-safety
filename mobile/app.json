@@ -20,7 +20,16 @@
           "microphonePermission": false
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "允许家庭化学品安全检查访问照片，以保存你主动生成的结果分享卡",
+          "savePhotosPermission": "允许家庭化学品安全检查把你主动生成的结果分享卡保存到相册",
+          "granularPermissions": ["photo"]
+        }
+      ]
     ],
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

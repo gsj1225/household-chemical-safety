@@ -3,7 +3,7 @@
  * 评分展示拆分到 ScoreDisplay，雷点列表拆分到 MineList
  */
 
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -16,6 +16,17 @@ import {
 import { useChallengeStore } from '../store/challengeStore';
 import ScoreDisplay from '../components/views/ScoreDisplay';
 import MineList from '../components/views/MineList';
+import {
+  ShareCardPreviewModal,
+  type ShareCardAction,
+} from '../components/features';
+import { buildShareCardData } from '../utils/shareCard';
+import {
+  captureShareCard,
+  saveShareCardImage,
+  shareShareCardImage,
+  supportsNativeImageShare,
+} from '../services/shareCard';
 import type { RootStackParamList } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Result'>;
@@ -23,6 +34,10 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Result'>;
 export default function ResultScreen({ navigation }: Props) {
   const { report, reset } = useChallengeStore();
   const [showDetails, setShowDetails] = useState(false);
+  const [shareCardVisible, setShareCardVisible] = useState(false);
+  const [shareAction, setShareAction] = useState<ShareCardAction>('idle');
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+  const shareCardRef = useRef<View | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -59,11 +74,56 @@ export default function ResultScreen({ navigation }: Props) {
     );
   }
 
+  const shareCardData = buildShareCardData(report);
+
+  const handleOpenShareCard = () => {
+    setShareFeedback(null);
+    setShareCardVisible(true);
+  };
+
   const handleShare = async () => {
+    if (!supportsNativeImageShare) {
+      try {
+        await Share.share({ message: report.share_text });
+        setShareFeedback('已打开系统文字分享面板。');
+      } catch {
+        setShareFeedback('暂时无法打开分享面板，请稍后重试。');
+      }
+      return;
+    }
+
     try {
-      await Share.share({ message: report.share_text });
-    } catch (err) {
-      console.error('分享失败:', err);
+      setShareFeedback(null);
+      setShareAction('capturing');
+      const uri = await captureShareCard(shareCardRef);
+      setShareAction('sharing');
+      const result = await shareShareCardImage(uri);
+      setShareFeedback(result === 'shared'
+        ? '图片分享操作已完成。'
+        : '当前设备暂不支持图片分享。');
+    } catch {
+      setShareFeedback('生成或分享图片失败，请稍后重试。');
+    } finally {
+      setShareAction('idle');
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setShareFeedback(null);
+      setShareAction('capturing');
+      const uri = await captureShareCard(shareCardRef);
+      setShareAction('saving');
+      const result = await saveShareCardImage(uri);
+      setShareFeedback(result === 'saved'
+        ? '结果卡已保存到相册。'
+        : result === 'permission-denied'
+          ? '未获得相册写入权限，图片没有保存。'
+          : '当前设备暂不支持保存图片。');
+    } catch {
+      setShareFeedback('保存图片失败，请检查相册权限后重试。');
+    } finally {
+      setShareAction('idle');
     }
   };
 
@@ -118,7 +178,7 @@ export default function ResultScreen({ navigation }: Props) {
         )}
 
         <View style={styles.actions}>
-          <AppButton label="生成隐私分享卡" onPress={handleShare} />
+          <AppButton label="生成结果分享卡" onPress={handleOpenShareCard} />
           {report.total_mines > 0 ? (
             <AppButton
               label={showDetails ? '收起全部风险详情' : '查看全部风险详情'}
@@ -133,7 +193,7 @@ export default function ResultScreen({ navigation }: Props) {
             accessibilityHint="结束当前报告并返回首页开始新的单场景检查"
           />
           <AppText variant="caption" color="secondary" align="center">
-            当前通过系统分享隐私摘要，不包含原始照片、产品名称和家庭地址
+            分享卡仅包含场景名、规则评分、数量统计和娱乐化标签，不包含原始照片、产品名称和家庭地址
           </AppText>
         </View>
 
@@ -143,6 +203,17 @@ export default function ResultScreen({ navigation }: Props) {
           </View>
         ) : null}
       </ScrollView>
+      <ShareCardPreviewModal
+        visible={shareCardVisible}
+        data={shareCardData}
+        cardRef={shareCardRef}
+        action={shareAction}
+        feedback={shareFeedback}
+        supportsImageShare={supportsNativeImageShare}
+        onClose={() => setShareCardVisible(false)}
+        onShare={handleShare}
+        onSave={handleSave}
+      />
     </SafeAreaView>
   );
 }
