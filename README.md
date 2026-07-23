@@ -96,8 +96,9 @@ flowchart LR
 - 单场景快速检查主流程已经完成：全景图 → 原图区域引导 → 近景识别 → 用户确认 → 场景报告
 - Android、iOS 和 Web 共用 Expo / React Native 代码
 - 黑白“检验档案”视觉与组件令牌已经迁移到核心页面
+- 报告页已增加隐私安全的 3:4 图片分享卡；Android / iOS 可调用系统分享或保存到相册，Web 明确降级为文字摘要
 - 首页与全景分析的就地异常恢复代表性切片已经实现
-- 细拍、确认和报告阶段的统一异常恢复暂缓，仍需继续迁移
+- 细拍、确认和报告阶段的完整异常恢复暂缓到 MVP 核心闭环之后，不阻塞当前产品验证
 - 项目仍处于 Demo / 验证阶段，账号体系、云端数据隔离、正式隐私授权和专业规则审查尚未完成
 
 ## 核心功能
@@ -109,6 +110,7 @@ flowchart LR
 - 识别结果先由用户核对或修正，再进入风险判断
 - 风险等级、冲突规则和报告评分由本地规则引擎确定，模型不直接裁决安全结论
 - 生成当前场景的抽查评分、雷点列表、证据状态和历史报告
+- 从结构化报告生成不含原始照片、产品名和家庭地址的图片分享卡，形成“完成检查 → 分享结果 → 吸引新用户”的传播闭环
 - 原始图片只在单次请求的内存中处理，不写入数据库或日志
 - 提供 Mock AI 模式，无 API Key 也可以进行本地开发和流程演示
 
@@ -123,6 +125,8 @@ flowchart LR
     E --> F[用户核对或修正]
     F --> G[本地规则引擎评估]
     G --> H[生成本场景检查报告]
+    H --> I[生成隐私结果分享卡]
+    I --> J[系统分享或保存图片]
 ```
 
 ## 技术架构
@@ -141,7 +145,7 @@ flowchart LR
 
 | 模块 | 技术 | 职责 |
 |---|---|---|
-| 移动端 / Web | Expo 57、React Native、TypeScript | 拍照、相册、区域引导、确认与报告 UI |
+| 移动端 / Web | Expo 57、React Native、TypeScript | 拍照、相册、区域引导、确认、报告和分享卡 UI |
 | 状态与导航 | Zustand、React Navigation 7 | 挑战状态和页面流转 |
 | 后端 | FastAPI、Pydantic | API、流程编排、校验、限流与错误契约 |
 | AI | Qwen OpenAI-compatible API / Mock Provider | 全景观察、包装识别与 OCR |
@@ -150,7 +154,7 @@ flowchart LR
 
 模型只负责“看见了什么”，本地规则负责“如何判断”。完整设计见 [架构方案](./docs/architecture/架构方案.md)。
 
-更多可视化说明见 [架构图集](./docs/architecture/README.md)，其中包含系统上下文、单场景时序、后端分层、移动端组件边界和异常恢复架构。
+更多可视化说明见 [架构图集](./docs/architecture/README.md)，其中包含系统上下文、单场景时序、后端分层、移动端组件边界、异常恢复和传播分享卡架构。
 
 ## 项目结构
 
@@ -326,6 +330,13 @@ cd mobile
 npm run test:recovery
 ```
 
+分享卡数据与隐私边界测试：
+
+```bash
+cd mobile
+npm run test:share-card
+```
+
 前端 Web 构建：
 
 ```bash
@@ -333,7 +344,7 @@ cd mobile
 npx expo export --platform web
 ```
 
-当前已验证：后端 22 项测试、异常恢复映射 6 项测试、TypeScript 类型检查和 Expo Web 构建通过。
+当前已验证：后端 22 项测试、异常恢复映射 6 项测试、分享卡 3 项测试、TypeScript 类型检查和 Expo Web 构建通过。
 
 仓库已配置 GitHub Actions。推送到 `main`、向 `main` 提交 Pull Request 或手动触发时，云端会自动运行上述检查；工作流强制使用 Mock 模式，不需要 Qwen API Key，也不会消耗模型额度。
 
@@ -384,10 +395,13 @@ npx expo export --platform web
 - [架构图集](./docs/architecture/README.md)
 - [架构方案](./docs/architecture/架构方案.md)
 - [用户流程](./docs/product/用户流程.md)
+- [传播闭环用户流程](./docs/product/传播闭环用户流程.md)
 - [手机端页面线框图](./docs/design/手机端页面线框图.md)
+- [传播结果卡页面线框图](./docs/design/传播结果卡页面线框图.md)
 - [移动端视觉规范](./docs/design/移动端视觉规范.md)
 - [前端组件图与设计令牌映射](./docs/design/前端组件图与设计令牌映射.md)
 - [实施计划目录](./docs/implementation/)
+- [传播结果卡实施计划](./docs/implementation/传播结果卡实施计划.md)
 - [部署指南](./docs/operations/部署指南.md)
 - [开发日记](./docs/history/开发日记.md)
 - [早期产品方案与比赛背景](./docs/product/家庭化学品安全方案.md)

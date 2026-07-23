@@ -217,7 +217,34 @@ flowchart LR
 - 错误对象、失败照片 URI 和重试闭包不写入全局 store。
 - 用户消息不出现 API 地址、端口、堆栈、密钥或完整内部异常。
 
-## 6. 数据所有权与隐私
+## 6. 传播结果卡架构
+
+> 传播卡是报告的派生展示，不建立第二套报告状态，也不把原始照片重新带入传播链路。
+
+```mermaid
+flowchart LR
+    Report["ReportData\n结构化报告"]
+    Allowlist["buildShareCardData()\n隐私白名单与字段裁剪"]
+    Card["ShareCard\n固定 3:4 黑白卡"]
+    Capture["captureRef\n1080 × 1440 PNG"]
+    Share["expo-sharing\nAndroid / iOS 系统分享"]
+    Album["expo-media-library\n用户授权后保存相册"]
+    Web["Web 降级\n复制 / 分享文字摘要"]
+
+    Report --> Allowlist --> Card --> Capture
+    Capture --> Share
+    Capture --> Album
+    Allowlist --> Web
+```
+
+边界规则：
+
+- 分享数据只能从 `ShareCardData` 白名单进入组件，不允许组件直接读取完整报告对象。
+- 图片卡只包含场景名、规则评分、数量统计和受控娱乐化标签；不包含原始照片、产品名称、家庭地址、检查编号或模型响应。
+- Android / iOS 才加载原生截图、分享和相册模块；Web 使用平台文件降级，避免加载不存在的原生模块。
+- 生成的 PNG 是一次性临时文件；只有用户主动选择“保存图片”时才写入系统相册。
+
+## 7. 数据所有权与隐私
 
 | 数据 | 页面内存 | Zustand | SQLite | 模型服务 |
 |---|---:|---:|---:|---:|
@@ -228,8 +255,9 @@ flowchart LR
 | 用户确认产品信息 | 是 | 是 | 是 | 否 |
 | 风险事实、证据与评分 | 是 | 是 | 是 | 否 |
 | 恢复错误与失败照片 URI | 是，短期 | 否 | 否 | 否 |
+| 分享卡临时 PNG | 是，短期 | 否 | 否 | 否 |
 
-## 7. 配套设计资料
+## 8. 配套设计资料
 
 - [用户流程](../product/用户流程.md)
 - [手机端低保真线框图](../design/手机端页面线框图.md)
@@ -237,3 +265,6 @@ flowchart LR
 - [前端组件图与设计令牌映射](../design/前端组件图与设计令牌映射.md)
 - [异常恢复用户流程](../product/异常恢复用户流程.md)
 - [异常恢复低保真线框图](../design/异常恢复页面线框图.md)
+- [传播闭环用户流程](../product/传播闭环用户流程.md)
+- [传播结果卡页面线框图](../design/传播结果卡页面线框图.md)
+- [传播结果卡实施计划](../implementation/传播结果卡实施计划.md)

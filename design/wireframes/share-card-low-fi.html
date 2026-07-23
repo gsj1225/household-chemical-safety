@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>家庭化学品安全检查｜传播结果卡低保真线框图</title>
+  <style>
+    :root {
+      --ink: #111;
+      --copy: #444;
+      --muted: #6b6b6b;
+      --line: #9b9b9b;
+      --soft: #ececec;
+      --paper: #fff;
+      --canvas: #d7d7d7;
+    }
+    * { box-sizing: border-box; }
+    html { scrollbar-width: none; }
+    html::-webkit-scrollbar { display: none; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+    .intro {
+      max-width: 1510px;
+      margin: 0 auto;
+      padding: 36px 28px 8px;
+    }
+    .intro h1 { margin: 0 0 10px; font-size: 31px; }
+    .intro p { margin: 4px 0; color: var(--copy); font-size: 14px; line-height: 1.55; }
+    .legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 14px; font-size: 12px; color: var(--copy); }
+    .legend span { display: inline-flex; align-items: center; gap: 7px; }
+    .swatch { width: 22px; height: 14px; border: 1.5px solid var(--ink); background: var(--paper); }
+    .swatch.primary { background: var(--ink); }
+    .swatch.context { border-style: dashed; background: var(--soft); }
+    main {
+      max-width: 1510px;
+      margin: 0 auto;
+      padding: 25px 28px 50px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(330px, 1fr));
+      gap: 34px 26px;
+      align-items: start;
+    }
+    .board { min-width: 0; }
+    .board-title { margin: 0 0 7px; font-size: 18px; }
+    .board-note { min-height: 54px; margin: 0 0 10px; color: var(--copy); font-size: 12px; line-height: 1.5; }
+    .phone {
+      position: relative;
+      width: 350px;
+      height: 758px;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 7px solid var(--ink);
+      border-radius: 38px;
+      background: var(--paper);
+      box-shadow: 0 14px 26px rgba(0, 0, 0, .14);
+    }
+    .notch {
+      position: absolute;
+      z-index: 8;
+      top: 7px;
+      left: 50%;
+      width: 105px;
+      height: 22px;
+      transform: translateX(-50%);
+      border-radius: 15px;
+      background: var(--ink);
+    }
+    .status {
+      height: 39px;
+      padding: 13px 18px 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .appbar {
+      height: 49px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--soft);
+      display: grid;
+      grid-template-columns: 50px 1fr 50px;
+      align-items: center;
+    }
+    .appbar span { color: var(--copy); font-size: 12px; }
+    .appbar strong { text-align: center; font-size: 15px; }
+    .appbar .right { text-align: right; color: var(--muted); font-size: 11px; }
+    .screen {
+      height: calc(100% - 88px);
+      padding: 16px 18px 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+    .eyebrow { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .1em; }
+    h3 { margin: 0; font-size: 25px; line-height: 1.22; }
+    h4 { margin: 0; font-size: 16px; line-height: 1.35; }
+    p { margin: 0; }
+    .copy { color: var(--copy); font-size: 12px; line-height: 1.5; }
+    .tiny { color: var(--muted); font-size: 10px; line-height: 1.45; }
+    .score-head { display: grid; grid-template-columns: 82px 1fr; align-items: center; gap: 14px; }
+    .score-ring {
+      width: 82px;
+      height: 82px;
+      border: 8px solid var(--ink);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 31px;
+      font-weight: 800;
+    }
+    .stack { display: flex; flex-direction: column; gap: 6px; }
+    .profile { padding: 14px 15px; color: #fff; background: var(--ink); border-radius: 11px; }
+    .profile .tiny { color: #d8d8d8; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1.5px solid var(--ink); border-radius: 10px; overflow: hidden; }
+    .stat { min-height: 61px; border-right: 1.5px solid var(--ink); display: grid; place-items: center; align-content: center; gap: 2px; }
+    .stat:last-child { border-right: 0; }
+    .stat strong { font-size: 19px; }
+    .risk { padding: 12px; border: 2px solid var(--ink); border-left-width: 5px; border-radius: 10px; display: grid; gap: 5px; }
+    .button {
+      width: 100%;
+      min-height: 48px;
+      padding: 10px 12px;
+      border: 2px solid var(--ink);
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .button.primary { color: #fff; background: var(--ink); }
+    .button.secondary { background: var(--paper); }
+    .button.text { min-height: 40px; border-color: transparent; color: var(--copy); }
+    .button.disabled { color: #777; border-color: #c5c5c5; background: #ddd; }
+    .actions { margin-top: auto; display: flex; flex-direction: column; gap: 7px; }
+    .privacy { padding: 9px 10px; border: 1px dashed var(--line); border-radius: 8px; text-align: center; }
+    .modal-screen { background: #efefef; }
+    .sheet {
+      height: 100%;
+      padding: 17px 16px 16px;
+      border-top: 2px solid var(--ink);
+      background: var(--paper);
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .sheet-head { display: flex; justify-content: space-between; align-items: center; }
+    .close { width: 40px; height: 40px; border: 1.5px solid var(--ink); border-radius: 50%; display: grid; place-items: center; font-weight: 700; }
+    .share-card {
+      aspect-ratio: 3 / 4;
+      width: min(100%, 292px);
+      margin: 0 auto;
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .share-card .card-head { padding: 12px 13px; color: #fff; background: var(--ink); display: flex; justify-content: space-between; align-items: center; }
+    .share-card .card-head strong { font-size: 11px; }
+    .share-card .card-head span { font-size: 8px; letter-spacing: .08em; }
+    .share-card .card-body { flex: 1; padding: 14px 14px 11px; display: flex; flex-direction: column; gap: 9px; }
+    .share-card .scene { font-size: 9px; color: var(--muted); font-weight: 700; }
+    .share-score { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 9px; border-bottom: 1.5px solid var(--ink); }
+    .share-score strong { font-size: 44px; line-height: .9; }
+    .share-score span { font-size: 10px; font-weight: 700; text-align: right; line-height: 1.35; }
+    .share-profile { padding: 10px; color: #fff; background: var(--ink); display: grid; gap: 3px; }
+    .share-profile small { opacity: .72; font-size: 7px; letter-spacing: .1em; }
+    .share-profile strong { font-size: 14px; }
+    .share-profile p { font-size: 8px; line-height: 1.35; }
+    .share-stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1.5px solid var(--ink); }
+    .share-stats div { padding: 7px 2px; border-right: 1px solid var(--ink); text-align: center; }
+    .share-stats div:last-child { border-right: 0; }
+    .share-stats strong { display: block; font-size: 15px; }
+    .share-stats span { font-size: 7px; color: var(--muted); }
+    .invite { margin-top: auto; font-size: 17px; font-weight: 800; line-height: 1.25; }
+    .card-foot { padding-top: 8px; border-top: 1px solid var(--ink); font-size: 7px; color: var(--muted); line-height: 1.45; }
+    .feedback { padding: 10px 11px; border: 2px solid var(--ink); border-radius: 9px; display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: start; }
+    .feedback-mark { width: 26px; height: 26px; border: 1.5px solid var(--ink); border-radius: 50%; display: grid; place-items: center; font-weight: 800; }
+    .feedback strong { font-size: 12px; }
+    .feedback p { margin-top: 2px; color: var(--copy); font-size: 10px; line-height: 1.4; }
+    .export-board {
+      width: 350px;
+      min-height: 758px;
+      margin: 0 auto;
+      padding: 26px;
+      border: 2px dashed var(--line);
+      background: #e9e9e9;
+      display: grid;
+      place-items: center;
+    }
+    .export-board .share-card { width: 298px; box-shadow: 0 12px 24px rgba(0, 0, 0, .12); }
+    .annotation { margin-top: 10px; padding: 10px; border-left: 3px solid var(--ink); background: #eee; color: var(--copy); font-size: 11px; line-height: 1.45; }
+    @media (max-width: 1420px) {
+      main { grid-template-columns: repeat(2, minmax(350px, 1fr)); }
+    }
+    @media (max-width: 780px) {
+      main { grid-template-columns: 1fr; padding-inline: 12px; }
+      .intro { padding-inline: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="intro">
+    <h1>传播结果卡｜低保真线框图 v1.0</h1>
+    <p>目标：把“文字分享”升级为分享前可预览、可保存、可通过系统面板发送的 3:4 图片结果卡。</p>
+    <p>本画板只确认信息层级与动作，不决定新的颜色、图标、阴影或动效；正式实现继续使用黑白检验档案令牌。</p>
+    <div class="legend">
+      <span><i class="swatch primary"></i>唯一主操作</span>
+      <span><i class="swatch"></i>次操作</span>
+      <span><i class="swatch context"></i>隐私或状态说明</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="board">
+      <h2 class="board-title">01｜报告入口</h2>
+      <p class="board-note">严肃结论仍在报告页。分享是完成后的主出口，按钮下先说明对外内容边界。</p>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="status"><span>12:40</span><span>5G ◼︎ 88%</span></div>
+        <div class="appbar"><span>←</span><strong>本场景报告</strong><span class="right">已完成</span></div>
+        <div class="screen">
+          <div class="score-head">
+            <div class="score-ring">68</div>
+            <div class="stack">
+              <span class="eyebrow">✓ 检查完成</span>
+              <h4>还有 2 处<br />需要注意</h4>
+              <p class="tiny">厨房水槽场景 · 规则评分</p>
+            </div>
+          </div>
+          <div class="profile stack">
+            <span class="tiny">YOUR CHEMICAL TYPE</span>
+            <h4>家庭炼金术预备役</h4>
+            <p class="tiny">清洁效果想叠 Buff，化学反应也准备叠 Buff。</p>
+          </div>
+          <div class="stats">
+            <div class="stat"><strong>2</strong><span class="tiny">雷点</span></div>
+            <div class="stat"><strong>3</strong><span class="tiny">当前未命中</span></div>
+            <div class="stat"><strong>5</strong><span class="tiny">已检查</span></div>
+          </div>
+          <div class="risk">
+            <strong>! 混用风险</strong>
+            <p class="copy">当前场景有一条建议优先处理的风险。</p>
+            <p class="tiny">完整事实、建议与证据仍在报告详情中。</p>
+          </div>
+          <div class="actions">
+            <div class="button primary">生成结果分享卡</div>
+            <div class="button secondary">检查另一个场景</div>
+            <p class="tiny privacy">分享卡不包含原始照片、产品名称和家庭地址</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">02｜图片卡预览</h2>
+      <p class="board-note">预览所见即分享所得；关闭模态后回到原报告，不重置详情和滚动位置。</p>
+      <div class="phone modal-screen">
+        <div class="notch"></div>
+        <div class="status"><span>12:40</span><span>5G ◼︎ 88%</span></div>
+        <div class="sheet">
+          <div class="sheet-head"><div><span class="eyebrow">SHARE PREVIEW</span><h4>确认对外内容</h4></div><div class="close">×</div></div>
+          <div class="share-card">
+            <div class="card-head"><strong>家庭化学品排雷档案</strong><span>SCENE / 01</span></div>
+            <div class="card-body">
+              <div class="scene">厨房水槽场景 · 单场景抽查</div>
+              <div class="share-score"><strong>68</strong><span>规则评分 / 100<br />还有 2 处需要注意</span></div>
+              <div class="share-profile"><small>YOUR CHEMICAL TYPE</small><strong>家庭炼金术预备役</strong><p>清洁效果想叠 Buff，化学反应也准备叠 Buff。</p></div>
+              <div class="share-stats"><div><strong>2</strong><span>本轮雷点</span></div><div><strong>3</strong><span>当前未命中</span></div><div><strong>5</strong><span>已检查</span></div></div>
+              <div class="invite">测测你家离<br />家庭实验室还有几步</div>
+              <div class="card-foot">本轮结果仅供预防参考，不替代产品标签与专业检测。<br />不含原始照片、产品名称和家庭地址。</div>
+            </div>
+          </div>
+          <p class="tiny privacy">只分享卡片中可见的信息，不上传原始照片</p>
+          <div class="button primary">分享这张图片</div>
+          <div class="button secondary">保存到相册</div>
+          <div class="button text">返回报告</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">03｜保存反馈与平台降级</h2>
+      <p class="board-note">处理时动作互斥；权限拒绝或网页不支持本地图片分享时，卡片预览始终保留。</p>
+      <div class="phone modal-screen">
+        <div class="notch"></div>
+        <div class="status"><span>12:40</span><span>5G ◼︎ 88%</span></div>
+        <div class="sheet">
+          <div class="sheet-head"><div><span class="eyebrow">SHARE PREVIEW</span><h4>确认对外内容</h4></div><div class="close">×</div></div>
+          <div class="share-card" style="width: 238px;">
+            <div class="card-head"><strong>家庭化学品排雷档案</strong><span>SCENE / 01</span></div>
+            <div class="card-body">
+              <div class="scene">厨房水槽场景 · 单场景抽查</div>
+              <div class="share-score"><strong>68</strong><span>规则评分 / 100<br />还有 2 处需要注意</span></div>
+              <div class="share-profile"><small>YOUR CHEMICAL TYPE</small><strong>家庭炼金术预备役</strong><p>化学反应也准备叠 Buff。</p></div>
+              <div class="share-stats"><div><strong>2</strong><span>雷点</span></div><div><strong>3</strong><span>未命中</span></div><div><strong>5</strong><span>已检查</span></div></div>
+              <div class="invite">测测你家离家庭实验室还有几步</div>
+              <div class="card-foot">本轮结果仅供预防参考 · 不含原始照片与产品名称</div>
+            </div>
+          </div>
+          <div class="feedback">
+            <div class="feedback-mark">✓</div>
+            <div><strong>已保存到系统相册</strong><p>现在可以继续分享，或返回报告查看完整风险详情。</p></div>
+          </div>
+          <div class="button primary">分享这张图片</div>
+          <div class="button secondary disabled">正在生成图片…</div>
+          <div class="button text">返回报告</div>
+        </div>
+      </div>
+      <div class="annotation">权限拒绝：将反馈替换为“没有获得保存权限，卡片仍可继续分享”；Web：替换为“网页暂不支持分享本地图片，将使用文字摘要”。</div>
+    </section>
+
+    <section class="board">
+      <h2 class="board-title">04｜1080×1440 图片本体</h2>
+      <p class="board-note">固定 3:4 黑白卡片，只接收结构化统计和受控文案；没有照片、产品名、地址、ID 或虚假二维码。</p>
+      <div class="export-board">
+        <div class="share-card">
+          <div class="card-head"><strong>家庭化学品排雷档案</strong><span>SCENE / 01</span></div>
+          <div class="card-body">
+            <div class="scene">厨房水槽场景 · 单场景抽查</div>
+            <div class="share-score"><strong>68</strong><span>规则评分 / 100<br />还有 2 处需要注意</span></div>
+            <div class="share-profile"><small>YOUR CHEMICAL TYPE</small><strong>家庭炼金术预备役</strong><p>清洁效果想叠 Buff，化学反应也准备叠 Buff。</p></div>
+            <div class="share-stats"><div><strong>2</strong><span>本轮雷点</span></div><div><strong>3</strong><span>当前未命中</span></div><div><strong>5</strong><span>已检查</span></div></div>
+            <div class="invite">测测你家离<br />家庭实验室还有几步</div>
+            <div class="card-foot">本轮结果仅供预防参考，不替代产品标签与专业检测。<br />不含原始照片、产品名称和家庭地址。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

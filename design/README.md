@@ -4,7 +4,7 @@
 
 | 目录 | 内容 |
 |---|---|
-| [`wireframes/`](./wireframes/) | 主流程与异常恢复低保真线框图，包含 HTML 和 PNG |
+| [`wireframes/`](./wireframes/) | 主流程、异常恢复与传播结果卡低保真线框图，包含 HTML 和 PNG |
 | [`visual-system/`](./visual-system/) | 早期视觉基础约束、样式板与归档方案 |
 | [`component-map/`](./component-map/) | 前端组件边界与设计令牌映射图 |
 | [`visual-polish/`](./visual-polish/) | 黑白检验档案视觉稿和真实页面验收截图 |

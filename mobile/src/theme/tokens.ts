@@ -109,6 +109,7 @@ export const semanticColors = {
     glass: 'rgba(255, 255, 255, 0.92)',
     glassSubtle: 'rgba(255, 255, 255, 0.08)',
     lens: 'rgba(255, 255, 255, 0.12)',
+    scrim: 'rgba(8, 9, 10, 0.72)',
   },
   text: {
     primary: rawTokens.palette.neutral[900],
@@ -263,5 +264,19 @@ export const componentTokens = {
     statMinHeight: 72,
     summaryBorderWidth: 2,
     summaryAccentWidth: 5,
+  },
+  shareCard: {
+    aspectRatio: 3 / 4,
+    previewMaxWidth: 360,
+    padding: rawTokens.space[4],
+    borderWidth: 2,
+    scoreRingSize: 76,
+    scoreRingBorderWidth: 7,
+    statMinHeight: 52,
+    summaryBorderWidth: 2,
+    summaryAccentWidth: 5,
+    ruleWidth: 2,
+    outputWidth: 1080,
+    outputHeight: 1440,
   },
 } as const;

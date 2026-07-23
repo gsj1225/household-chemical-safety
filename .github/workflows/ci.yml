@@ -74,5 +74,8 @@ jobs:
       - name: Test recovery mappings
         run: npm run test:recovery
 
+      - name: Test share-card privacy boundary
+        run: npm run test:share-card
+
       - name: Build Expo web
         run: npx expo export --platform web
