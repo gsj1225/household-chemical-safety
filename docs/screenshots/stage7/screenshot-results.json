@@ -1,0 +1,146 @@
+{
+  "inventory-empty": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "inventory-content": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "inventory-loading": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "inventory-error": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "inventory-no-results": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "intake-review-normal": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "intake-category-unknown": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "intake-conflict": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "intake-permission-denied": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "intake-partial-success": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "detail-full": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "detail-minimal": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "detail-long-text": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "detail-loading": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "detail-error": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "edit-form": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "edit-unsaved-dialog": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "detail-delete-dialog": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "compat-critical": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "compat-attention": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "compat-unknown": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "compat-empty": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "compat-loading": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  },
+  "compat-error": {
+    "320x568": "PASS",
+    "390x844": "PASS",
+    "520x844": "PASS",
+    "1280x900": "PASS"
+  }
+}
