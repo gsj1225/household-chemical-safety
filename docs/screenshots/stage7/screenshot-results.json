@@ -269,20 +269,40 @@
       "reason": "OK",
       "size": 30700
     },
+    "320x568-bottom": {
+      "status": "PASS",
+      "reason": "目标文字 '删除' 在视口内可见",
+      "size": 18133
+    },
     "390x844": {
       "status": "PASS",
       "reason": "OK",
       "size": 44364
+    },
+    "390x844-bottom": {
+      "status": "PASS",
+      "reason": "目标文字 '删除' 在视口内可见",
+      "size": 30477
     },
     "520x844": {
       "status": "PASS",
       "reason": "OK",
       "size": 48101
     },
+    "520x844-bottom": {
+      "status": "PASS",
+      "reason": "目标文字 '删除' 在视口内可见",
+      "size": 32698
+    },
     "1280x900": {
       "status": "PASS",
       "reason": "OK",
       "size": 65976
+    },
+    "1280x900-bottom": {
+      "status": "PASS",
+      "reason": "目标文字 '删除' 在视口内可见",
+      "size": 46189
     }
   },
   "detail-loading": {
@@ -335,20 +355,40 @@
       "reason": "OK",
       "size": 26849
     },
+    "320x568-bottom": {
+      "status": "PASS",
+      "reason": "目标文字 '保存' 在视口内可见",
+      "size": 22055
+    },
     "390x844": {
       "status": "PASS",
       "reason": "OK",
       "size": 38501
+    },
+    "390x844-bottom": {
+      "status": "PASS",
+      "reason": "目标文字 '保存' 在视口内可见",
+      "size": 33862
     },
     "520x844": {
       "status": "PASS",
       "reason": "OK",
       "size": 45625
     },
+    "520x844-bottom": {
+      "status": "PASS",
+      "reason": "目标文字 '保存' 在视口内可见",
+      "size": 38425
+    },
     "1280x900": {
       "status": "PASS",
       "reason": "OK",
       "size": 55621
+    },
+    "1280x900-bottom": {
+      "status": "PASS",
+      "reason": "目标文字 '保存' 在视口内可见",
+      "size": 53570
     }
   },
   "edit-unsaved-dialog": {

@@ -136,28 +136,82 @@ def capture_screenshot(ws, filepath, mid):
         return len(img_data)
     return 0
 
-def scroll_to_bottom(ws, mid):
-    # React Native Web ScrollView renders as a div with overflowY:auto/scroll
-    # Find all divs and check computed style for scrollable containers
+# 滚动场景的目标验证文字：滚动后必须可见
+SCROLL_TARGETS = {
+    "edit-form": "保存",
+    "detail-long-text": "删除",
+}
+
+def scroll_and_verify(ws, scene, mid):
+    """滚动到底部并验证目标文字进入视口。返回 (ok, reason)。"""
+    target_text = SCROLL_TARGETS.get(scene)
+    if not target_text:
+        return True, "无滚动目标"
+
+    # 记录滚动前的 scrollTop
     mid[0] += 1
-    send_cdp(ws, "Runtime.evaluate", {
+    resp = send_cdp(ws, "Runtime.evaluate", {
         "expression": """
             (function() {
                 var all = document.querySelectorAll('div');
-                var scrolled = 0;
+                var maxScroll = 0;
+                var scrollEl = null;
                 all.forEach(function(el) {
                     var style = window.getComputedStyle(el);
                     var oy = style.overflowY;
                     if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight) {
-                        el.scrollTop = el.scrollHeight;
-                        scrolled++;
+                        if (el.scrollTop > maxScroll || scrollEl === null) {
+                            maxScroll = el.scrollTop;
+                            scrollEl = el;
+                        }
                     }
                 });
-                return scrolled + ' containers scrolled';
+                if (!scrollEl) return JSON.stringify({found: false, beforeScroll: 0});
+                // Scroll to bottom
+                scrollEl.scrollTop = scrollEl.scrollHeight;
+                return JSON.stringify({
+                    found: true,
+                    beforeScroll: maxScroll,
+                    scrollHeight: scrollEl.scrollHeight,
+                    clientHeight: scrollEl.clientHeight,
+                    afterScroll: scrollEl.scrollTop
+                });
             })()
         """
     }, mid[0])
-    time.sleep(2)
+    scroll_info = json.loads(resp.get("result", {}).get("result", {}).get("value", "{}"))
+    if not scroll_info.get("found"):
+        return False, "未找到可滚动容器"
+
+    time.sleep(1)
+
+    # 验证目标文字是否在可见区域内
+    mid[0] += 1
+    resp = send_cdp(ws, "Runtime.evaluate", {
+        "expression": f"""
+            (function() {{
+                // 检查目标文字是否在视口中可见
+                var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+                var target = {repr(target_text)};
+                while (walker.nextNode()) {{
+                    var node = walker.currentNode;
+                    if (node.textContent.includes(target)) {{
+                        var el = node.parentElement;
+                        var rect = el.getBoundingClientRect();
+                        if (rect.top >= 0 && rect.bottom <= window.innerHeight) {{
+                            return JSON.stringify({{visible: true, text: target, top: rect.top, bottom: rect.bottom}});
+                        }}
+                    }}
+                }}
+                return JSON.stringify({{visible: false, text: target}});
+            }})()
+        """
+    }, mid[0])
+    vis_info = json.loads(resp.get("result", {}).get("result", {}).get("value", "{}"))
+    if vis_info.get("visible"):
+        return True, f"目标文字 '{target_text}' 在视口内可见"
+    else:
+        return False, f"目标文字 '{target_text}' 滚动后仍不可见"
 
 def capture_scene(ws, scene_config, vp_name, width, height, mid):
     scene = scene_config["name"]
@@ -191,13 +245,20 @@ def capture_scene(ws, scene_config, vp_name, width, height, mid):
     print(f"  OK {scene}-{vp_name}.jpg ({size} bytes) — {reason}")
 
     # 滚动证据
+    bottom_result = None
     if scene in SCROLL_SCENES:
-        scroll_to_bottom(ws, mid)
+        scroll_ok, scroll_reason = scroll_and_verify(ws, scene, mid)
         bottom_path = os.path.join(OUTPUT_DIR, f"{scene}-{vp_name}-bottom.jpg")
         bottom_size = capture_screenshot(ws, bottom_path, mid)
-        print(f"  OK {scene}-{vp_name}-bottom.jpg ({bottom_size} bytes) — 滚动到底部")
+        status = "PASS" if scroll_ok else "FAIL"
+        print(f"  {status} {scene}-{vp_name}-bottom.jpg ({bottom_size} bytes) — {scroll_reason}")
+        bottom_result = {
+            "status": status,
+            "reason": scroll_reason,
+            "size": bottom_size,
+        }
 
-    return True, reason, size
+    return True, reason, size, bottom_result
 
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -216,12 +277,14 @@ def main():
         print(f"\n--- {scene} ---")
         results[scene] = {}
         for vp_name, width, height in VIEWPORTS:
-            ok, reason, size = capture_scene(ws, scene_config, vp_name, width, height, mid)
+            ok, reason, size, bottom_result = capture_scene(ws, scene_config, vp_name, width, height, mid)
             results[scene][vp_name] = {
                 "status": "PASS" if ok else "FAIL",
                 "reason": reason,
                 "size": size,
             }
+            if bottom_result is not None:
+                results[scene][f"{vp_name}-bottom"] = bottom_result
 
     ws.close()
 
