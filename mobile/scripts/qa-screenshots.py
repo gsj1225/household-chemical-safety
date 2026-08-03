@@ -137,19 +137,23 @@ def capture_screenshot(ws, filepath, mid):
     return 0
 
 def scroll_to_bottom(ws, mid):
-    # React Native Web uses custom scroll containers, not window scroll
+    # React Native Web ScrollView renders as a div with overflowY:auto/scroll
+    # Find all divs and check computed style for scrollable containers
     mid[0] += 1
     send_cdp(ws, "Runtime.evaluate", {
         "expression": """
             (function() {
-                // Find all scrollable containers and scroll them to bottom
-                var containers = document.querySelectorAll('[style*="overflow"]');
-                containers.forEach(function(c) { c.scrollTop = c.scrollHeight; });
-                // Also try window scroll
-                window.scrollTo(0, document.body.scrollHeight);
-                // Try the main root div
-                var root = document.getElementById('root');
-                if (root) root.scrollTop = root.scrollHeight;
+                var all = document.querySelectorAll('div');
+                var scrolled = 0;
+                all.forEach(function(el) {
+                    var style = window.getComputedStyle(el);
+                    var oy = style.overflowY;
+                    if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight) {
+                        el.scrollTop = el.scrollHeight;
+                        scrolled++;
+                    }
+                });
+                return scrolled + ' containers scrolled';
             })()
         """
     }, mid[0])
