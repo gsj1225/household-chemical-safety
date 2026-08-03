@@ -4,6 +4,15 @@ Stage 7 Visual QA — 自动化截图脚本（v2）
 通过 CDP 对 QA 夹具的每个场景在指定视口下截图。
 每个场景配置期望文字和禁止文字，等待期望内容出现后才截图。
 出现禁止内容则标记 FAIL。
+
+用法:
+  python qa-screenshots.py
+  python qa-screenshots.py --base-url http://127.0.0.1:8082 --cdp-port 50194
+  python qa-screenshots.py --output-dir /path/to/screenshots
+  python qa-screenshots.py --negative-test          # 负向验证（确认失败路径可用）
+
+也支持环境变量:
+  QA_BASE_URL  /  QA_CDP_PORT  /  QA_OUTPUT_DIR
 """
 
 import websocket
@@ -13,24 +22,18 @@ import time
 import httpx
 import os
 import sys
+import argparse
 
-# 自动检测 CDP 端口
-CDP_PORT = None
-for _port in [50194, 58264, 58664]:
-    try:
-        r = httpx.get(f"http://127.0.0.1:{_port}/json/list", timeout=2)
-        if r.status_code == 200:
-            CDP_PORT = _port
-            break
-    except Exception:
-        pass
-if CDP_PORT is None:
-    print("ERROR: Cannot find CDP port. Tried 50194, 58264, 58664")
-    sys.exit(1)
-print(f"Using CDP port: {CDP_PORT}")
-OUTPUT_DIR = r"D:\lingxi\lingxi-claw\20260710-20-42-12-237\docs\screenshots\stage7"
-BASE_URL = "http://127.0.0.1:8082"
+# ── 路径推导 ──────────────────────────────────────────────
+# 脚本位于 mobile/scripts/qa-screenshots.py
+# 项目根 = 上两级
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+DEFAULT_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "docs", "screenshots", "stage7")
+DEFAULT_BASE_URL = "http://127.0.0.1:8082"
+DEFAULT_CDP_PORTS = [50194, 58264, 58664, 9222]
 
+# ── 视口 ──────────────────────────────────────────────────
 VIEWPORTS = [
     ("320x568", 320, 568),
     ("390x844", 390, 844),
@@ -38,8 +41,7 @@ VIEWPORTS = [
     ("1280x900", 1280, 900),
 ]
 
-# 场景配置：期望文字（全部出现才PASS）、禁止文字（任何出现即FAIL）
-# "产品不存在" 全局禁止；"加载失败" 仅在非错误场景禁止
+# ── 场景配置 ──────────────────────────────────────────────
 FORBIDDEN_COMMON = ["产品不存在"]
 
 SCENES = [
@@ -77,13 +79,35 @@ SCENES = [
 # 需要额外滚动到底部证据的场景
 SCROLL_SCENES = ["detail-long-text", "edit-form"]
 
-def get_page_ws():
-    r = httpx.get(f"http://127.0.0.1:{CDP_PORT}/json/list", timeout=5)
+# 滚动场景的目标验证文字
+SCROLL_TARGETS = {
+    "edit-form": "保存",
+    "detail-long-text": "删除",
+}
+
+
+# ── CDP 连接 ──────────────────────────────────────────────
+
+def detect_cdp_port(candidate_ports):
+    """自动检测可用的 CDP 端口。"""
+    for port in candidate_ports:
+        try:
+            r = httpx.get(f"http://127.0.0.1:{port}/json/list", timeout=2)
+            if r.status_code == 200:
+                return port
+        except Exception:
+            pass
+    return None
+
+
+def get_page_ws(cdp_port):
+    r = httpx.get(f"http://127.0.0.1:{cdp_port}/json/list", timeout=5)
     targets = r.json()
     for t in targets:
         if t.get("type") == "page":
             return t["webSocketDebuggerUrl"]
     raise RuntimeError("No page target found")
+
 
 def send_cdp(ws, method, params=None, msg_id=1):
     msg = {"id": msg_id, "method": method}
@@ -95,12 +119,16 @@ def send_cdp(ws, method, params=None, msg_id=1):
         if resp.get("id") == msg_id:
             return resp
 
+
+# ── 页面内容检测 ──────────────────────────────────────────
+
 def get_page_text(ws, mid):
     mid[0] += 1
     resp = send_cdp(ws, "Runtime.evaluate", {
         "expression": "document.body.innerText"
     }, mid[0])
     return resp.get("result", {}).get("result", {}).get("value", "")
+
 
 def wait_for_content(ws, scene_config, mid, timeout=20):
     """等待期望文字出现，检查禁止文字。返回 (ok, reason)。"""
@@ -123,6 +151,9 @@ def wait_for_content(ws, scene_config, mid, timeout=20):
     missing = [exp for exp in expected if exp not in text]
     return False, f"超时，缺失期望文字: {missing}"
 
+
+# ── 截图 ──────────────────────────────────────────────────
+
 def capture_screenshot(ws, filepath, mid):
     mid[0] += 1
     resp = send_cdp(ws, "Page.captureScreenshot", {
@@ -136,11 +167,8 @@ def capture_screenshot(ws, filepath, mid):
         return len(img_data)
     return 0
 
-# 滚动场景的目标验证文字：滚动后必须可见
-SCROLL_TARGETS = {
-    "edit-form": "保存",
-    "detail-long-text": "删除",
-}
+
+# ── 滚动验证 ──────────────────────────────────────────────
 
 def scroll_and_verify(ws, scene, mid):
     """滚动到底部并验证目标文字进入视口。返回 (ok, reason)。"""
@@ -148,7 +176,7 @@ def scroll_and_verify(ws, scene, mid):
     if not target_text:
         return True, "无滚动目标"
 
-    # 记录滚动前的 scrollTop
+    # 记录滚动前的 scrollTop 并滚动到底部
     mid[0] += 1
     resp = send_cdp(ws, "Runtime.evaluate", {
         "expression": """
@@ -167,7 +195,6 @@ def scroll_and_verify(ws, scene, mid):
                     }
                 });
                 if (!scrollEl) return JSON.stringify({found: false, beforeScroll: 0});
-                // Scroll to bottom
                 scrollEl.scrollTop = scrollEl.scrollHeight;
                 return JSON.stringify({
                     found: true,
@@ -190,7 +217,6 @@ def scroll_and_verify(ws, scene, mid):
     resp = send_cdp(ws, "Runtime.evaluate", {
         "expression": f"""
             (function() {{
-                // 检查目标文字是否在视口中可见
                 var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
                 var target = {repr(target_text)};
                 while (walker.nextNode()) {{
@@ -213,9 +239,17 @@ def scroll_and_verify(ws, scene, mid):
     else:
         return False, f"目标文字 '{target_text}' 滚动后仍不可见"
 
-def capture_scene(ws, scene_config, vp_name, width, height, mid):
+
+# ── 单场景截图 ────────────────────────────────────────────
+
+def capture_scene(ws, scene_config, vp_name, width, height, mid, output_dir, base_url):
+    """
+    截取单个场景在指定视口下的截图。
+    始终返回 (ok, reason, size, bottom_result) 四元组。
+    bottom_result 为 None 表示无滚动截图，否则为 dict。
+    """
     scene = scene_config["name"]
-    url = f"{BASE_URL}?qa=1&scene={scene}&capture=1"
+    url = f"{base_url}?qa=1&scene={scene}&capture=1"
 
     # 设置视口
     mid[0] += 1
@@ -235,21 +269,34 @@ def capture_scene(ws, scene_config, vp_name, width, height, mid):
     if not ok:
         print(f"  FAIL {scene}-{vp_name}: {reason}")
         # 仍然截图作为证据
-        filepath = os.path.join(OUTPUT_DIR, f"{scene}-{vp_name}.jpg")
+        filepath = os.path.join(output_dir, f"{scene}-{vp_name}.jpg")
         size = capture_screenshot(ws, filepath, mid)
-        return False, reason, size
+        # 截图 size <= 0 也标记 FAIL
+        if size <= 0:
+            reason = f"{reason}; 截图写入失败(size={size})"
+        return False, reason, size, None
 
     # 截图
-    filepath = os.path.join(OUTPUT_DIR, f"{scene}-{vp_name}.jpg")
+    filepath = os.path.join(output_dir, f"{scene}-{vp_name}.jpg")
     size = capture_screenshot(ws, filepath, mid)
+
+    # size <= 0 标记 FAIL
+    if size <= 0:
+        print(f"  FAIL {scene}-{vp_name}: 截图写入失败(size={size})")
+        return False, "截图写入失败(size=0)", size, None
+
     print(f"  OK {scene}-{vp_name}.jpg ({size} bytes) — {reason}")
 
     # 滚动证据
     bottom_result = None
     if scene in SCROLL_SCENES:
         scroll_ok, scroll_reason = scroll_and_verify(ws, scene, mid)
-        bottom_path = os.path.join(OUTPUT_DIR, f"{scene}-{vp_name}-bottom.jpg")
+        bottom_path = os.path.join(output_dir, f"{scene}-{vp_name}-bottom.jpg")
         bottom_size = capture_screenshot(ws, bottom_path, mid)
+        # bottom size <= 0 也标记 FAIL
+        if bottom_size <= 0:
+            scroll_ok = False
+            scroll_reason = f"{scroll_reason}; 截图写入失败(size={bottom_size})"
         status = "PASS" if scroll_ok else "FAIL"
         print(f"  {status} {scene}-{vp_name}-bottom.jpg ({bottom_size} bytes) — {scroll_reason}")
         bottom_result = {
@@ -260,31 +307,94 @@ def capture_scene(ws, scene_config, vp_name, width, height, mid):
 
     return True, reason, size, bottom_result
 
-def main():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    ws_url = get_page_ws()
+# ── 主流程 ────────────────────────────────────────────────
+
+def main():
+    parser = argparse.ArgumentParser(description="Stage 7 Visual QA 截图脚本")
+    parser.add_argument("--output-dir", default=None,
+                        help="截图输出目录（默认: <项目根>/docs/screenshots/stage7）")
+    parser.add_argument("--base-url", default=None,
+                        help="QA 夹具 Web 地址（默认: http://127.0.0.1:8082）")
+    parser.add_argument("--cdp-port", type=int, default=None,
+                        help="CDP 调试端口（默认: 自动检测）")
+    parser.add_argument("--negative-test", action="store_true",
+                        help="负向验证模式：用不存在的期望文字确认失败路径可用")
+    args = parser.parse_args()
+
+    # 参数优先级：命令行 > 环境变量 > 默认值
+    output_dir = args.output_dir or os.environ.get("QA_OUTPUT_DIR") or DEFAULT_OUTPUT_DIR
+    base_url = args.base_url or os.environ.get("QA_BASE_URL") or DEFAULT_BASE_URL
+    cdp_port = args.cdp_port or (
+        int(os.environ["QA_CDP_PORT"]) if os.environ.get("QA_CDP_PORT") else None
+    )
+
+    # CDP 端口检测
+    if cdp_port is None:
+        cdp_port = detect_cdp_port(DEFAULT_CDP_PORTS)
+    if cdp_port is None:
+        tried = ", ".join(str(p) for p in DEFAULT_CDP_PORTS)
+        print(f"ERROR: Cannot find CDP port. Tried: {tried}")
+        print("提示: 使用 --cdp-port 指定端口，或设置 QA_CDP_PORT 环境变量")
+        sys.exit(1)
+
+    print(f"CDP port:    {cdp_port}")
+    print(f"Base URL:    {base_url}")
+    print(f"Output dir:  {output_dir}")
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    ws_url = get_page_ws(cdp_port)
     print(f"Connecting to: {ws_url}")
     ws = websocket.create_connection(ws_url, timeout=30)
 
     mid = [0]
     send_cdp(ws, "Page.enable", {}, mid[0]); mid[0] += 1
 
-    results = {}
+    # 负向验证模式：仅跑2个场景，故意设置不存在的期望文字
+    if args.negative_test:
+        test_scenes = [
+            {"name": "inventory-empty", "expect": ["这段文字绝对不存在于页面上_xyzzy_42"], "forbid": []},
+            {"name": "inventory-content", "expect": ["共 4 件产品", "威猛先生"], "forbid": []},
+        ]
+        print("\n=== 负向验证模式 ===")
+        print("场景1 期望文字故意不存在 → 应 FAIL")
+        print("场景2 正常 → 应 PASS（验证后续场景继续执行）")
+        scenes_to_run = test_scenes
+    else:
+        scenes_to_run = SCENES
 
-    for scene_config in SCENES:
+    results = {}
+    has_failure = False
+
+    for scene_config in scenes_to_run:
         scene = scene_config["name"]
         print(f"\n--- {scene} ---")
         results[scene] = {}
         for vp_name, width, height in VIEWPORTS:
-            ok, reason, size, bottom_result = capture_scene(ws, scene_config, vp_name, width, height, mid)
+            try:
+                ok, reason, size, bottom_result = capture_scene(
+                    ws, scene_config, vp_name, width, height, mid, output_dir, base_url
+                )
+            except Exception as e:
+                # 单场景异常：记录 FAIL，继续跑剩余场景
+                ok = False
+                reason = f"异常: {type(e).__name__}: {e}"
+                size = 0
+                bottom_result = None
+                print(f"  EXCEPTION {scene}-{vp_name}: {reason}")
+
             results[scene][vp_name] = {
                 "status": "PASS" if ok else "FAIL",
                 "reason": reason,
                 "size": size,
             }
+            if not ok:
+                has_failure = True
             if bottom_result is not None:
                 results[scene][f"{vp_name}-bottom"] = bottom_result
+                if bottom_result["status"] == "FAIL":
+                    has_failure = True
 
     ws.close()
 
@@ -300,13 +410,17 @@ def main():
                 passed += 1
             else:
                 failed += 1
-                print(f"  FAILED: {scene}-{vp}: {info['reason']}")
+                print(f"  FAILED: {scene}/{vp}: {info['reason']}")
     print(f"Total: {total}, Passed: {passed}, Failed: {failed}")
 
-    results_path = os.path.join(OUTPUT_DIR, "screenshot-results.json")
+    results_path = os.path.join(output_dir, "screenshot-results.json")
     with open(results_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
     print(f"\nResults saved to: {results_path}")
+
+    # 非零退出码：有 FAIL 时 CI 可感知
+    sys.exit(1 if has_failure else 0)
+
 
 if __name__ == "__main__":
     main()
