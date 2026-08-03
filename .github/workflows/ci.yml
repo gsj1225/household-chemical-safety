@@ -71,11 +71,8 @@ jobs:
       - name: Check TypeScript
         run: npx tsc --noEmit
 
-      - name: Test recovery mappings
-        run: npm run test:recovery
-
-      - name: Test share-card privacy boundary
-        run: npm run test:share-card
+      - name: Run v2 behavior tests
+        run: npm run test:v2
 
       - name: Build Expo web
         run: npx expo export --platform web

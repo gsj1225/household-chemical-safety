@@ -117,8 +117,22 @@ class QwenAI(AIProvider):
     ) -> ProductIdentification:
         prompt = """
 你是产品包装与成分表 OCR 助手。只提取照片中确实可见的信息，不推测配方。
-返回 JSON：{"brand":"品牌或未知","name":"产品名或未知","category":"品类或未知","ingredients":["成分"],"confidence":"high|medium|low"}
-看不清的字段写“未知”；成分看不清时返回空数组；禁止输出安全或风险结论。
+返回 JSON：
+{
+  "brand": "品牌或未知",
+  "name": "产品名或未知",
+  "category": "品类，必须是以下英文枚举之一：kitchen_cleaner, bathroom_cleaner, toilet_cleaner, descaler, drain_cleaner, disinfectant, bleach, laundry, fabric_softener, stain_remover, pesticide, insect_repellent, other。看不清写未知",
+  "ingredients": ["成分"],
+  "production_date": "生产日期如2025-05，看不清写空字符串",
+  "expiry_date": "有效期如2027-05，看不清写空字符串",
+  "storage_requirements": ["储存条件，如避光、远离儿童"],
+  "hazard_notes": ["危险性说明，如腐蚀性、不可混用"],
+  "label_warnings": ["标签警示语，如远离儿童、不可食用"],
+  "confidence": "high|medium|low"
+}
+只提取包装上可见的文字，不得根据产品类别推测风险或成分。
+看不清的字段写"未知"（字符串）或空数组（列表）；日期看不清写空字符串。
+禁止输出安全或风险结论。
 """.strip()
         payload = await self._vision_json(
             "product_identification", image_bytes, prompt

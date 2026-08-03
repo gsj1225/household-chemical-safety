@@ -1,0 +1,111 @@
+{
+  "normal_product": {
+    "productId": "p-001",
+    "revision": 1,
+    "brand": "某品牌",
+    "name": "84消毒液",
+    "category": "disinfectant",
+    "barcode": null,
+    "production_date": {
+      "value": "2025-05",
+      "precision": "month",
+      "source": "label"
+    },
+    "expiry_date": {
+      "value": "2027-05",
+      "precision": "month",
+      "source": "label"
+    },
+    "shelf_life_text": null,
+    "ingredients": [
+      {
+        "display_value": "次氯酸钠",
+        "normalized_value": null,
+        "source": "label",
+        "confirmation": "confirmed",
+        "audit_source": null
+      }
+    ],
+    "label_warnings": [],
+    "storage_requirements": [],
+    "hazards": [],
+    "incompatibility_targets": [],
+    "identification_confidence": "high",
+    "information_status": "complete",
+    "created_at": "2026-08-02T09:43:46.349234+00:00",
+    "updated_at": "2026-08-02T09:43:46.349234+00:00"
+  },
+  "unknown_product": {
+    "productId": "p-002",
+    "revision": 1,
+    "brand": null,
+    "name": "强力除霉剂",
+    "category": "bathroom_cleaner",
+    "barcode": null,
+    "production_date": {
+      "value": null,
+      "precision": "unknown",
+      "source": "label"
+    },
+    "expiry_date": {
+      "value": null,
+      "precision": "unknown",
+      "source": "label"
+    },
+    "shelf_life_text": null,
+    "ingredients": [],
+    "label_warnings": [],
+    "storage_requirements": [],
+    "hazards": [],
+    "incompatibility_targets": [],
+    "identification_confidence": "low",
+    "information_status": "needs_information",
+    "created_at": "2026-08-02T09:43:46.349234+00:00",
+    "updated_at": "2026-08-02T09:43:46.349234+00:00"
+  },
+  "duplicate_candidates": {
+    "candidates": [
+      {
+        "productId": "p-001",
+        "name": "84消毒液",
+        "category": "disinfectant",
+        "brand": "某品牌",
+        "matchReason": "品牌+产品名一致",
+        "matchStrength": "strong"
+      }
+    ],
+    "hasCandidates": true
+  },
+  "conflict_relation": {
+    "relationId": "r-001",
+    "productAId": "p-001",
+    "productBId": "p-003",
+    "relationType": "do_not_mix",
+    "severity": "critical",
+    "title": "含氯消毒剂 x 酸性清洁剂",
+    "rationale": "含氯产品与酸性清洁剂混合可能产生有害气体",
+    "recommendedAction": "不要混合使用，更换产品前充分冲洗并保持通风",
+    "ruleId": "RULE-001",
+    "ruleVersion": "1.0",
+    "evidenceStatus": "verified",
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "氯气安全指南",
+        "url": null,
+        "reviewed_at": "2024-01-01"
+      }
+    ],
+    "updated_at": "2026-08-02T09:43:46.349234+00:00"
+  },
+  "no_conflict_summary": {
+    "status": "no_registered_conflict",
+    "totalRelations": 0,
+    "criticalCount": 0,
+    "attentionCount": 0,
+    "unknownCount": 0,
+    "needsInformationCount": 0,
+    "totalProducts": 3,
+    "boundary_notice": "库内存在相关产品，不表示它们正在共同存放或混用。"
+  }
+}

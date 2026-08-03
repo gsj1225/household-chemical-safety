@@ -1,0 +1,132 @@
+[
+  {
+    "id": "RULE-001",
+    "version": "2.0",
+    "enabled": true,
+    "name": "含氯消毒剂与酸性清洁剂禁忌",
+    "side_a": {
+      "ingredients": ["次氯酸钠", "含氯漂白剂", "84消毒液", "次氯酸钙", "次氯酸"],
+      "categories": ["disinfectant", "bleach"]
+    },
+    "side_b": {
+      "ingredients": ["盐酸", "酸性物质", "洁厕剂", "柠檬酸", "醋酸", "磷酸", "硫酸", "草酸"],
+      "categories": ["toilet_cleaner", "descaler"]
+    },
+    "relation_type": "do_not_mix",
+    "severity": "critical",
+    "title": "含氯消毒剂 × 酸性清洁剂",
+    "rationale": "含氯消毒剂（如次氯酸钠）与酸性清洁剂混合或未充分冲洗时连续使用，可能释放氯气。氯气对眼睛和呼吸道有强烈刺激性，高浓度暴露可造成严重伤害。",
+    "recommended_action": "不要混合使用。更换产品前充分冲洗并保持通风。如已出现强烈气味或身体不适，立即离开现场并按产品标签或当地专业机构指引处理。",
+    "evidence_status": "verified",
+    "sources": [
+      {"organization": "美国疾病控制与预防中心（CDC）", "title": "Cleaning and Disinfecting with Bleach", "url": "https://www.cdc.gov/hygiene/about/cleaning-and-disinfecting-with-bleach.html", "reviewed_at": "2026-07-12"}
+    ]
+  },
+  {
+    "id": "RULE-002",
+    "version": "2.0",
+    "enabled": true,
+    "name": "含氯消毒剂与含氨清洁剂禁忌",
+    "side_a": {
+      "ingredients": ["次氯酸钠", "含氯漂白剂", "84消毒液", "次氯酸钙"],
+      "categories": ["disinfectant", "bleach"]
+    },
+    "side_b": {
+      "ingredients": ["氨", "氨水", "含氨清洁剂", "铵盐", "氯化铵"],
+      "categories": ["kitchen_cleaner", "bathroom_cleaner"]
+    },
+    "relation_type": "do_not_mix",
+    "severity": "critical",
+    "title": "含氯消毒剂 × 含氨清洁剂",
+    "rationale": "含氯漂白剂和含氨清洁剂混合会产生氯胺气体，吸入可导致呼吸道损伤，长期接触可能引发肺炎。",
+    "recommended_action": "分开存放，切勿混合使用。如不慎混合，立即开窗通风并离开现场。",
+    "evidence_status": "verified",
+    "sources": [
+      {"organization": "美国疾病控制与预防中心（CDC）", "title": "How to Safely Clean and Sanitize with Bleach", "url": "https://www.cdc.gov/natural-disasters/safety/how-to-safely-clean-and-sanitize-with-bleach.html", "reviewed_at": "2026-07-12"}
+    ]
+  },
+  {
+    "id": "RULE-003",
+    "version": "2.0",
+    "enabled": true,
+    "name": "含氯消毒剂与酒精禁忌",
+    "side_a": {
+      "ingredients": ["次氯酸钠", "含氯漂白剂", "84消毒液"],
+      "categories": ["disinfectant", "bleach"]
+    },
+    "side_b": {
+      "ingredients": ["乙醇", "酒精", "酒精喷雾"],
+      "categories": ["disinfectant"]
+    },
+    "relation_type": "do_not_mix",
+    "severity": "critical",
+    "title": "含氯消毒剂 × 酒精",
+    "rationale": "含氯消毒液与酒精混合可能产生氯仿（三氯甲烷），这是一种麻醉性物质，长期接触可损伤肝脏和神经系统。",
+    "recommended_action": "消毒时不要同时使用酒精和含氯消毒液。先使用一种，通风待干后再使用另一种。",
+    "evidence_status": "needs_review",
+    "sources": []
+  },
+  {
+    "id": "RULE-004",
+    "version": "2.0",
+    "enabled": true,
+    "name": "含氯消毒剂与过氧化氢禁忌",
+    "side_a": {
+      "ingredients": ["次氯酸钠", "含氯漂白剂"],
+      "categories": ["disinfectant", "bleach"]
+    },
+    "side_b": {
+      "ingredients": ["过氧化氢", "双氧水"],
+      "categories": ["disinfectant"]
+    },
+    "relation_type": "do_not_mix",
+    "severity": "attention",
+    "title": "含氯消毒剂 × 过氧化氢",
+    "rationale": "含氯漂白剂和过氧化氢混合会发生剧烈反应，快速释放氧气，可能导致容器破裂或飞溅。",
+    "recommended_action": "切勿混合使用。分开存放，使用一种后彻底冲洗再使用另一种。",
+    "evidence_status": "needs_review",
+    "sources": []
+  },
+  {
+    "id": "RULE-005",
+    "version": "2.0",
+    "enabled": true,
+    "name": "强碱与酸性产品禁忌",
+    "side_a": {
+      "ingredients": ["氢氧化钠", "强碱", "氢氧化钾"],
+      "categories": ["drain_cleaner"]
+    },
+    "side_b": {
+      "ingredients": ["盐酸", "硫酸", "酸性物质", "洁厕剂", "草酸", "磷酸"],
+      "categories": ["toilet_cleaner", "descaler"]
+    },
+    "relation_type": "do_not_mix",
+    "severity": "critical",
+    "title": "管道疏通剂 × 酸性清洁剂",
+    "rationale": "含氢氧化钠的管道疏通剂与酸性产品混合会发生剧烈放热反应，可能导致液体飞溅伤人。",
+    "recommended_action": "绝对不要同时使用。使用一种后充分冲洗并等待一段时间再使用另一种。操作时佩戴防护手套和护目镜。",
+    "evidence_status": "needs_review",
+    "sources": []
+  },
+  {
+    "id": "RULE-006",
+    "version": "2.0",
+    "enabled": true,
+    "name": "过氧化氢与醋酸反应",
+    "side_a": {
+      "ingredients": ["过氧化氢", "双氧水"],
+      "categories": ["disinfectant"]
+    },
+    "side_b": {
+      "ingredients": ["醋酸", "食醋", "冰醋酸"],
+      "categories": ["kitchen_cleaner"]
+    },
+    "relation_type": "do_not_mix",
+    "severity": "attention",
+    "title": "过氧化氢 × 醋酸",
+    "rationale": "过氧化氢和醋酸混合会产生过氧乙酸，具有强刺激性和腐蚀性，可灼伤皮肤和呼吸道。",
+    "recommended_action": "不要将双氧水与醋混合使用。分开存放，单独使用。",
+    "evidence_status": "needs_review",
+    "sources": []
+  }
+]

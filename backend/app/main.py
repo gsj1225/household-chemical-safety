@@ -1,4 +1,9 @@
-"""FastAPI 应用入口、请求追踪与统一异常响应。"""
+"""FastAPI 应用入口、请求追踪与统一异常响应 — v2.0
+
+V1 排雷挑战流程已退出，仅保留 V2 化学品库管理路由。
+"""
+
+from __future__ import annotations
 
 import json
 import logging
@@ -11,30 +16,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
-from app.api.routes import challenge, narration, scan
+from app.api.routes import compatibility, inventory, recognition
 from app.config import settings
-from app.core.exceptions import (
-    AIProviderError,
-    AIProviderTimeoutError,
-    ChallengeCompletedError,
-    ChallengeNotFoundError,
-    IdentificationDraftNotFoundError,
-    PanoramaReplacementNotAllowedError,
-    ReportEvidenceRequiredError,
-    ScanLimitExceededError,
-)
-from app.core.rate_limit import rate_limiter
 
 logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL),
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
-logger = logging.getLogger("mine_challenge.api")
+logger = logging.getLogger("inventory.api")
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="家庭化学品排雷大挑战 API",
-    version="0.2.0",
+    description="家庭化学品安全库存 API",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -73,31 +67,9 @@ async def request_context_middleware(request: Request, call_next):
     request_id = uuid.uuid4().hex[:16]
     request.state.request_id = request_id
     started = time.perf_counter()
-    client = request.client.host if request.client else "unknown"
-    path = request.url.path
-    policy = None
-    if path == "/api/challenge/start":
-        policy = ("start", settings.RATE_LIMIT_START_PER_MINUTE)
-    elif path.startswith("/api/scan/"):
-        policy = ("scan", settings.RATE_LIMIT_SCAN_PER_MINUTE)
-    elif path == "/api/narration/generate":
-        policy = ("narration", settings.RATE_LIMIT_NARRATION_PER_MINUTE)
-    elif path == "/api/challenge/result":
-        policy = ("report", settings.RATE_LIMIT_SCAN_PER_MINUTE)
 
-    if policy:
-        allowed, retry_after = rate_limiter.check(
-            f"{client}:{policy[0]}", policy[1]
-        )
-        if not allowed:
-            response = error_response(
-                request, 429, "RATE_LIMITED", "请求过于频繁，请稍后重试",
-                headers={"Retry-After": str(retry_after)},
-            )
-        else:
-            response = await _safe_call(request, call_next)
-    else:
-        response = await _safe_call(request, call_next)
+    response = await _safe_call(request, call_next)
+
     duration_ms = round((time.perf_counter() - started) * 1000, 2)
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -127,71 +99,22 @@ async def _safe_call(request: Request, call_next):
         )
 
 
-@app.exception_handler(ChallengeNotFoundError)
-async def challenge_not_found_handler(request: Request, exc: ChallengeNotFoundError):
-    return error_response(request, 404, "CHALLENGE_NOT_FOUND", "挑战不存在")
-
-
-@app.exception_handler(ChallengeCompletedError)
-async def challenge_completed_handler(request: Request, exc: ChallengeCompletedError):
-    return error_response(request, 409, "CHALLENGE_COMPLETED", "挑战已完成")
-
-
-@app.exception_handler(ScanLimitExceededError)
-async def scan_limit_handler(request: Request, exc: ScanLimitExceededError):
-    return error_response(
-        request, 429, "SCAN_LIMIT_REACHED", "本次挑战的扫描次数已达上限"
-    )
-
-
-@app.exception_handler(AIProviderTimeoutError)
-async def ai_timeout_handler(request: Request, exc: AIProviderTimeoutError):
-    return error_response(request, 504, "AI_TIMEOUT", "模型识别超时，请重试")
-
-
-@app.exception_handler(AIProviderError)
-async def ai_provider_handler(request: Request, exc: AIProviderError):
-    return error_response(
-        request, 502, "AI_PROVIDER_ERROR", "模型识别暂时不可用，请重试"
-    )
-
-
-@app.exception_handler(IdentificationDraftNotFoundError)
-async def draft_not_found_handler(
-    request: Request, exc: IdentificationDraftNotFoundError
-):
-    return error_response(
-        request, 409, "IDENTIFICATION_DRAFT_INVALID",
-        "识别草稿已失效，请重新拍摄或选择照片",
-    )
-
-
-@app.exception_handler(ReportEvidenceRequiredError)
-async def report_evidence_required_handler(
-    request: Request, exc: ReportEvidenceRequiredError
-):
-    return error_response(
-        request,
-        409,
-        "REPORT_EVIDENCE_REQUIRED",
-        "至少确认一个近景识别结果后才能生成本场景报告",
-    )
-
-
-@app.exception_handler(PanoramaReplacementNotAllowedError)
-async def panorama_replacement_not_allowed_handler(
-    request: Request, exc: PanoramaReplacementNotAllowedError
-):
-    return error_response(
-        request,
-        409,
-        "PANORAMA_LOCKED",
-        "当前场景已有确认结果，不能再替换全景图",
-    )
-
-
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
+    if isinstance(exc.detail, dict) and "error" in exc.detail:
+        err = exc.detail["error"]
+        return JSONResponse(
+            status_code=exc.status_code,
+            headers=exc.headers,
+            content={
+                "error": {
+                    "code": err.get("code", "HTTP_ERROR"),
+                    "message": err.get("message", "请求处理失败"),
+                    "request_id": request_id_for(request),
+                    **{k: v for k, v in err.items() if k not in ("code", "message")},
+                }
+            },
+        )
     messages = {
         400: ("BAD_REQUEST", "请求内容不正确"),
         404: ("NOT_FOUND", "请求的资源不存在"),
@@ -217,9 +140,11 @@ async def unexpected_exception_handler(request: Request, exc: Exception):
     return error_response(request, 500, "INTERNAL_ERROR", "服务器暂时无法处理请求")
 
 
-app.include_router(challenge.router, prefix="/api")
-app.include_router(scan.router, prefix="/api")
-app.include_router(narration.router, prefix="/api")
+# ── V2 路由注册 ────────────────────────────────────
+
+app.include_router(inventory.router, prefix="/api")
+app.include_router(compatibility.router, prefix="/api")
+app.include_router(recognition.router, prefix="/api")
 
 
 @app.get("/health")
@@ -227,7 +152,6 @@ async def health_check():
     return {
         "status": "ok",
         "app": settings.APP_NAME,
-        "ai_provider": settings.AI_PROVIDER,
     }
 
 
@@ -235,7 +159,7 @@ async def health_check():
 async def root():
     return {
         "app": settings.APP_NAME,
-        "version": "0.2.0",
+        "version": "2.0.0",
         "docs": "/docs",
         "health": "/health",
     }

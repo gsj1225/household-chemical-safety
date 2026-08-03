@@ -30,8 +30,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test:recovery": "node --experimental-strip-types --no-warnings --test scripts/recovery.test.mjs",
-    "test:share-card": "node --experimental-strip-types --experimental-specifier-resolution=node --no-warnings --test scripts/share-card.test.mjs"
+    "test:v2": "node --experimental-strip-types --no-warnings --test scripts/v2-behavior.test.ts scripts/store-behavior.test.ts scripts/grid-layout.test.ts scripts/reduced-motion.test.ts"
   },
   "private": true
 }

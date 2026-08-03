@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>我的化学品库｜前端组件图</title>
+  <style>
+    :root{--ink:#111;--text:#333;--muted:#666;--line:#999;--soft:#eee;--paper:#fff;--canvas:#d8d8d8}
+    *{box-sizing:border-box} body{margin:0;background:var(--canvas);color:var(--ink);font-family:Arial,"Microsoft YaHei",sans-serif}
+    header{max-width:1540px;margin:auto;padding:34px 28px 12px} h1{margin:0 0 8px;font-size:32px} header p{margin:4px 0;color:#555}
+    main{max-width:1540px;margin:auto;padding:22px 28px 52px;display:grid;gap:22px}.row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.row.two{grid-template-columns:1fr 1fr}
+    section{border:2px solid var(--ink);border-radius:14px;background:var(--paper);padding:16px}section h2{margin:0 0 12px;font-size:19px}.layer{display:grid;gap:9px}.box{border:1.5px solid var(--line);border-radius:10px;padding:10px;background:#fff}.box.strong{border:2px solid var(--ink)}.box.soft{background:#f4f4f4}.box h3{margin:0 0 5px;font-size:15px}.box p,.box li{margin:0;color:#555;font-size:11px;line-height:1.45}.box ul{margin:6px 0 0;padding-left:18px}.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.chip{border:1px solid var(--line);border-radius:99px;padding:4px 7px;font-size:10px}.arrow{text-align:center;font-size:22px;font-weight:700}.flow{display:grid;grid-template-columns:1fr 40px 1fr 40px 1fr;align-items:center;gap:6px}.state{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.note{border-left:5px solid var(--ink);padding:10px;background:#f0f0f0;font-size:12px;line-height:1.5}
+  </style>
+</head>
+<body>
+<header><h1>我的化学品库｜前端组件图与状态所有权</h1><p>v2.0 · 组件绑定语义令牌，不绑定最终颜色或装饰值</p><p>层级：Tokens → Primitives → Composites → Feature Views → Screens / Controllers</p></header>
+<main>
+  <div class="row">
+    <section><h2>1. Screens / Controllers</h2><div class="layer">
+      <div class="box strong"><h3>InventoryScreen</h3><p>加载、刷新、筛选、导航；不计算规则。</p></div>
+      <div class="box strong"><h3>IntakeFlowScreen</h3><p>照片→识别→核对→重复→保存→成功的有限状态控制器。</p></div>
+      <div class="box strong"><h3>ProductDetail / Edit</h3><p>按 productId 读取；表单和对话框为本地状态。</p></div>
+      <div class="box strong"><h3>Compatibility / Detail</h3><p>展示服务端关系和证据，不在前端推理。</p></div>
+    </div></section>
+    <section><h2>2. Feature Views</h2><div class="layer">
+      <div class="box"><h3>InventoryView</h3><div class="chips"><span class="chip">loading</span><span class="chip">empty</span><span class="chip">error</span><span class="chip">content</span><span class="chip">noResults</span></div></div>
+      <div class="box"><h3>Intake Views</h3><div class="chips"><span class="chip">photo</span><span class="chip">permission</span><span class="chip">recognizing</span><span class="chip">review</span><span class="chip">duplicate</span><span class="chip">recovery</span><span class="chip">success</span></div></div>
+      <div class="box"><h3>ProductDetail / Edit View</h3><p>结构化档案、dirty表单、删除与缺图状态。</p></div>
+      <div class="box"><h3>Compatibility Views</h3><div class="chips"><span class="chip">content</span><span class="chip">needsEvidence</span><span class="chip">noRegisteredConflict</span></div></div>
+    </div></section>
+    <section><h2>3. Composites</h2><div class="layer">
+      <div class="box"><h3>仓库</h3><p>ProductGrid · ProductCard · InventorySummary · ProductPhoto</p></div>
+      <div class="box"><h3>入库</h3><p>ProductForm · CoverPhotoPicker · PhotoSourceActions · ProductSnapshot</p></div>
+      <div class="box"><h3>相容性</h3><p>ProductPair · ProductPairCard · CompatibilitySummary · EvidenceSourceList</p></div>
+      <div class="box"><h3>边界</h3><p>Composites 只接收 ViewModel 和语义事件，不读取 Store/API/文件。</p></div>
+    </div></section>
+  </div>
+
+  <div class="row">
+    <section><h2>4. Primitives</h2><div class="state">
+      <div class="box soft"><h3>Content</h3><p>AppText<br/>Surface<br/>ScreenScroll</p></div>
+      <div class="box soft"><h3>Controls</h3><p>AppButton<br/>IconButton<br/>TextField</p></div>
+      <div class="box soft"><h3>States</h3><p>SemanticBadge<br/>StatePanel<br/>AppDialog</p></div>
+    </div><div class="note" style="margin-top:10px">Primitives 负责可访问性、触控和语义外观，不理解“库存、产品、相容性”。</div></section>
+    <section><h2>5. Semantic tokens</h2><div class="state">
+      <div class="box"><h3>Color</h3><p>surface · text · border · action · status</p></div>
+      <div class="box"><h3>Layout / Type</h3><p>layout · type · shape · motion</p></div>
+      <div class="box"><h3>Components</h3><p>inventoryGrid · productCard · productPhoto · relationshipCard · dialog · bottomNav</p></div>
+    </div><div class="note" style="margin-top:10px">页面禁止硬编码颜色、双列宽度、照片比例和风险边框。</div></section>
+    <section><h2>6. State ownership</h2><div class="layer">
+      <div class="box strong"><h3>inventoryStore</h3><p>itemsById · orderedIds · relationsById · summary · loading/mutation status · filters</p></div>
+      <div class="box strong"><h3>intakeStore</h3><p>step · operationId · temporaryPhotos · recognitionDraft · formValue · duplicateCandidates · failure</p></div>
+      <div class="box"><h3>Local UI state</h3><p>dirty表单 · 字段错误 · Dialog开关 · 证据展开 · 搜索输入</p></div>
+    </div></section>
+  </div>
+
+  <section><h2>7. 事件与数据流</h2><div class="flow">
+    <div class="box strong"><h3>Screens</h3><p>导航、服务协调、状态公告</p></div><div class="arrow">→</div>
+    <div class="box strong"><h3>Stores</h3><p>持久实体缓存 / 短期入库草稿</p></div><div class="arrow">→</div>
+    <div class="box strong"><h3>Services</h3><p>Inventory API · PhotoAssetService · ImagePicker</p></div>
+  </div><div class="flow" style="margin-top:10px">
+    <div class="box"><h3>Feature Views</h3><p>接收 ViewModel + onAction</p></div><div class="arrow">←</div>
+    <div class="box"><h3>ViewModel mappers</h3><p>DTO/Store → 可展示语义</p></div><div class="arrow">←</div>
+    <div class="box"><h3>Backend</h3><p>持久库存、CRUD、相容性规则与证据</p></div>
+  </div></section>
+
+  <div class="row two">
+    <section><h2>8. 代表性垂直切片</h2><div class="flow"><div class="box"><h3>InventoryScreen</h3></div><div class="arrow">→</div><div class="box"><h3>ProductGrid</h3></div><div class="arrow">→</div><div class="box"><h3>ProductCard + Photo</h3></div></div><div class="note" style="margin-top:10px">先验证 320/390px 双列、真实缩略图、长名称、缺图和加载/空/错，再接入写流程。</div></section>
+    <section><h2>9. Anti-components</h2><div class="layer"><div class="box"><p>× UniversalCard + 多个布尔属性</p></div><div class="box"><p>× Screen 同时处理网络、文件、表单和规则</p></div><div class="box"><p>× ProductCard 读取 API 或计算危险关系</p></div><div class="box"><p>× 临时照片进入长期 store / 导航参数</p></div></div></section>
+  </div>
+</main>
+</body>
+</html>

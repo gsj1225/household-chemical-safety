@@ -4,5 +4,5 @@
     "strict": true,
     "allowImportingTsExtensions": true
   },
-  "exclude": ["dist", ".expo"]
+  "exclude": ["dist", ".expo", "_v1_archive", "scripts"]
 }

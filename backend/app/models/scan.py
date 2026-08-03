@@ -26,6 +26,11 @@ class ProductIdentification(BaseModel):
     name: str = Field(default="未知", description="产品名")
     category: str = Field(default="未知", description="品类")
     ingredients: list[str] = Field(default_factory=list, description="成分列表")
+    production_date: str = Field(default="", description="生产日期（如 2025-05）")
+    expiry_date: str = Field(default="", description="有效期至（如 2027-05）")
+    storage_requirements: list[str] = Field(default_factory=list, description="储存条件")
+    hazard_notes: list[str] = Field(default_factory=list, description="危险性说明")
+    label_warnings: list[str] = Field(default_factory=list, description="标签警示语")
     confidence: IdentificationConfidence = Field(default=IdentificationConfidence.LOW)
 
 

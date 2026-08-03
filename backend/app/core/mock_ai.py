@@ -37,6 +37,11 @@ _MOCK_PRODUCTS = [
         "category": "洗衣液",
         "ingredients": ["表面活性剂", "增白剂", "香精"],
         "confidence": "high",
+        "production_date": "2025-03",
+        "expiry_date": "2028-03",
+        "storage_requirements": ["避光阴凉"],
+        "hazard_notes": ["不可食用"],
+        "label_warnings": [],
     },
     {
         "brand": "威猛先生",
@@ -44,6 +49,11 @@ _MOCK_PRODUCTS = [
         "category": "洁厕剂",
         "ingredients": ["盐酸"],
         "confidence": "high",
+        "production_date": "2025-01",
+        "expiry_date": "2027-06",
+        "storage_requirements": ["远离儿童"],
+        "hazard_notes": ["腐蚀性", "不可混用漂白剂"],
+        "label_warnings": ["不可吞食"],
     },
     {
         "brand": "84",
@@ -51,6 +61,11 @@ _MOCK_PRODUCTS = [
         "category": "含氯消毒剂",
         "ingredients": ["次氯酸钠"],
         "confidence": "high",
+        "production_date": "2025-02",
+        "expiry_date": "2027-02",
+        "storage_requirements": ["避光", "远离儿童"],
+        "hazard_notes": ["腐蚀性", "不可混用酸性产品"],
+        "label_warnings": ["不可与洁厕灵混用"],
     },
     {
         "brand": "雷达",
@@ -58,6 +73,11 @@ _MOCK_PRODUCTS = [
         "category": "驱蚊液",
         "ingredients": ["避蚊胺", "DEET", "乙醇"],
         "confidence": "high",
+        "production_date": "",
+        "expiry_date": "2027-12",
+        "storage_requirements": [],
+        "hazard_notes": ["易燃"],
+        "label_warnings": [],
     },
     {
         "brand": "立白",
@@ -65,6 +85,11 @@ _MOCK_PRODUCTS = [
         "category": "洗洁精",
         "ingredients": ["表面活性剂", "椰油酰胺"],
         "confidence": "high",
+        "production_date": "2025-05",
+        "expiry_date": "2028-05",
+        "storage_requirements": ["常温保存"],
+        "hazard_notes": [],
+        "label_warnings": [],
     },
 ]
 
@@ -116,6 +141,11 @@ class MockAI(AIProvider):
             name=product_data["name"],
             category=product_data["category"],
             ingredients=product_data["ingredients"],
+            production_date=product_data.get("production_date", ""),
+            expiry_date=product_data.get("expiry_date", ""),
+            storage_requirements=product_data.get("storage_requirements", []),
+            hazard_notes=product_data.get("hazard_notes", []),
+            label_warnings=product_data.get("label_warnings", []),
             confidence=IdentificationConfidence(product_data["confidence"]),
         )
 

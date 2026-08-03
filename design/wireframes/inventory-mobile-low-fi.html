@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>我的化学品库｜手机端低保真线框图</title>
+  <style>
+    :root { --ink:#151515; --text:#303030; --muted:#666; --line:#9a9a9a; --soft:#e8e8e8; --paper:#fff; --canvas:#d6d6d6; }
+    * { box-sizing: border-box; }
+    body { margin:0; color:var(--ink); background:var(--canvas); font-family:Arial,"Microsoft YaHei",sans-serif; }
+    .intro { max-width:1420px; margin:0 auto; padding:38px 24px 8px; }
+    .intro h1 { margin:0 0 10px; font-size:32px; }
+    .intro p { margin:5px 0; color:#444; font-size:14px; }
+    .legend { display:flex; gap:18px; flex-wrap:wrap; margin-top:16px; font-size:12px; }
+    .legend i { width:22px; height:14px; display:inline-block; vertical-align:middle; margin-right:6px; border:1px solid var(--line); background:#fff; }
+    .legend .dark { background:var(--ink); }
+    .legend .dash { border-style:dashed; background:transparent; }
+    main { max-width:1420px; margin:0 auto; padding:26px 20px 54px; display:grid; grid-template-columns:repeat(3, 430px); gap:38px 34px; align-items:start; }
+    .board { min-width:0; }
+    .board-title { margin:0 0 8px; min-height:24px; font-size:17px; }
+    .board-note { margin:0 0 10px; min-height:36px; font-size:12px; line-height:1.45; color:#555; }
+    .phone { width:390px; height:844px; margin:0 auto; border:7px solid var(--ink); border-radius:36px; overflow:hidden; background:var(--paper); position:relative; box-shadow:0 10px 22px rgba(0,0,0,.16); }
+    .notch { position:absolute; z-index:10; top:7px; left:50%; transform:translateX(-50%); width:112px; height:24px; border-radius:15px; background:var(--ink); }
+    .status { height:40px; padding:13px 18px 0; display:flex; justify-content:space-between; font-size:10px; font-weight:700; }
+    .appbar { height:52px; padding:0 16px; border-bottom:1px solid var(--soft); display:grid; grid-template-columns:62px 1fr 62px; align-items:center; }
+    .appbar strong { text-align:center; font-size:16px; }
+    .appbar span { font-size:12px; color:var(--muted); }
+    .appbar .right { text-align:right; }
+    .screen { height:calc(100% - 92px); padding:16px 18px 18px; display:flex; flex-direction:column; gap:12px; overflow:hidden; }
+    .scroll { overflow-y:auto; }
+    h3 { margin:0; font-size:26px; line-height:1.2; }
+    h4 { margin:0; font-size:17px; line-height:1.25; }
+    p { margin:0; }
+    .copy { color:#555; font-size:13px; line-height:1.5; }
+    .tiny { color:var(--muted); font-size:10px; line-height:1.35; }
+    .row { display:flex; gap:9px; align-items:center; }
+    .between { justify-content:space-between; }
+    .stack { display:flex; flex-direction:column; gap:7px; }
+    .grow { flex:1; }
+    .card { padding:12px; border:1.5px solid var(--line); border-radius:12px; background:#fff; }
+    .card.strong { border:2px solid var(--ink); }
+    .card.soft { background:#f4f4f4; }
+    .badge { display:inline-flex; align-items:center; min-height:24px; padding:3px 8px; border:1px solid var(--line); border-radius:99px; font-size:10px; font-weight:700; background:#fff; }
+    .badge.dark { color:#fff; background:var(--ink); border-color:var(--ink); }
+    .button { width:100%; min-height:50px; border:2px solid var(--ink); border-radius:12px; display:grid; place-items:center; text-align:center; padding:8px; font-size:14px; font-weight:700; background:#fff; }
+    .button.primary { color:#fff; background:var(--ink); }
+    .button.text { border-color:transparent; min-height:38px; color:#555; }
+    .button.danger { border-style:dashed; }
+    .button-row { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+    .bottom { margin-top:auto; display:grid; gap:8px; }
+    .search { min-height:42px; padding:0 12px; border:1.5px solid var(--line); border-radius:11px; display:flex; align-items:center; gap:8px; color:#666; font-size:12px; }
+    .tabs { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+    .tabs span { min-height:34px; display:grid; place-items:center; font-size:11px; border-right:1px solid var(--line); }
+    .tabs span:last-child { border-right:0; }
+    .tabs .active { color:#fff; background:var(--ink); }
+    .warehouse-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start; }
+    .product { overflow:hidden; border:1.5px solid var(--line); border-radius:12px; background:#fff; }
+    .product-photo { height:132px; border-bottom:1px solid var(--line); background:repeating-linear-gradient(135deg,#f3f3f3,#f3f3f3 12px,#dedede 12px,#dedede 24px); display:grid; place-items:center; text-align:center; color:#555; font-size:11px; }
+    .product-photo.short { height:104px; }
+    .product-body { padding:9px; display:grid; gap:6px; }
+    .product-name { font-size:13px; font-weight:700; line-height:1.3; }
+    .meta { display:grid; gap:4px; font-size:10px; line-height:1.35; color:#555; }
+    .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .metric { padding:9px 5px; border:1px solid var(--line); border-radius:10px; text-align:center; }
+    .metric strong { display:block; font-size:19px; }
+    .metric span { font-size:9px; color:#666; }
+    .empty { min-height:330px; border:2px dashed var(--line); border-radius:16px; display:grid; place-items:center; text-align:center; padding:28px; }
+    .empty .circle { width:90px; height:90px; border:2px solid var(--ink); border-radius:50%; display:grid; place-items:center; font-size:36px; margin:0 auto 14px; }
+    .photo { height:225px; border:2px dashed var(--line); border-radius:14px; background:repeating-linear-gradient(135deg,#f3f3f3,#f3f3f3 14px,#e0e0e0 14px,#e0e0e0 28px); display:grid; place-items:center; text-align:center; color:#555; font-size:12px; position:relative; overflow:hidden; }
+    .photo.small { height:135px; }
+    .photo.detail { height:250px; border-style:solid; }
+    .scanline { position:absolute; left:8%; right:8%; top:50%; border-top:3px solid var(--ink); }
+    .loader { width:62px; height:62px; border:7px solid #ccc; border-top-color:var(--ink); border-radius:50%; }
+    .field { display:grid; gap:4px; }
+    .field label { font-size:11px; font-weight:700; }
+    .input { min-height:39px; padding:9px; border:1.5px solid var(--line); border-radius:8px; font-size:11px; color:#444; background:#fff; }
+    .input.multi { min-height:58px; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .divider { border-top:1px solid var(--line); }
+    .list { display:grid; gap:8px; }
+    .list-item { padding:11px; border:1.5px solid var(--line); border-radius:11px; display:grid; gap:6px; }
+    .thumb { width:54px; height:54px; flex:0 0 auto; border:1px dashed var(--line); border-radius:8px; display:grid; place-items:center; font-size:9px; color:#666; background:#eee; }
+    .line { height:8px; border-radius:5px; background:#ccc; }
+    .w90 { width:90%; } .w70 { width:70%; } .w50 { width:50%; }
+    .notice { border-left:4px solid var(--ink); padding:9px 10px; background:#f0f0f0; font-size:11px; line-height:1.45; }
+    .relation { display:grid; grid-template-columns:1fr 34px 1fr; align-items:center; gap:6px; }
+    .relation .node { min-height:72px; padding:8px; border:1.5px solid var(--ink); border-radius:10px; display:grid; place-items:center; text-align:center; font-size:11px; font-weight:700; }
+    .relation .edge { text-align:center; font-size:18px; }
+    .modal { position:absolute; inset:0; z-index:20; background:rgba(0,0,0,.48); display:grid; place-items:center; padding:26px; }
+    .dialog { width:100%; padding:18px; border:2px solid var(--ink); border-radius:16px; background:#fff; display:grid; gap:12px; }
+    .skeleton { background:#ddd; border-radius:6px; min-height:12px; }
+    .skeleton.photo-skeleton { height:132px; border-radius:11px; }
+    .footerbar { height:58px; margin:0 -18px -18px; padding:6px 22px 8px; border-top:1px solid var(--soft); display:grid; grid-template-columns:repeat(3,1fr); background:#fff; }
+    .footerbar span { display:grid; place-items:center; text-align:center; font-size:10px; color:#666; }
+    .footerbar .active { color:#111; font-weight:700; }
+    body[data-group] .board { display:none; }
+    body[data-group="warehouse"] .board[data-group="warehouse"],
+    body[data-group="intake"] .board[data-group="intake"],
+    body[data-group="manage"] .board[data-group="manage"],
+    body[data-group="compatibility"] .board[data-group="compatibility"] { display:block; }
+    body[data-group] .intro h1::after { content:"｜分组预览"; }
+  </style>
+</head>
+<body>
+  <header class="intro">
+    <h1>我的化学品库｜完整手机端低保真线框图</h1>
+    <p>v2.0 · 390×844 基准视口 · 灰度仅表达信息层级与动作优先级</p>
+    <p>分组：仓库浏览 / 扫描入库 / 产品维护 / 库内相容性。最终配色、图标、动效与组件边界均未确定。</p>
+    <div class="legend"><span><i class="dark"></i>唯一主操作</span><span><i></i>内容或次操作</span><span><i class="dash"></i>用户产品照片占位</span></div>
+  </header>
+  <main>
+    <section class="board" data-group="warehouse"><h2 class="board-title">01 仓库｜有产品</h2><p class="board-note">产品用入库照片双列陈列；首屏先看库存、待补充与相容性摘要。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span></span><strong>我的化学品库</strong><span class="right">帮助</span></div><div class="screen scroll">
+      <div class="summary"><div class="metric"><strong>6</strong><span>在库产品</span></div><div class="metric"><strong>2</strong><span>相容性提醒</span></div><div class="metric"><strong>1</strong><span>信息待补充</span></div></div>
+      <div class="search">⌕ 搜索产品名称或类别</div>
+      <div class="row between"><strong>全部产品</strong><span class="badge">筛选</span></div>
+      <div class="warehouse-grid">
+        <article class="product"><div class="product-photo">入库产品照片<br/>84 消毒液</div><div class="product-body"><div class="product-name">84 消毒液</div><div class="meta"><span>有效期：2027.05</span><span>避光、阴凉保存</span></div><span class="badge dark">与 1 件产品有禁忌</span></div></article>
+        <article class="product"><div class="product-photo short">入库产品照片<br/>洁厕剂</div><div class="product-body"><div class="product-name">酸性洁厕剂</div><div class="meta"><span>有效期：未识别</span><span>注意通风</span></div><span class="badge">腐蚀性</span></div></article>
+        <article class="product"><div class="product-photo short">入库产品照片<br/>酒精喷雾</div><div class="product-body"><div class="product-name">75% 酒精喷雾</div><div class="meta"><span>远离火源</span></div><span class="badge">易燃</span></div></article>
+        <article class="product"><div class="product-photo">入库产品照片<br/>洗衣凝珠</div><div class="product-body"><div class="product-name">洗衣凝珠</div><div class="meta"><span>有效期：2028.01</span><span>远离儿童</span></div></div></article>
+      </div>
+      <div class="bottom"><div class="button primary">扫描入库</div><div class="footerbar"><span class="active">▦<br/>化学品库</span><span>＋<br/>扫描入库</span><span>≋<br/>相容性</span></div></div>
+    </div></div></section>
+
+    <section class="board" data-group="warehouse"><h2 class="board-title">02 仓库｜空状态</h2><p class="board-note">先解释长期库存和相容性价值，再提供唯一开始动作。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span></span><strong>我的化学品库</strong><span class="right">帮助</span></div><div class="screen">
+      <div class="empty"><div><div class="circle">＋</div><h3>还没有入库产品</h3><p class="copy" style="margin-top:10px">拍摄家里的清洁剂、消毒剂或杀虫用品，建立可持续更新的安全档案。</p><div class="card soft stack" style="margin-top:18px;text-align:left"><strong>入库后可以</strong><span class="copy">查看有效期与储存要求</span><span class="copy">检查库内产品的混用禁忌</span><span class="copy">再次扫描并更新记录</span></div></div></div>
+      <div class="bottom"><div class="button primary">添加第一件产品</div><p class="tiny" style="text-align:center">入库前会先让你核对识别信息</p></div>
+    </div></div></section>
+
+    <section class="board" data-group="warehouse"><h2 class="board-title">03 仓库｜加载中</h2><p class="board-note">骨架保持双列结构，避免加载完成后页面跳动。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span></span><strong>我的化学品库</strong><span></span></div><div class="screen">
+      <div class="skeleton" style="height:54px"></div><div class="skeleton" style="height:42px"></div><div class="row between"><div class="skeleton" style="width:90px"></div><div class="skeleton" style="width:46px"></div></div>
+      <div class="warehouse-grid"><div class="stack"><div class="skeleton photo-skeleton"></div><div class="skeleton"></div><div class="skeleton" style="width:70%"></div></div><div class="stack"><div class="skeleton photo-skeleton"></div><div class="skeleton"></div><div class="skeleton" style="width:65%"></div></div><div class="stack"><div class="skeleton photo-skeleton"></div><div class="skeleton"></div></div><div class="stack"><div class="skeleton photo-skeleton"></div><div class="skeleton"></div></div></div>
+      <p class="copy" style="text-align:center">正在读取本机化学品库…</p>
+    </div></div></section>
+
+    <section class="board" data-group="warehouse"><h2 class="board-title">04 仓库｜加载失败</h2><p class="board-note">不把加载失败误画成空仓库；重试是主操作。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span></span><strong>我的化学品库</strong><span></span></div><div class="screen">
+      <div class="empty"><div><div class="circle">!</div><h3>暂时无法读取仓库</h3><p class="copy" style="margin-top:10px">本地数据没有被清空。可能是存储暂时不可用，请重试。</p></div></div>
+      <div class="bottom"><div class="button primary">重新加载</div><div class="button text">查看问题说明</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="warehouse"><h2 class="board-title">05 仓库｜搜索与筛选</h2><p class="board-note">搜索、类别、有效期和相容性状态可以组合；清除条件始终可见。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 返回</span><strong>搜索与筛选</strong><span class="right">清除</span></div><div class="screen">
+      <div class="search">⌕ 含氯</div><div class="stack"><strong>产品类别</strong><div class="row" style="flex-wrap:wrap"><span class="badge dark">全部</span><span class="badge">清洁剂</span><span class="badge">消毒剂</span><span class="badge">杀虫用品</span></div></div>
+      <div class="divider"></div><div class="stack"><strong>有效期状态</strong><div class="tabs"><span class="active">全部</span><span>临近有效期</span><span>未识别</span></div></div>
+      <div class="stack"><strong>安全信息</strong><div class="list"><div class="list-item row between"><span>存在库内禁忌</span><span>□</span></div><div class="list-item row between"><span>信息待补充</span><span>□</span></div><div class="list-item row between"><span>危险性已登记</span><span>□</span></div></div></div>
+      <div class="bottom"><div class="button primary">查看 2 件产品</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="warehouse"><h2 class="board-title">06 仓库｜无搜索结果</h2><p class="board-note">保留当前条件，并提供清除条件或扫描入库两个出口。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 返回</span><strong>搜索结果</strong><span></span></div><div class="screen">
+      <div class="search">⌕ “强力除霉剂”</div><div class="row"><span class="badge">消毒剂 ×</span><span class="badge">存在禁忌 ×</span></div>
+      <div class="empty"><div><div class="circle">⌕</div><h3>没有匹配的产品</h3><p class="copy" style="margin-top:10px">试试缩短名称，或清除类别与安全状态筛选。</p></div></div>
+      <div class="bottom"><div class="button primary">清除筛选条件</div><div class="button secondary">扫描并加入新产品</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="intake"><h2 class="board-title">07 扫描入库｜照片输入</h2><p class="board-note">正面先识别身份；背标与日期按需补拍。拍照与相册并列。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 取消</span><strong>扫描入库</strong><span class="right">1 / 3</span></div><div class="screen">
+      <h3>先拍产品正面</h3><p class="copy">让产品占据画面中央，尽量拍清品牌、产品名和包装类型。</p><div class="photo"><div><strong>合格照片示例</strong><br/><span class="tiny">只包含单件产品，减少家庭背景</span></div></div>
+      <div class="card soft stack"><strong>照片如何保存？</strong><span class="copy">识别期间暂存；确认入库后，只保存你选定的压缩封面图。</span></div>
+      <div class="bottom"><div class="button primary">拍摄产品</div><div class="button secondary">从相册选择</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="intake"><h2 class="board-title">08 扫描入库｜相机权限</h2><p class="board-note">解释用途；相册是完整替代入口，取消不会产生记录。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 取消</span><strong>需要相机权限</strong><span></span></div><div class="screen">
+      <div class="empty"><div><div class="circle">▣</div><h3>允许拍摄产品标签</h3><p class="copy" style="margin-top:10px">相机只用于拍摄你主动选择的产品。没有权限时也可以从相册添加。</p></div></div>
+      <div class="card soft stack"><strong>应用不会</strong><span class="copy">自动拍摄或扫描周围环境</span><span class="copy">在确认入库前长期保存照片</span></div>
+      <div class="bottom"><div class="button primary">去授权相机</div><div class="button secondary">改用相册</div><div class="button text">取消入库</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="intake"><h2 class="board-title">09 扫描入库｜识别中</h2><p class="board-note">始终展示正在处理的照片，并说明只提取可见信息。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 返回</span><strong>识别产品</strong><span></span></div><div class="screen">
+      <div class="photo detail"><div class="scanline"></div><div class="loader"></div><span style="position:absolute;bottom:15px">正在读取产品与标签</span></div>
+      <div class="card soft stack"><strong>系统正在提取</strong><span class="copy">品牌、产品名、品类和可见警示文字</span><span class="tiny">看不清的字段会标记“未识别”，不会猜测。</span></div>
+      <div class="list"><div class="list-item row"><span class="badge dark">1</span><span>读取包装正面</span></div><div class="list-item row"><span class="badge">2</span><span>整理可编辑字段</span></div><div class="list-item row"><span class="badge">3</span><span>由你核对后再入库</span></div></div>
+      <div class="bottom"><div class="button text">返回并保留这张临时照片</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="intake"><h2 class="board-title">10 扫描入库｜识别失败</h2><p class="board-note">失败照片保留；重试同一张为主操作，换图不丢当前任务。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 返回</span><strong>识别未完成</strong><span></span></div><div class="screen">
+      <div class="photo detail"><strong>刚才的产品照片</strong></div><div class="card strong stack"><h4>这张照片还没识别成功</h4><p class="copy">可能是网络超时或标签过小。照片仍在本次流程中，没有加入仓库。</p></div>
+      <div class="bottom"><div class="button primary">重试这张照片</div><div class="button secondary">重新拍摄</div><div class="button secondary">从相册换图</div><div class="button text">取消入库</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="intake"><h2 class="board-title">11 扫描入库｜信息核对</h2><p class="board-note">照片、置信度和关键字段同屏；未知日期不猜，补拍是次操作。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 返回</span><strong>核对产品信息</strong><span class="right">2 / 3</span></div><div class="screen">
+      <div class="row"><div class="photo small grow">产品正面照片</div><div class="stack grow"><span class="badge">识别置信度：中</span><p class="copy">请重点核对带 * 的字段。</p><span class="tiny">封面将使用左侧照片</span></div></div>
+      <div class="form-grid"><div class="field"><label>产品名 *</label><div class="input">84 消毒液</div></div><div class="field"><label>品类 *</label><div class="input">含氯消毒剂</div></div><div class="field"><label>生产日期</label><div class="input">未识别</div></div><div class="field"><label>有效期</label><div class="input">2027-05</div></div></div>
+      <div class="field"><label>成分</label><div class="input multi">次氯酸钠（来自可见标签）</div></div><div class="field"><label>储存条件</label><div class="input multi">避光、阴凉、远离儿童</div></div>
+      <div class="notice">标签要求与系统建议将在详情中分开标注来源。</div>
+      <div class="bottom"><div class="button primary">信息无误，继续</div><div class="button secondary">补拍背标或日期</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="intake"><h2 class="board-title">12 扫描入库｜补拍标签</h2><p class="board-note">补拍只为补字段，不自动替换仓库封面；允许跳过非必填信息。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 返回</span><strong>补拍产品标签</strong><span class="right">可选</span></div><div class="screen">
+      <h3>拍清背标或日期喷码</h3><p class="copy">优先让成分、警示语、生产日期或有效期占满画面。</p><div class="photo detail"><strong>背标 / 日期喷码示例</strong></div>
+      <div class="card soft stack"><strong>只补充可见字段</strong><span class="copy">如果标签磨损或日期看不清，可以跳过并在仓库中保留“未识别”。</span></div>
+      <div class="bottom"><div class="button primary">拍摄标签</div><div class="button secondary">从相册选择</div><div class="button text">暂不补充</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="intake"><h2 class="board-title">13 扫描入库｜疑似重复</h2><p class="board-note">不静默覆盖；旧记录与新照片并排，让用户选择更新或另存。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 返回</span><strong>发现相似产品</strong><span></span></div><div class="screen">
+      <p class="copy">仓库中已有一件信息相近的产品。请选择这次扫描如何处理。</p><div class="button-row"><div class="card stack"><div class="photo small">本次照片</div><strong>84 消毒液</strong><span class="tiny">有效期：2027.05</span></div><div class="card stack"><div class="photo small">已有封面</div><strong>84 消毒液</strong><span class="tiny">上次更新：07-20</span></div></div>
+      <div class="notice">包装相似不一定是同一瓶，系统不会自动合并。</div>
+      <div class="bottom"><div class="button primary">更新已有产品</div><div class="button secondary">作为另一件产品入库</div><div class="button text">返回继续核对</div><div class="button text">取消本次入库</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="intake"><h2 class="board-title">14 扫描入库｜保存失败</h2><p class="board-note">保留所有核对内容和临时照片；相容性计算失败不能回滚已保存产品。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 返回</span><strong>还没有入库</strong><span></span></div><div class="screen">
+      <div class="row"><div class="photo small" style="width:118px;flex:none">待保存封面</div><div class="stack"><h4>84 消毒液</h4><span class="badge">字段已保留</span><span class="tiny">照片仍在本次流程中</span></div></div>
+      <div class="card strong stack"><h4>保存没有完成</h4><p class="copy">可能是本地存储暂时不可用。产品尚未出现在仓库，重新保存不会建立重复记录。</p></div>
+      <div class="list"><div class="list-item row between"><span>产品基本信息</span><strong>已保留</strong></div><div class="list-item row between"><span>生产日期与有效期</span><strong>已保留</strong></div><div class="list-item row between"><span>封面照片</span><strong>临时保留</strong></div></div>
+      <div class="bottom"><div class="button primary">重新保存</div><div class="button secondary">返回检查信息</div><div class="button text">取消并丢弃本次内容</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="intake"><h2 class="board-title">15 扫描入库｜成功与新关系</h2><p class="board-note">先确认产品已入库，再单独提示相容性结果；不宣称已经发生混用。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span></span><strong>已加入化学品库</strong><span></span></div><div class="screen">
+      <div class="row"><div class="photo small" style="width:118px;flex:none">仓库封面</div><div class="stack"><span class="badge dark">入库成功</span><h4>酸性洁厕剂</h4><span class="copy">已保存产品信息和本地缩略图</span></div></div>
+      <div class="card strong stack"><span class="badge dark" style="align-self:flex-start">新增 1 条相容性提醒</span><h4>与“84 消毒液”存在混用禁忌</h4><p class="copy">库内同时存在两件不相容产品。该提醒不表示你正在混用或共同存放。</p><div class="relation"><div class="node">84 消毒液</div><div class="edge">×</div><div class="node">酸性洁厕剂</div></div></div>
+      <div class="notice">建议分别查看两件产品标签，避免混合或未经冲洗连续使用。</div>
+      <div class="bottom"><div class="button primary">返回我的化学品库</div><div class="button secondary">查看相容性详情</div><div class="button text">继续扫描另一件产品</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="manage"><h2 class="board-title">16 产品详情｜完整档案</h2><p class="board-note">摘要卡不承载全部内容；详情按事实、储存、危险、相容性和来源展开。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 仓库</span><strong>产品详情</strong><span class="right">编辑</span></div><div class="screen scroll">
+      <div class="photo detail">入库封面照片</div><div class="row between"><div><h3 style="font-size:22px">84 消毒液</h3><span class="copy">含氯消毒剂</span></div><span class="badge">信息较完整</span></div>
+      <div class="summary"><div class="metric"><strong>2027.05</strong><span>有效期</span></div><div class="metric"><strong>1</strong><span>库内禁忌</span></div><div class="metric"><strong>07-20</strong><span>最后更新</span></div></div>
+      <div class="card stack"><strong>储存条件</strong><span class="copy">避光、阴凉、保持原包装、远离儿童。</span><span class="tiny">来源：产品标签＋系统安全建议</span></div>
+      <div class="card stack"><strong>危险性与成分</strong><span class="copy">已确认成分：次氯酸钠。可能造成刺激，按标签使用。</span></div>
+      <div class="card strong stack"><strong>库内相容性</strong><span class="copy">与“酸性洁厕剂”存在混用禁忌。</span><span class="tiny">这是潜在关系提醒，不代表已经混用。</span></div>
+      <div class="bottom"><div class="button secondary">重新扫描标签</div><div class="button danger">删除产品</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="manage"><h2 class="board-title">17 产品编辑｜修改与补充</h2><p class="board-note">预填已保存信息；来源随字段保留，用户输入不会冒充包装标签。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 取消</span><strong>编辑产品</strong><span></span></div><div class="screen">
+      <div class="row"><div class="photo small" style="width:110px;flex:none">更换封面</div><div class="stack grow"><div class="button secondary" style="min-height:42px">重新选择照片</div><span class="tiny">更换后删除旧缩略图</span></div></div>
+      <div class="form-grid"><div class="field"><label>产品名 *</label><div class="input">84 消毒液</div></div><div class="field"><label>品类 *</label><div class="input">含氯消毒剂</div></div><div class="field"><label>生产日期</label><div class="input">2025-05</div></div><div class="field"><label>有效期</label><div class="input">2027-05</div></div></div>
+      <div class="field"><label>成分</label><div class="input multi">次氯酸钠</div></div><div class="field"><label>储存条件</label><div class="input multi">避光、阴凉、保持原包装、远离儿童</div></div><div class="field"><label>危险性说明</label><div class="input multi">可能造成刺激；遵循包装警示</div></div>
+      <div class="notice">保存后将重新检查此产品与库内其他产品的相容性。</div>
+      <div class="bottom"><div class="button primary">保存修改</div><div class="button secondary">重新扫描标签补充</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="manage"><h2 class="board-title">18 产品编辑｜未保存退出</h2><p class="board-note">退出确认只在存在变更时出现；继续编辑是主操作。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 取消</span><strong>编辑产品</strong><span></span></div><div class="screen"><div class="photo small">产品封面</div><div class="field"><label>储存条件</label><div class="input multi">用户正在编辑的内容……</div></div><div class="modal"><div class="dialog"><h4>要放弃未保存的修改吗？</h4><p class="copy">刚才修改的有效期和储存条件尚未保存。</p><div class="button primary">继续编辑</div><div class="button secondary">放弃修改并返回</div></div></div></div></div></section>
+
+    <section class="board" data-group="manage"><h2 class="board-title">19 产品详情｜删除确认</h2><p class="board-note">明确删除照片和关系；删除失败时产品不能提前从仓库消失。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 仓库</span><strong>产品详情</strong><span class="right">编辑</span></div><div class="screen"><div class="photo detail">入库封面照片</div><h3 style="font-size:22px">酸性洁厕剂</h3><div class="card"><span class="copy">有效期：未识别<br/>库内相容性提醒：1 条</span></div><div class="modal"><div class="dialog"><h4>删除“酸性洁厕剂”？</h4><p class="copy">此操作会删除产品记录、本地封面缩略图，以及它与其他产品的相容性结果，无法撤销。</p><div class="button danger">确认删除</div><div class="button primary">取消，保留产品</div></div></div></div></div></section>
+
+    <section class="board" data-group="manage"><h2 class="board-title">20 产品详情｜封面丢失</h2><p class="board-note">结构化档案仍可用；重新选择封面，不把产品隐藏或删除。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 仓库</span><strong>产品详情</strong><span class="right">编辑</span></div><div class="screen">
+      <div class="photo detail"><div><strong>产品照片暂不可用</strong><br/><span class="tiny">本地文件可能被系统清理</span></div></div><div class="card strong stack"><h4>档案信息仍然保留</h4><p class="copy">产品名称、日期、成分和相容性结果没有丢失。你可以重新选择一张封面。</p></div>
+      <div class="list"><div class="list-item row between"><span>84 消毒液</span><span class="badge">含氯消毒剂</span></div><div class="list-item row between"><span>有效期</span><strong>2027.05</strong></div><div class="list-item row between"><span>库内禁忌</span><strong>1 条</strong></div></div>
+      <div class="bottom"><div class="button primary">重新选择封面</div><div class="button secondary">继续查看无图档案</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="compatibility"><h2 class="board-title">21 相容性｜关系列表</h2><p class="board-note">风险优先，不画拥挤网络图；每条直接展示产品对、规则和处理入口。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 仓库</span><strong>库内相容性</strong><span class="right">说明</span></div><div class="screen">
+      <div class="summary"><div class="metric"><strong>2</strong><span>需要注意</span></div><div class="metric"><strong>1</strong><span>信息待补充</span></div><div class="metric"><strong>6</strong><span>在库产品</span></div></div>
+      <div class="tabs"><span class="active">需要注意</span><span>待补充</span><span>全部关系</span></div>
+      <div class="list"><article class="list-item strong"><div class="row between"><span class="badge dark">禁止混用</span><span class="tiny">规则已登记</span></div><div class="relation"><div class="node">84 消毒液</div><div class="edge">×</div><div class="node">酸性洁厕剂</div></div><p class="copy">含氯产品与酸性清洁剂不应混合或未经充分冲洗连续使用。</p><strong class="tiny">查看依据与建议 ›</strong></article>
+      <article class="list-item"><div class="row between"><span class="badge">远离火源</span><span class="tiny">单品储存提醒</span></div><div class="row"><div class="thumb">酒精照片</div><div><strong>75% 酒精喷雾</strong><p class="tiny">包装标注易燃，请按标签储存。</p></div></div></article></div>
+      <div class="notice">库内存在相关产品，不表示它们正在共同存放或混用。</div>
+      <div class="bottom"><div class="footerbar"><span>▦<br/>化学品库</span><span>＋<br/>扫描入库</span><span class="active">≋<br/>相容性</span></div></div>
+    </div></div></section>
+
+    <section class="board" data-group="compatibility"><h2 class="board-title">22 相容性｜关系详情</h2><p class="board-note">先给条件式结论，再给触发依据、避免方式和证据边界。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 返回</span><strong>相容性详情</strong><span></span></div><div class="screen scroll">
+      <span class="badge dark" style="align-self:flex-start">禁止混用</span><h3>含氯产品 × 酸性清洁剂</h3><div class="relation"><div class="node">84 消毒液<br/><span class="tiny">次氯酸钠</span></div><div class="edge">×</div><div class="node">酸性洁厕剂<br/><span class="tiny">酸性成分</span></div></div>
+      <div class="card strong stack"><strong>为什么需要注意</strong><p class="copy">如果混合或在未充分冲洗时连续使用，可能产生有害气体。实际风险取决于配方、浓度和使用方式。</p></div>
+      <div class="card stack"><strong>建议怎么做</strong><span class="copy">分别遵循两件产品标签；不要混合；更换产品前充分冲洗并保持通风。</span></div>
+      <div class="card stack"><strong>判断依据</strong><span class="copy">两件产品均由用户确认成分，命中规则 RULE-001。</span><span class="tiny">证据状态：已登记规则 · 查看资料来源 ›</span></div>
+      <div class="notice">本页不是事故诊断或应急医疗建议。如已发生暴露，请遵循当地应急指引。</div>
+      <div class="bottom"><div class="button primary">查看两件产品详情</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="compatibility"><h2 class="board-title">23 相容性｜信息待补充</h2><p class="board-note">未知不是安全；把缺失证据变成明确的补拍任务。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 返回</span><strong>信息待补充</strong><span></span></div><div class="screen">
+      <div class="row"><div class="thumb">产品照片</div><div><h4>强力除霉清洁剂</h4><span class="badge">成分未识别</span></div></div>
+      <div class="card strong stack"><h4>暂时无法完成相容性检查</h4><p class="copy">产品名可以识别，但照片中没有清晰成分或警示标签。系统不会根据包装颜色猜测配方。</p></div>
+      <div class="stack"><strong>建议补充</strong><div class="list"><div class="list-item row"><span class="badge dark">1</span><span>拍摄背面成分或警示标签</span></div><div class="list-item row"><span class="badge">2</span><span>核对是否含氯、酸性或含氨成分</span></div><div class="list-item row"><span class="badge">3</span><span>重新执行库内相容性检查</span></div></div></div>
+      <div class="bottom"><div class="button primary">补拍产品标签</div><div class="button secondary">手动编辑产品信息</div><div class="button text">暂时保留未知状态</div></div>
+    </div></div></section>
+
+    <section class="board" data-group="compatibility"><h2 class="board-title">24 相容性｜当前未命中</h2><p class="board-note">不显示“全库安全”；清楚说明规则范围与未知边界。</p><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>● ● ●</span></div><div class="appbar"><span>‹ 仓库</span><strong>库内相容性</strong><span class="right">说明</span></div><div class="screen scroll">
+      <div class="empty" style="min-height:260px"><div><div class="circle">✓</div><h3>当前未发现已登记禁忌</h3><p class="copy" style="margin-top:10px">已根据 4 件信息完整的产品检查当前规则库。</p></div></div>
+      <div class="card soft stack"><strong>这不代表绝对安全</strong><span class="copy">未知成分、标签外用途、实际浓度和使用方式可能不在当前检查范围内。</span></div>
+      <div class="list"><div class="list-item row between"><span>已检查产品</span><strong>4 件</strong></div><div class="list-item row between"><span>信息待补充</span><strong>2 件</strong></div><div class="list-item row between"><span>规则最后更新</span><strong>2026-08</strong></div></div>
+      <div class="bottom"><div class="button primary">补充 2 件产品信息</div><div class="button secondary">返回化学品库</div></div>
+    </div></div></section>
+  </main>
+  <script>
+    const group = new URLSearchParams(location.search).get('group');
+    if (['warehouse','intake','manage','compatibility'].includes(group)) document.body.dataset.group = group;
+  </script>
+</body>
+</html>

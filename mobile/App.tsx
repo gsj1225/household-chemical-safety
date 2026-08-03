@@ -1,5 +1,7 @@
 /**
- * App 入口 + 导航配置
+ * App 入口 + 导航配置 — v2.0
+ *
+ * V1 排雷挑战流程已退出，仅保留 V2 化学品库管理路由。
  */
 
 import React from 'react';
@@ -8,10 +10,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import HomeScreen from './src/screens/HomeScreen';
-import ScanScreen from './src/screens/ScanScreen';
-import ResultScreen from './src/screens/ResultScreen';
-import HistoryScreen from './src/screens/HistoryScreen';
+import InventoryScreen from './src/screens/InventoryScreen';
+import IntakeFlowScreen from './src/screens/IntakeFlowScreen';
+import ProductDetailScreen from './src/screens/ProductDetailScreen';
+import ProductEditScreen from './src/screens/ProductEditScreen';
+import CompatibilityScreen from './src/screens/CompatibilityScreen';
+import RelationDetailScreen from './src/screens/RelationDetailScreen';
 import { semanticColors } from './src/theme/tokens';
 import type { RootStackParamList } from './src/types';
 
@@ -23,6 +27,7 @@ export default function App() {
       <NavigationContainer>
         <StatusBar style="dark" />
         <Stack.Navigator
+          initialRouteName="Inventory"
           screenOptions={{
             headerStyle: { backgroundColor: semanticColors.surface.page },
             headerTitleStyle: {
@@ -34,24 +39,34 @@ export default function App() {
           }}
         >
           <Stack.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{ title: '排雷挑战', headerShown: false }}
+            name="Inventory"
+            component={InventoryScreen}
+            options={{ title: '我的化学品库', headerShown: false }}
           />
           <Stack.Screen
-            name="History"
-            component={HistoryScreen}
-            options={{ title: '历史报告' }}
+            name="IntakeFlow"
+            component={IntakeFlowScreen}
+            options={{ title: '添加产品', headerShown: false }}
           />
           <Stack.Screen
-            name="Scan"
-            component={ScanScreen}
-            options={{ title: '本场景检查' }}
+            name="ProductDetail"
+            component={ProductDetailScreen}
+            options={{ title: '产品详情', headerShown: false }}
           />
           <Stack.Screen
-            name="Result"
-            component={ResultScreen}
-            options={{ title: '本场景报告' }}
+            name="ProductEdit"
+            component={ProductEditScreen}
+            options={{ title: '编辑产品', headerShown: false }}
+          />
+          <Stack.Screen
+            name="Compatibility"
+            component={CompatibilityScreen}
+            options={{ title: '相容性', headerShown: false }}
+          />
+          <Stack.Screen
+            name="RelationDetail"
+            component={RelationDetailScreen}
+            options={{ title: '关系详情', headerShown: false }}
           />
         </Stack.Navigator>
       </NavigationContainer>
