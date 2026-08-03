@@ -1,146 +1,530 @@
 {
   "inventory-empty": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 17425
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 19776
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 19413
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 25830
+    }
   },
   "inventory-content": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 31487
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 48971
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 46891
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 57105
+    }
   },
   "inventory-loading": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 14994
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 15382
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 16537
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 21618
+    }
   },
   "inventory-error": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 20220
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 22203
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 23255
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 27294
+    }
   },
   "inventory-no-results": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 16582
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 17073
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 18218
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 24346
+    }
   },
   "intake-review-normal": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 28489
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 40357
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 44622
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 55429
+    }
   },
   "intake-category-unknown": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 29460
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 41361
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 45605
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 56520
+    }
   },
   "intake-conflict": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 31367
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 48104
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 52616
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 65799
+    }
   },
   "intake-permission-denied": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 15895
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 16651
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 19585
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 23015
+    }
   },
   "intake-partial-success": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 16214
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 19069
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 19151
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 25235
+    }
   },
   "detail-full": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 20584
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 33498
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 35319
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 50516
+    }
   },
   "detail-minimal": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 17656
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 26903
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 29657
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 37997
+    }
   },
   "detail-long-text": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 30700
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 44364
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 48101
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 65976
+    }
   },
   "detail-loading": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 5318
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 6395
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 7151
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 11375
+    }
   },
   "detail-error": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 10810
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 12546
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 13280
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 16609
+    }
   },
   "edit-form": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 26849
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 38501
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 45625
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 55621
+    }
   },
   "edit-unsaved-dialog": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 19008
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 22740
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 23871
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 27352
+    }
   },
   "detail-delete-dialog": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 19998
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 22272
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 23654
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 28859
+    }
   },
   "compat-critical": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 28831
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 29983
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 31209
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 37328
+    }
   },
   "compat-attention": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 26961
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 27706
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 29140
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 35189
+    }
   },
   "compat-unknown": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 27381
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 27997
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 29473
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 35604
+    }
   },
   "compat-empty": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 26807
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 26876
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 28278
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 35536
+    }
   },
   "compat-loading": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 12253
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 14230
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 15047
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 19329
+    }
   },
   "compat-error": {
-    "320x568": "PASS",
-    "390x844": "PASS",
-    "520x844": "PASS",
-    "1280x900": "PASS"
+    "320x568": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 17289
+    },
+    "390x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 18172
+    },
+    "520x844": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 18997
+    },
+    "1280x900": {
+      "status": "PASS",
+      "reason": "OK",
+      "size": 24741
+    }
   }
 }

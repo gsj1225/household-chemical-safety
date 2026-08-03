@@ -265,6 +265,15 @@ export const componentTokens = {
     summaryBorderWidth: 2,
     summaryAccentWidth: 5,
   },
+  dialog: {
+    maxWidth: 360,
+    radius: rawTokens.radius.large,
+    padding: rawTokens.space[4],
+    gap: rawTokens.space[4],
+    headerGap: rawTokens.space[2],
+    actionGap: rawTokens.space[2],
+    scrimOpacity: 0.72,
+  },
   shareCard: {
     aspectRatio: 3 / 4,
     previewMaxWidth: 360,
@@ -278,5 +287,33 @@ export const componentTokens = {
     ruleWidth: 2,
     outputWidth: 1080,
     outputHeight: 1440,
+  },
+  elevation: {
+    card: {
+      elevation: 2,
+      shadowColor: semanticColors.overlay.photo,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+    },
+    dialog: {
+      elevation: 4,
+      shadowColor: semanticColors.overlay.photo,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+    },
+  },
+  interaction: {
+    cardPressed: {
+      opacity: 0.88,
+      transform: [{ scale: 0.985 }],
+    },
+    cardPressedReduced: {
+      opacity: 0.88,
+    },
+  },
+  statusAccent: {
+    width: 3,
   },
 } as const;

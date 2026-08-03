@@ -5,11 +5,13 @@
  * 直接向 Zustand store 注入预设状态，渲染各页面/组件。
  * 不修改 API、Store 契约或业务流程。
  *
- * 通过 URL 参数选择场景：?scene=inventory-empty
+ * URL 参数：
+ *   ?qa=1&scene=<name>         选择场景（显示 QA 调试栏）
+ *   ?qa=1&scene=<name>&capture=1  截图模式（隐藏 QA 调试栏）
  */
 
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -20,8 +22,8 @@ import ScreenScroll from '../components/primitives/ScreenScroll';
 import StateMessage from '../components/primitives/StateMessage';
 import AppDialog from '../components/primitives/AppDialog';
 
-import { useInventoryStore, emptySummary, selectInventoryView } from '../store/inventoryStore';
-import { useCompatibilityStore, selectFilteredRelations, selectCompatibilityView } from '../store/compatibilityStore';
+import { useInventoryStore } from '../store/inventoryStore';
+import { useCompatibilityStore } from '../store/compatibilityStore';
 import { useIntakeStore, type ReviewForm } from '../store/intakeStore';
 import type { FormConflict } from '../view-models/intake';
 import { toRelationVM, type RelationVM } from '../view-models/compatibility';
@@ -34,12 +36,13 @@ import CompatibilityScreen from '../screens/CompatibilityScreen';
 import IntakeFlowScreen from '../screens/IntakeFlowScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import ProductEditScreen from '../screens/ProductEditScreen';
+import RelationDetailScreen from '../screens/RelationDetailScreen';
 import IntakeReviewStep from '../components/features/intake/IntakeReviewStep';
 import IntakePhotoStep from '../components/features/intake/IntakePhotoStep';
-import RelationDetailScreen from '../screens/RelationDetailScreen';
+import PermissionDeniedView from '../components/features/intake/PermissionDeniedView';
 
-import type { InventoryProduct, ProductCategory, ConfirmedFact, SafetyStatement, PartialDate, RecognitionDraft, DraftFact } from '../types/inventory';
-import type { CompatibilitySummary, CompatibilityRelation, CompatibilityApiRelation, ProductMutationResult, DuplicateCandidate } from '../types/compatibility';
+import type { InventoryProduct, RecognitionDraft } from '../types/inventory';
+import type { CompatibilitySummary, CompatibilityApiRelation, ProductMutationResult } from '../types/compatibility';
 import type { RootStackParamList } from '../types';
 
 // ── 工厂函数 ──────────────────────────────────────
@@ -168,80 +171,6 @@ function makeMutationResult(product: InventoryProduct): ProductMutationResult {
   };
 }
 
-// ── 状态注入器 ────────────────────────────────────
-
-function injectInventoryState(state: {
-  items?: InventoryProduct[];
-  total?: number;
-  summary?: CompatibilitySummary | null;
-  loadState?: 'idle' | 'loading' | 'success' | 'error';
-  errorMessage?: string | null;
-  searchQuery?: string | null;
-}) {
-  const store = useInventoryStore as unknown as { setState: (partial: Record<string, unknown>) => void };
-  store.setState({
-    items: state.items ?? [],
-    total: state.total ?? (state.items?.length ?? 0),
-    summary: state.summary ?? null,
-    loadState: state.loadState ?? 'success',
-    errorMessage: state.errorMessage ?? null,
-    searchQuery: state.searchQuery ?? null,
-    // 覆盖 load/refresh 为空操作，防止组件 useEffect 自动加载覆盖注入状态
-    load: async () => {},
-    refresh: async () => {},
-  });
-}
-
-function injectCompatibilityState(state: {
-  relations?: CompatibilityApiRelation[];
-  summary?: CompatibilitySummary | null;
-  loadState?: 'idle' | 'loading' | 'success' | 'error';
-  errorMessage?: string | null;
-  productMap?: Record<string, InventoryProduct>;
-}) {
-  const store = useCompatibilityStore as unknown as { setState: (partial: Record<string, unknown>) => void };
-  const productMap = state.productMap ?? {};
-  const rawRelations = state.relations ?? [];
-  const relations: RelationVM[] = rawRelations.map(toRelationVM);
-  store.setState({
-    rawRelations,
-    relations,
-    summary: state.summary ?? null,
-    loadState: state.loadState ?? 'success',
-    errorMessage: state.errorMessage ?? null,
-    productMap,
-    total: rawRelations.length,
-    severityFilter: 'all',
-    // 覆盖 load/loadSummary/refresh 为空操作，防止组件 useEffect 自动加载覆盖注入状态
-    load: async () => {},
-    loadSummary: async () => {},
-    refresh: async () => {},
-  });
-}
-
-function injectIntakeState(state: {
-  step?: string;
-  errorMessage?: string | null;
-  draft?: RecognitionDraft | null;
-  reviewForm?: ReviewForm | null;
-  formConflicts?: FormConflict[];
-  coverSaveFailed?: boolean;
-  rescanProductId?: string | null;
-}) {
-  const store = useIntakeStore as unknown as { setState: (partial: Record<string, unknown>) => void };
-  store.setState({
-    step: state.step ?? 'review',
-    errorMessage: state.errorMessage ?? null,
-    draft: state.draft ?? null,
-    reviewForm: state.reviewForm ?? null,
-    formConflicts: state.formConflicts ?? [],
-    coverSaveFailed: state.coverSaveFailed ?? false,
-    rescanProductId: state.rescanProductId ?? null,
-  });
-}
-
-// ── 识别草稿工厂 ──────────────────────────────────
-
 function makeDraft(overrides: Partial<RecognitionDraft> = {}): RecognitionDraft {
   return {
     draftId: 'draft-1',
@@ -295,16 +224,89 @@ function makeConflict(overrides: Partial<FormConflict> = {}): FormConflict {
   };
 }
 
+// ── 状态注入器 ────────────────────────────────────
+
+function injectInventoryState(state: {
+  items?: InventoryProduct[];
+  total?: number;
+  summary?: CompatibilitySummary | null;
+  loadState?: 'idle' | 'loading' | 'success' | 'error';
+  errorMessage?: string | null;
+  searchQuery?: string | null;
+}) {
+  const store = useInventoryStore as unknown as { setState: (partial: Record<string, unknown>) => void };
+  store.setState({
+    items: state.items ?? [],
+    total: state.total ?? (state.items?.length ?? 0),
+    summary: state.summary ?? null,
+    loadState: state.loadState ?? 'success',
+    errorMessage: state.errorMessage ?? null,
+    searchQuery: state.searchQuery ?? null,
+    load: async () => {},
+    refresh: async () => {},
+  });
+}
+
+function injectCompatibilityState(state: {
+  relations?: CompatibilityApiRelation[];
+  summary?: CompatibilitySummary | null;
+  loadState?: 'idle' | 'loading' | 'success' | 'error';
+  errorMessage?: string | null;
+  productMap?: Record<string, InventoryProduct>;
+}) {
+  const store = useCompatibilityStore as unknown as { setState: (partial: Record<string, unknown>) => void };
+  const productMap = state.productMap ?? {};
+  const rawRelations = state.relations ?? [];
+  const relations: RelationVM[] = rawRelations.map(toRelationVM);
+  store.setState({
+    rawRelations,
+    relations,
+    summary: state.summary ?? null,
+    loadState: state.loadState ?? 'success',
+    errorMessage: state.errorMessage ?? null,
+    productMap,
+    total: rawRelations.length,
+    severityFilter: 'all',
+    load: async () => {},
+    loadSummary: async () => {},
+    refresh: async () => {},
+  });
+}
+
+function injectIntakeState(state: {
+  step?: string;
+  errorMessage?: string | null;
+  draft?: RecognitionDraft | null;
+  reviewForm?: ReviewForm | null;
+  formConflicts?: FormConflict[];
+  coverSaveFailed?: boolean;
+  rescanProductId?: string | null;
+}) {
+  const store = useIntakeStore as unknown as { setState: (partial: Record<string, unknown>) => void };
+  store.setState({
+    step: state.step ?? 'review',
+    errorMessage: state.errorMessage ?? null,
+    draft: state.draft ?? null,
+    reviewForm: state.reviewForm ?? null,
+    formConflicts: state.formConflicts ?? [],
+    coverSaveFailed: state.coverSaveFailed ?? false,
+    rescanProductId: state.rescanProductId ?? null,
+    // 覆盖 actions 为空操作，防止 IntakeFlowScreen useEffect 自动调用 start/startRescan 覆盖注入状态
+    start: async () => {},
+    startRescan: async () => {},
+    reset: () => {},
+  });
+}
+
 // ── API 猴补丁（仅 QA 环境） ─────────────────────
 
 const originalGetDetail = inventoryApi.getDetail.bind(inventoryApi);
-const originalGetById = (inventoryApi as any).getById ? (inventoryApi as any).getById.bind(inventoryApi) : null;
+const originalGetById = inventoryApi.getById.bind(inventoryApi);
 const originalGetCoverUri = photoAssetService.getCoverUri.bind(photoAssetService);
 
 function patchApiForScene(scene: string) {
-  // 先恢复原始方法
   inventoryApi.getDetail = originalGetDetail;
-  if (originalGetById) (inventoryApi as any).getById = originalGetById;
+  inventoryApi.getById = originalGetById;
   photoAssetService.getCoverUri = originalGetCoverUri;
 
   // QA 环境始终 mock 封面 URI，避免文件系统访问
@@ -321,8 +323,7 @@ function patchApiForScene(scene: string) {
   } else if (scene === 'detail-long-text') {
     inventoryApi.getDetail = async () => makeMutationResult(makeLongTextProduct());
   } else if (scene === 'edit-form') {
-    // ProductEditScreen 调用的是 getById（返回 InventoryProduct），而非 getDetail
-    (inventoryApi as any).getById = async () => makeProduct();
+    inventoryApi.getById = async () => makeProduct();
   }
 }
 
@@ -330,7 +331,6 @@ function patchApiForScene(scene: string) {
 
 const QAStack = createNativeStackNavigator<RootStackParamList>();
 
-/** 完整导航栈，确保所有 useNavigation() 调用都能正常工作 */
 function QAFullNavigator({ initialRoute, productId }: { initialRoute: keyof RootStackParamList; productId?: string }) {
   const initialParams = productId ? { productId } : undefined;
   return (
@@ -347,37 +347,8 @@ function QAFullNavigator({ initialRoute, productId }: { initialRoute: keyof Root
   );
 }
 
-// ── 独立场景组件 ──────────────────────────────────
+// ── 删除确认对话框场景（使用生产 AppDialog） ──────
 
-/** 权限拒绝场景：渲染与 IntakePhotoStep 权限拒绝时相同的 UI */
-function QAPermissionDeniedScene() {
-  return (
-    <View style={styles.qaWrapper}>
-      <StateMessage
-        title="权限被拒绝"
-        description="需要相机或相册权限才能拍照。请在系统设置中开启权限后重试。"
-        tone="error"
-        actions={<AppButton label="前往设置" variant="secondary" onPress={() => {}} />}
-      />
-    </View>
-  );
-}
-
-/** 部分成功场景：渲染与 IntakeFlowScreen success 步骤相同的 UI */
-function QAIntakeSuccessScene() {
-  return (
-    <View style={styles.qaWrapper}>
-      <StateMessage
-        title="部分成功"
-        description="产品已保存，但照片上传失败。你可以稍后在详情页重新上传。"
-        tone="error"
-        actions={<AppButton label="完成" variant="primary" onPress={() => {}} />}
-      />
-    </View>
-  );
-}
-
-/** 删除确认对话框场景 */
 function QADeleteDialogScene() {
   return (
     <View style={styles.root}>
@@ -397,7 +368,6 @@ function QADeleteDialogScene() {
   );
 }
 
-/** 未保存退出对话框场景 */
 function QAUnsavedDialogScene() {
   return (
     <View style={styles.root}>
@@ -421,33 +391,25 @@ function QAUnsavedDialogScene() {
 
 // ── 场景定义 ──────────────────────────────────────
 
-type SceneName = string;
-
-const SCENES: SceneName[] = [
-  // 仓库
+const SCENES: string[] = [
   'inventory-empty',
   'inventory-content',
   'inventory-loading',
   'inventory-error',
   'inventory-no-results',
-  // 入库
   'intake-review-normal',
   'intake-category-unknown',
   'intake-conflict',
   'intake-permission-denied',
   'intake-partial-success',
-  // 详情
   'detail-full',
   'detail-minimal',
   'detail-long-text',
   'detail-loading',
   'detail-error',
-  // 编辑
   'edit-form',
   'edit-unsaved-dialog',
-  // 删除确认
   'detail-delete-dialog',
-  // 相容性
   'compat-critical',
   'compat-attention',
   'compat-unknown',
@@ -456,11 +418,9 @@ const SCENES: SceneName[] = [
   'compat-error',
 ];
 
-function setupScene(scene: SceneName) {
-  // 先猴补丁 API（详情/编辑场景需要）
+function setupScene(scene: string) {
   patchApiForScene(scene);
 
-  // Reset stores
   injectInventoryState({ items: [], summary: null, loadState: 'idle', errorMessage: null, searchQuery: null });
   injectCompatibilityState({ relations: [], summary: null, loadState: 'idle', errorMessage: null });
   injectIntakeState({ step: 'idle', draft: null, reviewForm: null, formConflicts: [], errorMessage: null });
@@ -507,10 +467,11 @@ function setupScene(scene: SceneName) {
       });
       break;
     case 'intake-permission-denied':
-      // 渲染独立的权限拒绝场景组件，无需注入 store
+      // 使用生产 PermissionDeniedView 组件，不复制文案
       break;
     case 'intake-partial-success':
-      // 渲染独立的成功场景组件，无需注入 store
+      // 使用真实 IntakeFlowScreen + Store 注入（step=success, coverSaveFailed=true）
+      injectIntakeState({ step: 'success', coverSaveFailed: true });
       break;
 
     case 'detail-full':
@@ -518,16 +479,13 @@ function setupScene(scene: SceneName) {
     case 'detail-long-text':
     case 'detail-loading':
     case 'detail-error':
-      // API 已在 patchApiForScene 中补丁，QANavigator 会渲染 ProductDetailScreen
       break;
 
     case 'edit-form':
-      // API 已在 patchApiForScene 中补丁，QANavigator 会渲染 ProductEditScreen
       break;
 
     case 'edit-unsaved-dialog':
     case 'detail-delete-dialog':
-      // 渲染独立的对话框场景组件
       break;
 
     case 'compat-critical':
@@ -574,26 +532,27 @@ function setupScene(scene: SceneName) {
 // ── QA 夹具组件 ───────────────────────────────────
 
 export default function QAFixture() {
-  const [currentScene, setCurrentScene] = useState<SceneName>('');
+  const [currentScene, setCurrentScene] = useState<string>('');
+  const [capture, setCapture] = useState(false);
 
-  // Read scene from URL on web
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const scene = params.get('scene');
+      const cap = params.get('capture');
       if (scene) {
         setupScene(scene);
         setCurrentScene(scene);
+        setCapture(cap === '1');
       }
     }
   }, []);
 
-  // Re-setup when scene changes (via scene list clicks)
-  const selectScene = (scene: SceneName) => {
+  const selectScene = (scene: string) => {
     setupScene(scene);
     setCurrentScene(scene);
     if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', `?scene=${scene}`);
+      window.history.replaceState(null, '', `?qa=1&scene=${scene}`);
     }
   };
 
@@ -619,12 +578,12 @@ export default function QAFixture() {
       );
     }
 
-    // 详情场景：需要导航上下文 + 猴补丁 API
+    // 详情场景
     if (currentScene.startsWith('detail-') && currentScene !== 'detail-delete-dialog') {
       return <QAFullNavigator initialRoute="ProductDetail" productId="test-1" />;
     }
 
-    // 编辑表单场景
+    // 编辑表单
     if (currentScene === 'edit-form') {
       return <QAFullNavigator initialRoute="ProductEdit" productId="test-1" />;
     }
@@ -638,22 +597,28 @@ export default function QAFixture() {
     }
 
     // 入库场景
+    if (currentScene === 'intake-permission-denied') {
+      // 使用生产 PermissionDeniedView 组件
+      return (
+        <View style={styles.qaWrapper}>
+          <PermissionDeniedView />
+        </View>
+      );
+    }
+    if (currentScene === 'intake-partial-success') {
+      // 使用真实 IntakeFlowScreen + Store 注入
+      return <QAFullNavigator initialRoute="IntakeFlow" />;
+    }
     if (currentScene.startsWith('intake-')) {
-      if (currentScene === 'intake-permission-denied') {
-        return <QAPermissionDeniedScene />;
-      }
-      if (currentScene === 'intake-partial-success') {
-        return <QAIntakeSuccessScene />;
-      }
       return <IntakeReviewStep />;
     }
 
-    // 仓库场景：需要导航上下文（InventoryScreen 使用 useNavigation）
+    // 仓库场景
     if (currentScene.startsWith('inventory-')) {
       return <QAFullNavigator initialRoute="Inventory" />;
     }
 
-    // 相容性场景：需要导航上下文（CompatibilityScreen 使用 useNavigation）
+    // 相容性场景
     if (currentScene.startsWith('compat-')) {
       return <QAFullNavigator initialRoute="Compatibility" />;
     }
@@ -668,7 +633,8 @@ export default function QAFixture() {
   return (
     <SafeAreaProvider>
       <View style={styles.root}>
-        {currentScene ? (
+        {/* capture 模式下隐藏 QA 调试栏，截图为真实布局 */}
+        {currentScene && !capture ? (
           <View style={styles.sceneBar}>
             <AppText variant="caption" color="muted">QA: {currentScene}</AppText>
             <Pressable onPress={() => {
@@ -729,10 +695,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: rawTokens.space[4],
-  },
-  intakeWrapper: {
-    flex: 1,
     padding: rawTokens.space[4],
   },
 });

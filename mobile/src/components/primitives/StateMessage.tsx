@@ -57,9 +57,13 @@ const styles = StyleSheet.create({
   error: {
     backgroundColor: semanticColors.surface.errorSubtle,
     borderColor: semanticColors.border.error,
+    borderTopWidth: componentTokens.statusAccent.width,
+    borderTopColor: semanticColors.status.error,
   },
   permission: {
     backgroundColor: semanticColors.surface.infoSubtle,
     borderColor: semanticColors.status.info,
+    borderTopWidth: componentTokens.statusAccent.width,
+    borderTopColor: semanticColors.status.info,
   },
 });

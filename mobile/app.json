@@ -8,15 +8,15 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "允许排雷挑战使用相机拍摄家庭化学品",
+          "cameraPermission": "允许家庭化学品库使用相机拍摄产品标签",
           "recordAudioAndroid": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "允许排雷挑战选择一张家庭化学品照片进行分析",
-          "cameraPermission": "允许排雷挑战使用相机拍摄家庭化学品",
+          "photosPermission": "允许家庭化学品库选择产品照片用于识别和入库",
+          "cameraPermission": "允许家庭化学品库使用相机拍摄产品标签",
           "microphonePermission": false
         }
       ],
@@ -25,8 +25,8 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "允许家庭化学品安全检查访问照片，以保存你主动生成的结果分享卡",
-          "savePhotosPermission": "允许家庭化学品安全检查把你主动生成的结果分享卡保存到相册",
+          "photosPermission": "允许家庭化学品库访问照片，以保存产品封面图片",
+          "savePhotosPermission": "允许家庭化学品库将产品封面图片保存到相册",
           "granularPermissions": ["photo"]
         }
       ]

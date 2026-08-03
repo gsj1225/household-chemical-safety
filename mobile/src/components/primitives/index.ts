@@ -1,6 +1,9 @@
 export { default as AppButton } from './AppButton';
+export { default as AppDialog } from './AppDialog';
 export { default as AppText } from './AppText';
+export { default as IconButton } from './IconButton';
+export { default as ScreenScroll } from './ScreenScroll';
+export { default as SemanticBadge } from './SemanticBadge';
 export { default as StateMessage } from './StateMessage';
-export { default as StatusBadge } from './StatusBadge';
 export { default as Surface } from './Surface';
 export { default as TextField } from './TextField';
