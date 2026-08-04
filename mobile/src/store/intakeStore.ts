@@ -38,6 +38,7 @@ async function fetchProductForRescan(productId: string): Promise<InventoryProduc
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch(`${API_BASE}/inventory/products/${encodeURIComponent(productId)}`, {
+      headers: authHeaders(),
       signal: controller.signal,
     });
     if (!response.ok) throw new ApiError('加载产品失败', response.status);
@@ -228,6 +229,11 @@ const API_BASE = (
 const AI_TIMEOUT_MS = 45_000;
 const REQUEST_TIMEOUT_MS = 15_000;
 
+// 从统一 apiClient 获取令牌注入能力
+import { authHeaders, API_BASE as SHARED_API_BASE } from '../services/apiClient';
+// 使用共享 API_BASE 保持一致性
+const _ = SHARED_API_BASE; // 确保导入不被 tree-shake
+
 // ── 内部请求函数 ──────────────────────────────────
 
 async function uploadForRecognition(imageUri: string): Promise<RecognitionDraft> {
@@ -252,6 +258,7 @@ async function uploadForRecognition(imageUri: string): Promise<RecognitionDraft>
   try {
     const response = await fetch(`${API_BASE}/inventory/recognition/recognize`, {
       method: 'POST',
+      headers: authHeaders(),
       body: formData,
       signal: controller.signal,
     });
@@ -289,7 +296,7 @@ async function checkDuplicatesApi(
   try {
     const response = await fetch(`${API_BASE}/inventory/duplicates/check`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, brand, category, barcode, ingredients: [] }),
       signal: controller.signal,
     });
@@ -313,7 +320,7 @@ async function createProductApi(
   try {
     const response = await fetch(`${API_BASE}/inventory/products`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(data),
       signal: controller.signal,
     });
@@ -348,7 +355,7 @@ async function updateProductApi(
   try {
     const response = await fetch(`${API_BASE}/inventory/products/${encodeURIComponent(productId)}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(data),
       signal: controller.signal,
     });

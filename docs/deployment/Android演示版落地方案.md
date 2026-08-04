@@ -171,12 +171,22 @@ AI_PROVIDER=qwen → Qwen API 失败 → 前端提示重试
 
 ### 5.2 环境变量
 
-| 变量 | 用途 | 放置位置 |
-|------|------|---------|
-| `EXPO_PUBLIC_API_BASE_URL` | 编译时注入后端 API 地址 | `eas.json` env |
-| `AI_PROVIDER` | 运行时后端 AI 切换 | 后端环境变量 |
-| `QWEN_API_KEY` | 运行时后端调用 Qwen | 后端环境变量（**不放入 APK**） |
-| `DEMO_ACCESS_TOKEN` | 运行时鉴权 | 后端环境变量 |
+| 变量 | 用途 | 放置位置 | 安全级别 |
+|------|------|---------|---------|
+| `EXPO_PUBLIC_API_BASE_URL` | 编译时注入后端 API 地址 | `eas.json` env | 公开 |
+| `EXPO_PUBLIC_DEMO_ACCESS_TOKEN` | 编译时注入演示令牌到 APK | `eas.json` env | **短期演示用**（见下方说明） |
+| `AI_PROVIDER` | 运行时后端 AI 切换 | 后端环境变量 | 内部 |
+| `QWEN_API_KEY` | 运行时后端调用 Qwen | 后端环境变量 | **秘密，绝不放入 APK** |
+| `DEMO_ACCESS_TOKEN` | 运行时后端鉴权 | 后端环境变量 | 内部 |
+
+#### 演示令牌安全说明
+
+`EXPO_PUBLIC_DEMO_ACCESS_TOKEN` 编译时嵌入 APK，可被逆向工程提取。
+它**不是正式安全秘密**，仅用于比赛演示期间的访问控制。
+
+- **比赛版**：短期令牌可嵌入 APK，比赛后立即轮换后端 `DEMO_ACCESS_TOKEN`
+- **正式产品**：必须改用用户认证（OAuth/OIDC）替代静态令牌
+- `QWEN_API_KEY` 等真正密钥**绝不**放入 `EXPO_PUBLIC_*` 变量或 APK
 
 ### 5.3 EAS 占位符检测
 
@@ -237,20 +247,22 @@ cd mobile && bash scripts/eas-pre-build-check.sh
 | `DEBUG` | 否 | `true` | 生产环境设为 `false` |
 | `DATABASE_PATH` | 否 | `data/inventory.db` | SQLite 路径 |
 | `CORS_ORIGINS` | 否 | `["*"]` | DEBUG=false 禁止 `*`；APK 用 `[]` |
-| `DEMO_ACCESS_TOKEN` | 否 | `""` | 演示令牌，空则不鉴权 |
+| `DEMO_ACCESS_TOKEN` | DEBUG=false 时必填 | `""` | 演示令牌，空则不鉴权；生产环境必须非空 |
 | `RECOGNITION_RATE_LIMIT_PER_MINUTE` | 否 | `10` | 识别接口限流 |
 
 ### 7.2 移动端环境变量（编译时）
 
 | 变量 | 必填 | 说明 |
 |------|------|------|
-| `EXPO_PUBLIC_API_BASE_URL` | 是 | 后端 API 地址 |
+| `EXPO_PUBLIC_API_BASE_URL` | 是 | 后端 API 地址（必须 https://） |
+| `EXPO_PUBLIC_DEMO_ACCESS_TOKEN` | 是 | 演示令牌（短期可嵌入，见 5.2 安全说明） |
 
 ### 7.3 禁止放入 APK 的变量
 
-- `QWEN_API_KEY`
-- `DEMO_ACCESS_TOKEN`
-- 任何含 `SECRET`、`KEY`、`TOKEN`、`PASSWORD` 的变量
+- `QWEN_API_KEY` — 真正密钥，绝不放入 APK
+- 任何含 `SECRET`、`PASSWORD` 的变量
+
+> 注意：`EXPO_PUBLIC_DEMO_ACCESS_TOKEN` 是**短期演示令牌**，可嵌入 APK 但不属于安全秘密。比赛后必须轮换。正式产品必须改用用户认证。
 
 ---
 

@@ -23,8 +23,6 @@ class Settings(BaseSettings):
     RATE_LIMIT_NARRATION_PER_MINUTE: int = 60
 
     # AI 提供者切换
-    # mock: 使用 MockAI
-    # qwen: 使用 Qwen 云 API
     AI_PROVIDER: Literal["mock", "qwen"] = "mock"
 
     # Qwen OpenAI-compatible API 配置
@@ -43,6 +41,7 @@ class Settings(BaseSettings):
     # 演示访问令牌（仅用于比赛演示，支持随时轮换）
     # 设置后所有 /api 请求需携带 Authorization: Bearer <token>
     # 留空则不启用鉴权（仅开发环境）
+    # DEBUG=false 时必须非空，否则启动失败
     DEMO_ACCESS_TOKEN: str = ""
 
     # 识别接口限流（独立于通用限流）
@@ -51,12 +50,21 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @model_validator(mode="after")
-    def validate_production_cors(self):
-        if not self.DEBUG and "*" in self.CORS_ORIGINS:
-            raise ValueError(
-                "生产环境 CORS_ORIGINS 不得使用通配符 *。"
-                "原生 APK 用空列表 []；Web QA 用明确 Origin。"
-            )
+    def validate_production_config(self):
+        """生产环境（DEBUG=false）强制安全配置。"""
+        if not self.DEBUG:
+            # CORS 禁止通配符
+            if "*" in self.CORS_ORIGINS:
+                raise ValueError(
+                    "生产环境 CORS_ORIGINS 不得使用通配符 *。"
+                    "原生 APK 用空列表 []；Web QA 用明确 Origin。"
+                )
+            # 演示令牌必须设置
+            if not self.DEMO_ACCESS_TOKEN:
+                raise ValueError(
+                    "生产环境（DEBUG=false）必须设置 DEMO_ACCESS_TOKEN。"
+                    "生成令牌：python -c \"import secrets; print(secrets.token_urlsafe(24))\""
+                )
         if self.AI_PROVIDER == "qwen" and not self.QWEN_API_KEY:
             raise ValueError("AI_PROVIDER=qwen 时必须配置 QWEN_API_KEY")
         return self

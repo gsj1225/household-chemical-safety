@@ -4,7 +4,7 @@
  * 对接后端 /api/inventory/* 接口。
  */
 
-import { ApiError } from './errors';
+import { apiRequest } from './apiClient';
 import type {
   InventoryProduct,
   ProductUpdateRequest,
@@ -36,50 +36,7 @@ export interface InventoryListParams {
   offset?: number;
 }
 
-// ── 配置 ──────────────────────────────────────────
-
-const API_BASE = (
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000/api'
-).replace(/\/$/, '');
-const REQUEST_TIMEOUT_MS = 15_000;
-
-// ── 内部请求函数 ──────────────────────────────────
-
-async function request<T>(
-  path: string,
-  init: RequestInit = {},
-  timeoutMs: number = REQUEST_TIMEOUT_MS,
-): Promise<T> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(`${API_BASE}${path}`, {
-      ...init,
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      let detail = `请求失败 (${response.status})`;
-      let code: string | undefined;
-      try {
-        const body = await response.json();
-        if (typeof body?.error?.message === 'string') detail = body.error.message;
-        if (typeof body?.error?.code === 'string') code = body.error.code;
-      } catch {
-        // 非 JSON 错误响应
-      }
-      throw new ApiError(detail, response.status, code);
-    }
-    return response.json() as Promise<T>;
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new ApiError('请求超时，请检查网络后重试', undefined, 'REQUEST_TIMEOUT');
-    }
-    throw new ApiError('无法连接服务，请检查网络后重试', undefined, 'NETWORK_UNAVAILABLE');
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+// request 函数已统一到 apiClient.apiRequest
 
 // ── 查询字符串构建 ────────────────────────────────
 
@@ -104,7 +61,7 @@ export const inventoryApi = {
    * GET /api/inventory/products
    */
   async list(params: InventoryListParams = {}): Promise<InventoryListResponse> {
-    return request<InventoryListResponse>(
+    return apiRequest<InventoryListResponse>(
       `/inventory/products${buildQueryString(params)}`,
     );
   },
@@ -114,7 +71,7 @@ export const inventoryApi = {
    * GET /api/inventory/products/{productId}
    */
   async getDetail(productId: string): Promise<ProductMutationResult> {
-    return request<ProductMutationResult>(
+    return apiRequest<ProductMutationResult>(
       `/inventory/products/${encodeURIComponent(productId)}`,
     );
   },
@@ -124,7 +81,7 @@ export const inventoryApi = {
    * GET /api/inventory/products/{productId}
    */
   async getById(productId: string): Promise<InventoryProduct> {
-    const result = await request<ProductMutationResult>(
+    const result = await apiRequest<ProductMutationResult>(
       `/inventory/products/${encodeURIComponent(productId)}`,
     );
     return result.product;
@@ -135,7 +92,7 @@ export const inventoryApi = {
    * GET /api/inventory/compatibility/summary
    */
   async getSummary(): Promise<CompatibilitySummary> {
-    return request<CompatibilitySummary>(
+    return apiRequest<CompatibilitySummary>(
       '/inventory/compatibility/summary',
     );
   },
@@ -145,7 +102,7 @@ export const inventoryApi = {
    * PATCH /api/inventory/products/{productId}
    */
   async update(productId: string, data: ProductUpdateRequest): Promise<ProductMutationResult> {
-    return request<ProductMutationResult>(
+    return apiRequest<ProductMutationResult>(
       `/inventory/products/${encodeURIComponent(productId)}`,
       {
         method: 'PATCH',
@@ -160,7 +117,7 @@ export const inventoryApi = {
    * DELETE /api/inventory/products/{productId}
    */
   async delete(productId: string, data: ProductDeleteRequest): Promise<CompatibilitySummary> {
-    return request<CompatibilitySummary>(
+    return apiRequest<CompatibilitySummary>(
       `/inventory/products/${encodeURIComponent(productId)}`,
       {
         method: 'DELETE',

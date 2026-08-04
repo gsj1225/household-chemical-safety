@@ -3,6 +3,9 @@
 接收临时上传照片，返回识别草稿。
 照片不长期存储，识别完成后丢弃。
 识别接口接入独立限流，防止 Qwen API 配额耗尽。
+
+限流客户端标识：只信任 Nginx 写入的 X-Real-IP 头。
+不信任 X-Forwarded-For（客户端可伪造）。
 """
 
 from __future__ import annotations
@@ -20,10 +23,16 @@ router = APIRouter(prefix="/inventory/recognition", tags=["recognition"])
 
 
 def _client_key(request: Request) -> str:
-    """提取客户端标识用于限流。"""
-    forwarded = request.headers.get("X-Forwarded-For", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    """提取客户端标识用于限流。
+
+    只信任 Nginx 写入的 X-Real-IP 头。
+    不信任 X-Forwarded-For（客户端可伪造）。
+    开发环境（无 Nginx）回退到 request.client.host。
+    """
+    real_ip = request.headers.get("X-Real-IP", "")
+    if real_ip:
+        return real_ip.strip()
+    # 开发环境回退
     return request.client.host if request.client else "unknown"
 
 

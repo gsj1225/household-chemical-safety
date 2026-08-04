@@ -42,6 +42,13 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
 )
 
+# ── 演示令牌鉴权中间件（唯一生产实现）──────────────
+# 拦截 /api 路由，豁免 /health、/ 和 CORS OPTIONS 预检请求
+app.middleware("http")(demo_auth_middleware)
+
+
+# ── 请求追踪 + 安全头 ─────────────────────────────
+
 def request_id_for(request: Request) -> str:
     return getattr(request.state, "request_id", "unknown")
 
@@ -66,26 +73,6 @@ async def request_context_middleware(request: Request, call_next):
     request_id = uuid.uuid4().hex[:16]
     request.state.request_id = request_id
     started = time.perf_counter()
-
-    # 演示令牌鉴权（在请求追踪之后，确保 401 也有 request_id）
-    path = request.url.path
-    if (
-        settings.DEMO_ACCESS_TOKEN
-        and path.startswith("/api")
-        and path not in ("/health", "/")
-    ):
-        auth_header = request.headers.get("Authorization", "")
-        token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
-        import hmac
-        if not hmac.compare_digest(token, settings.DEMO_ACCESS_TOKEN):
-            duration_ms = round((time.perf_counter() - started) * 1000, 2)
-            logger.info(json.dumps({
-                "event": "auth_rejected",
-                "request_id": request_id,
-                "path": path,
-                "duration_ms": duration_ms,
-            }, ensure_ascii=False))
-            return error_response(request, 401, "UNAUTHORIZED", "无效或缺失的访问令牌")
 
     response = await _safe_call(request, call_next)
 

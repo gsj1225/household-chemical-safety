@@ -4,55 +4,14 @@
  * 对接后端 /api/inventory/compatibility/* 接口。
  */
 
-import { ApiError } from './errors';
+import { apiRequest } from './apiClient';
 import type {
   CompatibilitySummary,
   CompatibilityListApiResponse,
   CompatibilityApiRelation,
 } from '../types/compatibility';
 
-// ── 配置 ──────────────────────────────────────────
-
-const API_BASE = (
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000/api'
-).replace(/\/$/, '');
-const REQUEST_TIMEOUT_MS = 15_000;
-
-// ── 内部请求函数 ──────────────────────────────────
-
-async function request<T>(
-  path: string,
-  init: RequestInit = {},
-  timeoutMs: number = REQUEST_TIMEOUT_MS,
-): Promise<T> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(`${API_BASE}${path}`, {
-      ...init,
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      let detail = `请求失败 (${response.status})`;
-      let code: string | undefined;
-      try {
-        const body = await response.json();
-        if (typeof body?.error?.message === 'string') detail = body.error.message;
-        if (typeof body?.error?.code === 'string') code = body.error.code;
-      } catch { /* 非 JSON */ }
-      throw new ApiError(detail, response.status, code);
-    }
-    return response.json() as Promise<T>;
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new ApiError('请求超时，请检查网络后重试', undefined, 'REQUEST_TIMEOUT');
-    }
-    throw new ApiError('无法连接服务，请检查网络后重试', undefined, 'NETWORK_UNAVAILABLE');
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+// request 函数已统一到 apiClient.apiRequest
 
 // ── 查询参数 ──────────────────────────────────────
 
@@ -82,7 +41,7 @@ export const compatibilityApi = {
    * GET /api/inventory/compatibility/summary
    */
   async getSummary(): Promise<CompatibilitySummary> {
-    return request<CompatibilitySummary>('/inventory/compatibility/summary');
+    return apiRequest<CompatibilitySummary>('/inventory/compatibility/summary');
   },
 
   /**
@@ -90,7 +49,7 @@ export const compatibilityApi = {
    * GET /api/inventory/compatibility/relations
    */
   async listRelations(params: CompatibilityListParams = {}): Promise<CompatibilityListApiResponse> {
-    return request<CompatibilityListApiResponse>(
+    return apiRequest<CompatibilityListApiResponse>(
       `/inventory/compatibility/relations${buildQueryString(params)}`,
     );
   },
@@ -100,7 +59,7 @@ export const compatibilityApi = {
    * GET /api/inventory/compatibility/relations/{relationId}
    */
   async getRelationDetail(relationId: string): Promise<CompatibilityApiRelation> {
-    return request<CompatibilityApiRelation>(
+    return apiRequest<CompatibilityApiRelation>(
       `/inventory/compatibility/relations/${encodeURIComponent(relationId)}`,
     );
   },
