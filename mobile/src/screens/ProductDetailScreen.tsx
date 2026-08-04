@@ -9,6 +9,7 @@ import { generateStableOperationId } from '../utils/operationId';
 import { StyleSheet, View } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { rawTokens, semanticColors, componentTokens } from '../theme/tokens';
+import ScreenSafeArea from '../components/primitives/ScreenSafeArea';
 import AppText from '../components/primitives/AppText';
 import AppButton from '../components/primitives/AppButton';
 import SemanticBadge from '../components/primitives/SemanticBadge';
@@ -122,20 +123,20 @@ export default function ProductDetailScreen() {
 
   if (loadState === 'loading') {
     return (
-      <View style={styles.screen}>
+      <ScreenSafeArea>
         <View style={styles.centering}>
           <StateMessage title="加载中" description="正在获取产品详情…" tone="neutral" />
         </View>
-      </View>
+      </ScreenSafeArea>
     );
   }
 
   if (loadState === 'error' || !detail) {
     return (
-      <View style={styles.screen}>
-        <View style={styles.centering}>
-          <StateMessage
-            title="加载失败"
+    <ScreenSafeArea>
+      <View style={styles.centering}>
+        <StateMessage
+          title="加载失败"
             description={errorMessage ?? '产品不存在'}
             tone="error"
             actions={
@@ -147,7 +148,7 @@ export default function ProductDetailScreen() {
             }
           />
         </View>
-      </View>
+      </ScreenSafeArea>
     );
   }
 
@@ -162,7 +163,7 @@ export default function ProductDetailScreen() {
   const incompatTargets = product.incompatibility_targets.filter((s) => s.text);
 
   return (
-    <View style={styles.screen}>
+    <ScreenSafeArea>
       <ScreenScroll variant="detail">
         {/* 头部：照片 + 名称 + 品牌 + 品类 */}
         <Surface variant="subtle" style={styles.headerCard}>
@@ -351,15 +352,12 @@ export default function ProductDetailScreen() {
           setDeleteDialogVisible(false);
         }}
       />
-    </View>
+    </ScreenSafeArea>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: semanticColors.surface.page,
-  },
+
   centering: {
     flex: 1,
     alignItems: 'center',

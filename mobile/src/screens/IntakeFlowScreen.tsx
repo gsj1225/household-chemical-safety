@@ -12,6 +12,7 @@ import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { rawTokens, semanticColors } from '../theme/tokens';
+import ScreenSafeArea from '../components/primitives/ScreenSafeArea';
 import AppText from '../components/primitives/AppText';
 import StateMessage from '../components/primitives/StateMessage';
 import AppButton from '../components/primitives/AppButton';
@@ -47,7 +48,7 @@ export default function IntakeFlowScreen() {
   };
 
   return (
-    <View style={styles.screen}>
+    <ScreenSafeArea>
       <View style={styles.header}>
         <AppText variant="titleSmall">{rescanProductId ? '重新扫描' : '添加产品'}</AppText>
         <AppButton label="取消" variant="quiet" onPress={handleCancel} />
@@ -137,15 +138,12 @@ export default function IntakeFlowScreen() {
           </View>
         ) : null}
       </View>
-    </View>
+    </ScreenSafeArea>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: semanticColors.surface.page,
-  },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',

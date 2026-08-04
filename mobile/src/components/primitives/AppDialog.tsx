@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   BackHandler,
   Modal,
@@ -68,6 +69,7 @@ export default function AppDialog({
       accessibilityViewIsModal
     >
       <Pressable style={styles.scrim} onPress={handleCancel}>
+        <SafeAreaView edges={['bottom']} style={styles.dialogWrapper}>
         <Pressable
           style={styles.dialog}
           onPress={(e) => e.stopPropagation()}
@@ -105,18 +107,24 @@ export default function AppDialog({
             />
           </View>
         </Pressable>
+        </SafeAreaView>
       </Pressable>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  dialogWrapper: {
+    width: '100%' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    padding: rawTokens.space[5],
+  },
   scrim: {
     flex: 1,
     backgroundColor: semanticColors.surface.scrim,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: rawTokens.space[5],
   },
   dialog: {
     backgroundColor: semanticColors.surface.page,

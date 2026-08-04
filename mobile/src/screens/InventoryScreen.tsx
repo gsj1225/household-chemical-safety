@@ -9,6 +9,7 @@ import { StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { rawTokens, semanticColors } from '../theme/tokens';
 import AppText from '../components/primitives/AppText';
+import ScreenSafeArea from '../components/primitives/ScreenSafeArea';
 import ScreenScroll from '../components/primitives/ScreenScroll';
 import StateMessage from '../components/primitives/StateMessage';
 import Surface from '../components/primitives/Surface';
@@ -94,7 +95,7 @@ export default function InventoryScreen() {
   }, [navigation]);
 
   return (
-    <View style={styles.screen}>
+    <ScreenSafeArea>
       <View style={styles.header}>
         <AppText variant="title">我的化学品库</AppText>
         <View style={styles.headerActions}>
@@ -125,7 +126,7 @@ export default function InventoryScreen() {
           onPressProduct={handlePressProduct}
         />
       </ScreenScroll>
-    </View>
+    </ScreenSafeArea>
   );
 }
 
@@ -225,10 +226,7 @@ function InventoryContent({
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: semanticColors.surface.page,
-  },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',

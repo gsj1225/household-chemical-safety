@@ -9,6 +9,7 @@ import React, { useEffect, useCallback } from 'react';
 import { StyleSheet, View, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { rawTokens, semanticColors, componentTokens } from '../theme/tokens';
+import ScreenSafeArea from '../components/primitives/ScreenSafeArea';
 import AppText from '../components/primitives/AppText';
 import AppButton from '../components/primitives/AppButton';
 import SemanticBadge from '../components/primitives/SemanticBadge';
@@ -68,7 +69,7 @@ export default function CompatibilityScreen() {
   const overview = summary ? toCompatibilityOverviewVM(summary) : null;
 
   return (
-    <View style={styles.screen}>
+    <ScreenSafeArea>
       <View style={styles.header}>
         <AppText variant="title">相容性</AppText>
         <AppButton label="返回" variant="quiet" onPress={() => navigation.goBack()} />
@@ -186,7 +187,7 @@ export default function CompatibilityScreen() {
           </View>
         ) : null}
       </ScreenScroll>
-    </View>
+    </ScreenSafeArea>
   );
 }
 
@@ -222,10 +223,6 @@ function severityToTone(severity: string): 'critical' | 'attention' | 'info' | '
 // ── 样式 ──────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: semanticColors.surface.page,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

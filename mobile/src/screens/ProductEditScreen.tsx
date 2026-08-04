@@ -11,6 +11,7 @@ import { generateStableOperationId, shouldResetOperationId } from '../utils/oper
 import { StyleSheet, View, BackHandler } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { rawTokens, semanticColors } from '../theme/tokens';
+import ScreenSafeArea from '../components/primitives/ScreenSafeArea';
 import AppText from '../components/primitives/AppText';
 import AppButton from '../components/primitives/AppButton';
 import TextField from '../components/primitives/TextField';
@@ -272,33 +273,33 @@ export default function ProductEditScreen() {
 
   if (loadState === 'loading') {
     return (
-      <View style={styles.screen}>
+      <ScreenSafeArea>
         <View style={styles.centering}>
           <StateMessage title="加载中" description="正在获取产品信息…" tone="neutral" />
         </View>
-      </View>
+      </ScreenSafeArea>
     );
   }
 
   if (loadState === 'error') {
     return (
-      <View style={styles.screen}>
-        <View style={styles.centering}>
-          <StateMessage
-            title="加载失败"
-            description={errorMessage ?? '产品不存在'}
+    <ScreenSafeArea>
+      <View style={styles.centering}>
+        <StateMessage
+          title="加载失败"
+          description={errorMessage ?? '产品不存在'}
             tone="error"
             actions={
               <AppButton label="返回" variant="secondary" onPress={() => navigation.goBack()} />
             }
           />
         </View>
-      </View>
+      </ScreenSafeArea>
     );
   }
 
   return (
-    <View style={styles.screen}>
+    <ScreenSafeArea>
       <View style={styles.header}>
         <AppText variant="titleSmall">编辑产品</AppText>
         <AppButton label="取消" variant="quiet" onPress={handleCancelPress} />
@@ -404,15 +405,12 @@ export default function ProductEditScreen() {
         onConfirm={handleConfirmExit}
         onCancel={() => setCancelDialogVisible(false)}
       />
-    </View>
+    </ScreenSafeArea>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: semanticColors.surface.page,
-  },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, Linking, Pressable } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { rawTokens, semanticColors } from '../theme/tokens';
+import ScreenSafeArea from '../components/primitives/ScreenSafeArea';
 import AppText from '../components/primitives/AppText';
 import AppButton from '../components/primitives/AppButton';
 import SemanticBadge from '../components/primitives/SemanticBadge';
@@ -67,17 +68,17 @@ export default function RelationDetailScreen() {
 
   if (loadState === 'loading') {
     return (
-      <View style={styles.screen}>
+      <ScreenSafeArea>
         <View style={styles.centering}>
           <StateMessage title="加载中" description="正在获取关系详情…" tone="neutral" />
         </View>
-      </View>
+      </ScreenSafeArea>
     );
   }
 
   if (loadState === 'error' || !relation) {
     return (
-      <View style={styles.screen}>
+      <ScreenSafeArea>
         <View style={styles.centering}>
           <StateMessage
             title="加载失败"
@@ -88,12 +89,12 @@ export default function RelationDetailScreen() {
             }
           />
         </View>
-      </View>
+      </ScreenSafeArea>
     );
   }
 
   return (
-    <View style={styles.screen}>
+    <ScreenSafeArea>
       <View style={styles.header}>
         <AppText variant="titleSmall">关系详情</AppText>
         <AppButton label="返回" variant="quiet" onPress={() => navigation.goBack()} />
@@ -219,7 +220,7 @@ export default function RelationDetailScreen() {
           </View>
         </Surface>
       </ScreenScroll>
-    </View>
+    </ScreenSafeArea>
   );
 }
 
@@ -233,10 +234,6 @@ function severityToTone(severity: string): 'critical' | 'attention' | 'info' | '
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: semanticColors.surface.page,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
