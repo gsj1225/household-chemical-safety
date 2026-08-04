@@ -149,9 +149,19 @@ app.include_router(recognition.router, prefix="/api")
 
 @app.get("/health")
 async def health_check():
+    """健康检查：验证进程存活 + SQLite 可连通。"""
+    import sqlite3
+    db_ok = True
+    try:
+        conn = sqlite3.connect(str(settings.DATABASE_PATH))
+        conn.execute("SELECT 1")
+        conn.close()
+    except Exception:
+        db_ok = False
     return {
-        "status": "ok",
+        "status": "ok" if db_ok else "degraded",
         "app": settings.APP_NAME,
+        "db": "ok" if db_ok else "error",
     }
 
 

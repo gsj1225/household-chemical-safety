@@ -7,11 +7,26 @@
       "android": {
         "buildType": "apk"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://PLACEHOLDER_REPLACE_BEFORE_BUILD/api"
+      }
     },
     "production": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://PLACEHOLDER_REPLACE_BEFORE_BUILD/api"
+      }
+    },
+    "lanLocal": {
+      "android": {
+        "buildType": "apk"
+      },
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "http://PLACEHOLDER_LAN_IP:8000/api"
       }
     }
   },

@@ -9,14 +9,14 @@ class Settings(BaseSettings):
     """全局配置，可通过环境变量覆盖"""
 
     # 应用基础
-    APP_NAME: str = "排雷挑战"
+    APP_NAME: str = "家庭化学品库"
     DEBUG: bool = True
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     MAX_IMAGE_SIZE_MB: int = 5
     CHALLENGE_TTL_SECONDS: int = 3600
     MAX_ACTIVE_CHALLENGES: int = 1000
-    DATABASE_PATH: str = "data/challenges.db"
+    DATABASE_PATH: str = "data/inventory.db"
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     MAX_SCANS_PER_CHALLENGE: int = 20
     RATE_LIMIT_START_PER_MINUTE: int = 10

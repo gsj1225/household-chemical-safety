@@ -37,6 +37,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.homechem.safety",
+      "versionCode": 2,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

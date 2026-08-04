@@ -1,6 +1,6 @@
-# 排雷挑战 - 后端 Dockerfile
-# 构建命令：docker build -t mine-challenge-api .
-# 运行命令：docker run -p 8000:8000 --env-file .env mine-challenge-api
+# 家庭化学品库 - 后端 Dockerfile
+# 构建命令：docker build -t homechem-api .
+# 运行命令：docker run -p 8000:8000 --env-file .env -v $(pwd)/data:/app/data homechem-api
 
 FROM python:3.12-slim
 
@@ -12,6 +12,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制代码
 COPY . .
+
+# 数据持久化目录
+VOLUME /app/data
 
 # 暴露端口
 EXPOSE 8000
