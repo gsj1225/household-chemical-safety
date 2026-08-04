@@ -19,6 +19,7 @@ from app.core.mock_ai import MockAI
 from app.core.rate_limit import rate_limiter
 from app.data.inventory_repository import InventoryRepository
 from app.main import app
+from fastapi import Request
 from app.services.inventory_service import InventoryService
 
 
@@ -56,6 +57,11 @@ def client_with_auth(service):
     original_token = settings.DEMO_ACCESS_TOKEN
     settings.DEMO_ACCESS_TOKEN = "test-demo-token-12345"
 
+    # 测试专用端点：回显 Authorization 头，用于验证 Bearer Token 值
+    @app.get("/api/_test_echo_auth")
+    async def _test_echo_auth(request: Request):
+        return {"authorization": request.headers.get("Authorization", "")}
+
     def override_service():
         return service
 
@@ -65,6 +71,8 @@ def client_with_auth(service):
     app.dependency_overrides.clear()
     settings.DEMO_ACCESS_TOKEN = original_token
     rate_limiter.clear()
+    # 清理测试专用端点
+    app.routes[:] = [r for r in app.routes if getattr(r, "path", "") != "/api/_test_echo_auth"]
 
 
 VALID_TOKEN_HEADERS = {"Authorization": "Bearer test-demo-token-12345"}
@@ -101,12 +109,14 @@ class TestDemoAuth:
         assert resp.status_code == 401
 
     def test_api_with_valid_token_returns_200(self, client_with_auth):
-        """有效令牌正常访问。"""
+        """有效令牌正常访问，验证实际 Bearer Token 值。"""
         resp = client_with_auth.get(
-            "/api/inventory/products",
+            "/api/_test_echo_auth",
             headers=VALID_TOKEN_HEADERS,
         )
         assert resp.status_code == 200
+        body = resp.json()
+        assert body["authorization"] == "Bearer test-demo-token-12345"
 
     def test_no_auth_when_token_empty(self, client_no_auth):
         """令牌为空时不启用鉴权。"""

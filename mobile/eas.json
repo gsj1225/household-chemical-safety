@@ -7,14 +7,12 @@
       "android": {
         "buildType": "apk"
       },
-      "distribution": "internal",
-      "preBuildHook": "bash scripts/eas-pre-build-check.sh"
+      "distribution": "internal"
     },
     "production": {
       "android": {
         "buildType": "apk"
-      },
-      "preBuildHook": "bash scripts/eas-pre-build-check.sh"
+      }
     }
   },
   "submit": {

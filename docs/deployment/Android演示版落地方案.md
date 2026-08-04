@@ -274,7 +274,7 @@ cd mobile && bash scripts/eas-pre-build-check.sh
 - 备份后执行 `PRAGMA integrity_check` 校验
 - 原子重命名（先写 .tmp 再 mv）
 - 路径：`data/backups/inventory-backup-YYYYMMDD-HHMMSS.db`
-- 与 docker-compose volume 挂载一致
+- 与 docker compose volume 挂载一致
 
 ### 8.2 恢复
 

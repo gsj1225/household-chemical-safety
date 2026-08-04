@@ -55,7 +55,7 @@ mkdir -p /opt/homechem/data
 
 ```bash
 cd /opt/homechem/deploy
-docker-compose up -d
+docker compose up -d
 ```
 
 验证：
@@ -113,7 +113,7 @@ CORS_ORIGINS=["https://你的域名"]
 
 ```bash
 cd /opt/homechem/deploy
-docker-compose restart api
+docker compose restart api
 ```
 
 ---
@@ -125,23 +125,19 @@ docker-compose restart api
 - Expo EAS 账号
 - 后端已部署且公网可访问
 
-### 2.2 修改 API 地址
+### 2.2 配置 EAS 环境变量
 
-构建前必须更新 `mobile/eas.json` 中的 `EXPO_PUBLIC_API_BASE_URL`，将 `PLACEHOLDER_REPLACE_BEFORE_BUILD` 替换为实际地址：
+构建前，在 EAS Dashboard 中为项目配置以下环境变量：
 
-```json
-{
-  "preview": {
-    "env": {
-      "EXPO_PUBLIC_API_BASE_URL": "https://你的域名/api"
-    }
-  }
-}
-```
+| 变量名 | 值 | 说明 |
+|--------|-----|------|
+| `EXPO_PUBLIC_API_BASE_URL` | `https://你的域名/api` | 后端 API 公网地址，必须 HTTPS |
+| `EXPO_PUBLIC_DEMO_ACCESS_TOKEN` | `<与 backend/.env 相同的令牌>` | 演示访问令牌，用于 APK 鉴权 |
 
-### 2.3 占位符检测
+> 比赛演示版访问令牌可嵌入 APK 中；比赛结束后立即轮换。
+> 令牌通过 EAS 环境变量注入，不会写入 `eas.json` 或受 Git 跟踪的文件。
 
-构建脚本会自动检测 `PLACEHOLDER`，发现则立即失败：
+### 2.3 构建 APK
 
 ```bash
 cd mobile
@@ -154,6 +150,10 @@ npx eas build --profile preview --platform android
 npx eas build:list --status finished
 ```
 
+构建时会自动执行 `eas-build-pre-install` 钩子，校验：
+- `EXPO_PUBLIC_API_BASE_URL` 已设置且为 HTTPS
+- `EXPO_PUBLIC_DEMO_ACCESS_TOKEN` 已设置且非空
+
 ---
 
 ## 3. 数据备份与恢复
@@ -162,7 +162,7 @@ npx eas build:list --status finished
 
 ```bash
 cd /opt/homechem
-bash backend/scripts/backup.sh
+python backend/scripts/backup.py
 # 备份到 data/backups/inventory-backup-YYYYMMDD-HHMMSS.db
 ```
 
@@ -171,7 +171,7 @@ bash backend/scripts/backup.sh
 ```bash
 # crontab -e
 # 每小时备份，保留最近 24 份
-0 * * * * cd /opt/homechem && bash backend/scripts/backup.sh
+0 * * * * cd /opt/homechem && python backend/scripts/backup.py
 ```
 
 ### 3.3 恢复
@@ -179,15 +179,15 @@ bash backend/scripts/backup.sh
 ```bash
 # 1. 停止后端
 cd /opt/homechem/deploy
-docker-compose stop api
+docker compose stop api
 
 # 2. 恢复（脚本会校验备份完整性 + 原子替换）
 cd /opt/homechem
-bash backend/scripts/restore.sh data/backups/inventory-backup-YYYYMMDD-HHMMSS.db
+python backend/scripts/backup.py --restore data/backups/inventory-backup-YYYYMMDD-HHMMSS.db
 
 # 3. 重启后端
 cd /opt/homechem/deploy
-docker-compose start api
+docker compose start api
 ```
 
 ---
@@ -201,7 +201,7 @@ vi /opt/homechem/backend/.env
 # 改为 AI_PROVIDER=mock
 
 cd /opt/homechem/deploy
-docker-compose restart api
+docker compose restart api
 
 curl http://localhost:8000/health
 ```
@@ -212,9 +212,9 @@ curl http://localhost:8000/health
 
 ```bash
 cd /opt/homechem/deploy
-docker-compose down
+docker compose down
 git checkout <旧版本commit> -- ../backend
-docker-compose up -d
+docker compose up -d
 ```
 
 ---

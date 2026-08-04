@@ -14,7 +14,7 @@
     python backup.py --restore <file>     # 恢复指定备份文件
 
 数据库路径：项目根目录 data/inventory.db
-与 docker-compose.yml 的 volume 挂载一致（../data:/app/data）
+与 docker compose.yml 的 volume 挂载一致（../data:/app/data）
 """
 
 from __future__ import annotations
@@ -200,7 +200,7 @@ def main():
 
         print(f"\nRestore complete: {db_path}")
         print("\nRestart the backend:")
-        print("  cd deploy && docker-compose start api")
+        print("  cd deploy && docker compose start api")
 
     else:
         # 备份模式

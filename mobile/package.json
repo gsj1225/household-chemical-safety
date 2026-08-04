@@ -31,8 +31,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test:v2": "node --experimental-strip-types --no-warnings --test scripts/v2-behavior.test.ts scripts/store-behavior.test.ts scripts/grid-layout.test.ts scripts/reduced-motion.test.ts scripts/api-client.test.ts",
-    "prebuild:check": "bash scripts/eas-pre-build-check.sh",
-    "prebuild": "npm run prebuild:check && npx expo prebuild",
+    "eas-build-pre-install": "bash scripts/eas-pre-build-check.sh",
+    "prebuild": "npm run eas-build-pre-install && npx expo prebuild",
     "eas:build:preview": "npx eas build --profile preview --platform android"
   },
   "private": true
