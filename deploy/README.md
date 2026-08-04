@@ -11,6 +11,7 @@
 | VPS | Ubuntu 22.04+，1核2G 足够 |
 | Docker | 20.10+ |
 | Docker Compose | v2+ |
+| Python | 3.10+（Ubuntu 22.04 自带 `python3`） |
 | Nginx | 已安装 |
 | 域名 | **必须**。不支持 IP + 自签证书方案（APK 信任系统 CA，自签证书无法使用） |
 
@@ -43,7 +44,7 @@ CORS_ORIGINS=[]
 DEMO_ACCESS_TOKEN=<生成的随机令牌>
 ```
 
-> 生成令牌：`python -c "import secrets; print(secrets.token_urlsafe(24))"`
+> 生成令牌：`python3 -c "import secrets; print(secrets.token_urlsafe(24))"`
 
 ### 1.3 创建数据目录
 
@@ -162,7 +163,7 @@ npx eas build:list --status finished
 
 ```bash
 cd /opt/homechem
-python backend/scripts/backup.py
+python3 backend/scripts/backup.py
 # 备份到 data/backups/inventory-backup-YYYYMMDD-HHMMSS.db
 ```
 
@@ -171,7 +172,7 @@ python backend/scripts/backup.py
 ```bash
 # crontab -e
 # 每小时备份，保留最近 24 份
-0 * * * * cd /opt/homechem && python backend/scripts/backup.py
+0 * * * * cd /opt/homechem && python3 backend/scripts/backup.py
 ```
 
 ### 3.3 恢复
@@ -183,7 +184,7 @@ docker compose stop api
 
 # 2. 恢复（脚本会校验备份完整性 + 原子替换）
 cd /opt/homechem
-python backend/scripts/backup.py --restore data/backups/inventory-backup-YYYYMMDD-HHMMSS.db
+python3 backend/scripts/backup.py --restore data/backups/inventory-backup-YYYYMMDD-HHMMSS.db
 
 # 3. 重启后端
 cd /opt/homechem/deploy

@@ -16,8 +16,8 @@
 |--------|------|-----------|
 | `android.package` | `com.homechem.safety` | 已修复 |
 | `versionCode` | `2` | 已修复 |
-| `eas.json` | `preview` 和 `production` profile，含 `EXPO_PUBLIC_API_BASE_URL` 注入 | 已修复 |
-| `EXPO_PUBLIC_API_BASE_URL` | 默认 `127.0.0.1`，编译时通过 EAS env 注入 | 部署时填入 |
+| `eas.json` | `preview` 和 `production` profile，不保存真实 URL 和令牌 | 已修复 |
+| `EXPO_PUBLIC_API_BASE_URL` | 默认 `127.0.0.1`，通过 EAS Dashboard 环境变量注入 | 部署时填入 |
 | `lanLocal` profile | **已删除**（不实现明文网络配置） | 不适用 |
 | EAS 环境变量校验 | `eas-build-pre-install` 钩子校验 HTTPS 地址和令牌非空 | 已就绪 |
 | 相机/相册/文件存储 | 标准 Expo 插件，独立 APK 可用 | 无风险 |

@@ -19,16 +19,44 @@ export const API_BASE = (
   process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000/api'
 ).replace(/\/$/, '');
 
+/**
+ * 当前演示令牌（从环境变量读取，可在运行时更新）。
+ */
+export function getDemoToken(): string {
+  return process.env.EXPO_PUBLIC_DEMO_ACCESS_TOKEN ?? '';
+}
+
+/** @deprecated 使用 getDemoToken() 代替 */
 export const DEMO_TOKEN = process.env.EXPO_PUBLIC_DEMO_ACCESS_TOKEN ?? '';
 
 const REQUEST_TIMEOUT_MS = 15_000;
+
+// ── 公共头构建 ────────────────────────────────────
+
+/**
+ * 构建 Authorization 头（纯函数，可测试）。
+ *
+ * 所有请求路径（apiRequest 和 authHeaders）共用此函数，
+ * 确保令牌注入逻辑唯一。
+ *
+ * @param token - Bearer 令牌值
+ * @param extra - 额外请求头
+ * @returns 合并后的 Headers 对象
+ */
+export function buildAuthHeaders(token: string, extra?: HeadersInit): Headers {
+  const headers = new Headers(extra);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return headers;
+}
 
 // ── 通用请求函数 ──────────────────────────────────
 
 /**
  * 发送 API 请求，自动附加 Bearer 令牌和超时控制。
  *
- * 此函数为所有 API 请求的唯一出口，确保令牌注入的一致性。
+ * 此函数为所有 API 请求的唯一出口，通过 buildAuthHeaders 注入令牌。
  */
 export async function apiRequest<T>(
   path: string,
@@ -38,11 +66,7 @@ export async function apiRequest<T>(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  // 合并 headers，注入 Authorization
-  const headers = new Headers(init.headers);
-  if (DEMO_TOKEN) {
-    headers.set('Authorization', `Bearer ${DEMO_TOKEN}`);
-  }
+  const headers = buildAuthHeaders(getDemoToken(), init.headers);
 
   try {
     const response = await fetch(`${API_BASE}${path}`, {
@@ -78,26 +102,8 @@ export async function apiRequest<T>(
 
 /**
  * 构建 Authorization 头（供 intakeStore 的原生 fetch 调用使用）。
- */
-/**
- * 构建 Authorization 头（纯函数，可测试）。
- *
- * @param token - Bearer 令牌值
- * @param extra - 额外请求头
- * @returns 合并后的请求头对象
- */
-export function buildAuthHeaders(token: string, extra?: Record<string, string>): Record<string, string> {
-  const headers: Record<string, string> = { ...extra };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
-}
-
-/**
- * 构建 Authorization 头（供 intakeStore 的原生 fetch 调用使用）。
  * 从环境变量读取令牌，委托给 buildAuthHeaders。
  */
-export function authHeaders(extra?: Record<string, string>): Record<string, string> {
-  return buildAuthHeaders(DEMO_TOKEN, extra);
+export function authHeaders(extra?: HeadersInit): Record<string, string> {
+  return Object.fromEntries(buildAuthHeaders(getDemoToken(), extra).entries());
 }

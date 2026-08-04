@@ -4,15 +4,13 @@
  * 直接导入 src/services/apiClient.ts 的生产函数，不复制实现。
  *
  * 覆盖：
- * - authHeaders() 注入 Authorization Bearer
- * - authHeaders() 合并 extra headers
- * - authHeaders() 无令牌时不注入
+ * - buildAuthHeaders() 注入 Authorization Bearer（纯函数）
+ * - authHeaders() 委托 buildAuthHeaders
+ * - apiRequest() 通过 buildAuthHeaders 注入令牌到实际请求
  * - apiRequest() 401 响应抛出 ApiError
  * - apiRequest() 网络错误抛出 ApiError
  * - apiRequest() 成功响应返回 JSON
- * - apiRequest() 注入 Authorization 头到实际请求
  * - FormData 请求不覆盖 Content-Type
- * - 无令牌时不注入 Authorization 头
  */
 
 import { test, describe, after } from 'node:test';
@@ -20,34 +18,32 @@ import assert from 'node:assert/strict';
 
 // ── 直接导入生产函数 ──────────────────────────────
 
-import { buildAuthHeaders, authHeaders, apiRequest, API_BASE, DEMO_TOKEN } from '../src/services/apiClient.ts';
+import { buildAuthHeaders, authHeaders, apiRequest, API_BASE, DEMO_TOKEN, getDemoToken } from '../src/services/apiClient.ts';
 import { ApiError } from '../src/services/errors.ts';
-
-// ── authHeaders 测试 ─────────────────────────────
 
 // ── buildAuthHeaders 测试（纯函数，直接断言令牌值）──
 
 describe('buildAuthHeaders', () => {
   test('注入 Bearer test-token', () => {
     const headers = buildAuthHeaders('test-token');
-    assert.strictEqual(headers['Authorization'], 'Bearer test-token');
+    assert.strictEqual(headers.get('Authorization'), 'Bearer test-token');
   });
 
   test('合并 extra headers', () => {
     const headers = buildAuthHeaders('test-token', { 'Content-Type': 'application/json' });
-    assert.strictEqual(headers['Authorization'], 'Bearer test-token');
-    assert.strictEqual(headers['Content-Type'], 'application/json');
+    assert.strictEqual(headers.get('Authorization'), 'Bearer test-token');
+    assert.strictEqual(headers.get('Content-Type'), 'application/json');
   });
 
   test('空令牌时不注入 Authorization', () => {
     const headers = buildAuthHeaders('');
-    assert.ok(!('Authorization' in headers));
+    assert.strictEqual(headers.get('Authorization'), null);
   });
 
   test('空令牌时仍保留 extra headers', () => {
     const headers = buildAuthHeaders('', { 'X-Custom': 'test' });
-    assert.strictEqual(headers['X-Custom'], 'test');
-    assert.ok(!('Authorization' in headers));
+    assert.strictEqual(headers.get('X-Custom'), 'test');
+    assert.strictEqual(headers.get('Authorization'), null);
   });
 });
 
@@ -62,13 +58,14 @@ describe('authHeaders', () => {
 
   test('合并 extra headers', () => {
     const headers = authHeaders({ 'Content-Type': 'application/json' });
-    assert.strictEqual(headers['Content-Type'], 'application/json');
+    // Headers 归一化键名为小写
+    assert.strictEqual(headers['content-type'], 'application/json');
   });
 
   test('无令牌时仍合并 extra headers', () => {
     const headers = authHeaders({ 'Content-Type': 'application/json', 'X-Custom': 'test' });
-    assert.strictEqual(headers['Content-Type'], 'application/json');
-    assert.strictEqual(headers['X-Custom'], 'test');
+    assert.strictEqual(headers['content-type'], 'application/json');
+    assert.strictEqual(headers['x-custom'], 'test');
   });
 });
 
@@ -153,7 +150,7 @@ describe('apiRequest', () => {
     assert.deepStrictEqual(result, mockData);
   });
 
-  test('注入 Authorization 头到实际请求', async () => {
+  test('通过 buildAuthHeaders 注入 Bearer test-token 到实际请求', async () => {
     let capturedHeaders: Headers | null = null;
     globalThis.fetch = ((url: string, init: RequestInit) => {
       capturedHeaders = new Headers(init.headers);
@@ -165,11 +162,16 @@ describe('apiRequest', () => {
       );
     }) as typeof fetch;
 
+    // 设置测试令牌，验证 apiRequest 通过 buildAuthHeaders 注入
+    process.env.EXPO_PUBLIC_DEMO_ACCESS_TOKEN = 'test-token';
+
     await apiRequest('/test');
 
     assert.ok(capturedHeaders !== null);
-    // 在无令牌的测试环境中，Authorization 不存在
-    // 此测试验证 Headers 构建逻辑正确执行
+    assert.strictEqual(capturedHeaders!.get('Authorization'), 'Bearer test-token');
+
+    // 清理测试令牌
+    delete process.env.EXPO_PUBLIC_DEMO_ACCESS_TOKEN;
   });
 
   test('FormData 请求不覆盖 Content-Type', async () => {
