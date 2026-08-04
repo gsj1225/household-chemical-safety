@@ -13,6 +13,7 @@ if (__DEV__) {
 const isQA =
   __DEV__ &&
   typeof window !== 'undefined' &&
+  typeof window.location !== 'undefined' &&
   new URLSearchParams(window.location.search).has('qa');
 
 const RootComponent = isQA
