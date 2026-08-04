@@ -12,7 +12,7 @@
 | Docker | 20.10+ |
 | Docker Compose | v2+ |
 | Nginx | 已安装 |
-| 域名（可选） | 如有域名可直接用 443 端口；无域名用 8443 非标端口 |
+| 域名 | **必须**。不支持 IP + 自签证书方案（APK 信任系统 CA，自签证书无法使用） |
 
 ---
 
@@ -28,8 +28,7 @@ cd /opt/homechem
 ### 1.2 配置后端环境变量
 
 ```bash
-cp deploy/.env.example ../backend/.env
-# 或者直接创建
+cp deploy/.env.example backend/.env
 vi backend/.env
 ```
 
@@ -40,8 +39,11 @@ AI_PROVIDER=qwen
 QWEN_API_KEY=<真实密钥>
 DEBUG=false
 DATABASE_PATH=data/inventory.db
-CORS_ORIGINS=["*"]   # 演示用；有域名后改为明确域名
+CORS_ORIGINS=[]
+DEMO_ACCESS_TOKEN=<生成的随机令牌>
 ```
+
+> 生成令牌：`python -c "import secrets; print(secrets.token_urlsafe(24))"`
 
 ### 1.3 创建数据目录
 
@@ -63,59 +65,48 @@ curl http://localhost:8000/health
 # 期望: {"status":"ok","app":"家庭化学品库","db":"ok"}
 ```
 
-### 1.5 配置 Nginx + HTTPS
+### 1.5 配置 Nginx + HTTPS（分两阶段）
 
-**有域名（推荐）：**
+**阶段1：HTTP-only（首次申请证书前）**
 
 ```bash
-# 复制 Nginx 配置
+# 创建 certbot 验证目录
+mkdir -p /var/www/certbot
+
+# 编辑 nginx.conf，注释阶段2块，取消注释阶段1块
+# 替换 PLACEHOLDER_DOMAIN 为你的域名
 cp deploy/nginx.conf /etc/nginx/sites-available/homechem
-
-# 替换域名占位符
 sed -i 's/PLACEHOLDER_DOMAIN/你的域名/g' /etc/nginx/sites-available/homechem
-
-# 启用站点
-ln -s /etc/nginx/sites-available/homechem /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/homechem /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
 
 # 申请 Let's Encrypt 证书
-certbot --nginx -d 你的域名
-
-# 重载 Nginx
-nginx -t && systemctl reload nginx
+sudo certbot certonly --webroot -w /var/www/certbot -d 你的域名
 ```
 
-**无域名（用 IP + 8443 端口免备案）：**
+**阶段2：切换到 HTTPS（证书签发成功后）**
 
 ```bash
-# 生成自签证书
-mkdir -p /etc/nginx/ssl
-openssl req -x509 -newkey rsa:2048 \
-  -keyout /etc/nginx/ssl/homechem.key \
-  -out /etc/nginx/ssl/homechem.crt \
-  -days 30 -nodes \
-  -subj "/CN=<VPS公网IP>"
-
-# 启用 8443 配置（编辑 nginx.conf 取消注释 8443 server 块）
-# 然后复制到 Nginx 并重载
+# 编辑 nginx.conf，注释阶段1块，取消注释阶段2块
+vi /etc/nginx/sites-available/homechem
 nginx -t && systemctl reload nginx
+
+# 设置自动续期
+sudo certbot renew --dry-run
 ```
 
 ### 1.6 验证公网访问
 
 ```bash
 curl https://你的域名/health
-# 或
-curl -k https://VPS公网IP:8443/health
+# 期望: {"status":"ok","app":"家庭化学品库","db":"ok"}
 ```
 
-### 1.7 更新 CORS
-
-公网验证通过后，收紧 CORS：
+### 1.7 更新 CORS（如需 Web QA）
 
 ```ini
 # backend/.env
 CORS_ORIGINS=["https://你的域名"]
-# 或无域名时设为 ["*"]（演示版可接受）
 ```
 
 重启后端：
@@ -132,26 +123,11 @@ docker-compose restart api
 ### 2.1 前置条件
 
 - Expo EAS 账号
-- 修改 `mobile/eas.json` 中的 `PLACEHOLDER_REPLACE_BEFORE_BUILD` 为实际 API 地址
+- 后端已部署且公网可访问
 
-### 2.2 构建命令
+### 2.2 修改 API 地址
 
-```bash
-cd mobile
-
-# 登录 EAS
-npx eas login
-
-# 构建 APK（使用 preview profile）
-npx eas build --profile preview --platform android
-
-# 构建完成后获取下载链接
-npx eas build:list --status finished
-```
-
-### 2.3 修改 API 地址
-
-构建前必须更新 `eas.json` 中的 `EXPO_PUBLIC_API_BASE_URL`：
+构建前必须更新 `mobile/eas.json` 中的 `EXPO_PUBLIC_API_BASE_URL`，将 `PLACEHOLDER_REPLACE_BEFORE_BUILD` 替换为实际地址：
 
 ```json
 {
@@ -163,14 +139,31 @@ npx eas build:list --status finished
 }
 ```
 
+### 2.3 占位符检测
+
+构建脚本会自动检测 `PLACEHOLDER`，发现则立即失败：
+
+```bash
+cd mobile
+npx eas build --profile preview --platform android
+```
+
+### 2.4 获取下载链接
+
+```bash
+npx eas build:list --status finished
+```
+
 ---
 
 ## 3. 数据备份与恢复
 
-### 3.1 手动备份
+### 3.1 手动备份（SQLite 在线备份）
 
 ```bash
-sqlite3 /opt/homechem/data/inventory.db ".backup /opt/homechem/data/backup-$(date +%Y%m%d-%H%M%S).db"
+cd /opt/homechem
+bash backend/scripts/backup.sh
+# 备份到 data/backups/inventory-backup-YYYYMMDD-HHMMSS.db
 ```
 
 ### 3.2 定时备份
@@ -178,17 +171,22 @@ sqlite3 /opt/homechem/data/inventory.db ".backup /opt/homechem/data/backup-$(dat
 ```bash
 # crontab -e
 # 每小时备份，保留最近 24 份
-0 * * * * sqlite3 /opt/homechem/data/inventory.db ".backup /opt/homechem/data/backup-$(date +\%Y\%m\%d-\%H\%M).db" && find /opt/homechem/data/backup-*.db -mtime +1 -delete
+0 * * * * cd /opt/homechem && bash backend/scripts/backup.sh
 ```
 
 ### 3.3 恢复
 
 ```bash
+# 1. 停止后端
 cd /opt/homechem/deploy
 docker-compose stop api
 
-cp /opt/homechem/data/backup-YYYYMMDD-HHMM.db /opt/homechem/data/inventory.db
+# 2. 恢复（脚本会校验备份完整性 + 原子替换）
+cd /opt/homechem
+bash backend/scripts/restore.sh data/backups/inventory-backup-YYYYMMDD-HHMMSS.db
 
+# 3. 重启后端
+cd /opt/homechem/deploy
 docker-compose start api
 ```
 
@@ -199,15 +197,12 @@ docker-compose start api
 Qwen 不可用时快速切换到 Mock：
 
 ```bash
-# 编辑 .env
 vi /opt/homechem/backend/.env
 # 改为 AI_PROVIDER=mock
 
-# 重启
 cd /opt/homechem/deploy
 docker-compose restart api
 
-# 验证
 curl http://localhost:8000/health
 ```
 
@@ -216,16 +211,10 @@ curl http://localhost:8000/health
 ## 5. 回滚
 
 ```bash
-# 回滚 Docker 镜像
 cd /opt/homechem/deploy
 docker-compose down
 git checkout <旧版本commit> -- ../backend
 docker-compose up -d
-
-# 回滚数据
-docker-compose stop api
-cp /opt/homechem/data/backup-YYYYMMDD-HHMM.db /opt/homechem/data/inventory.db
-docker-compose start api
 ```
 
 ---
@@ -234,10 +223,11 @@ docker-compose start api
 
 | 步骤 | 命令 | 预期 |
 |------|------|------|
-| 健康检查 | `curl https://域名/health` | `{"status":"ok","app":"家庭化学品库","db":"ok"}` |
-| 库存列表 | `curl https://域名/api/inventory/products` | JSON 产品列表 |
-| 相容性 | `curl https://域名/api/compatibility/summary` | JSON 摘要 |
+| 健康检查 | `curl https://域名/health` | 200, `{"status":"ok","app":"家庭化学品库","db":"ok"}` |
+| 无令牌访问 | `curl https://域名/api/inventory/products` | 401 |
+| 带令牌访问 | `curl -H "Authorization: Bearer <token>" https://域名/api/inventory/products` | 200, JSON 产品列表 |
+| 相容性 | `curl -H "Authorization: Bearer <token>" https://域名/api/inventory/compatibility/summary` | 200, JSON 摘要 |
+| 限流 | 连续 11 次识别请求 | 第 11 次返回 429 |
 | APK 启动 | 打开 APK | 显示库存列表 |
 | 拍照识别 | APK 中拍照 | 返回识别草稿 |
-| 创建产品 | APK 中确认入库 | 库存列表新增 |
 | 离线行为 | 关闭 WiFi 后打开 APK | 显示错误页 |

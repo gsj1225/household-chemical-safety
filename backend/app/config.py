@@ -4,7 +4,6 @@ from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
 
-
 class Settings(BaseSettings):
     """全局配置，可通过环境变量覆盖"""
 
@@ -24,8 +23,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_NARRATION_PER_MINUTE: int = 60
 
     # AI 提供者切换
-    # mock: 使用 MockAI（当前）
-    # qwen: 使用 Qwen 云 API（后期接入）
+    # mock: 使用 MockAI
+    # qwen: 使用 Qwen 云 API
     AI_PROVIDER: Literal["mock", "qwen"] = "mock"
 
     # Qwen OpenAI-compatible API 配置
@@ -37,14 +36,27 @@ class Settings(BaseSettings):
     QWEN_MAX_RETRIES: int = 1
 
     # CORS
+    # DEBUG=true 时允许 ["*"]；DEBUG=false 时必须为明确 Origin 列表或空列表
+    # 空列表 [] 适用于原生 APK（无 Origin 头，CORS 不生效）
     CORS_ORIGINS: list[str] = ["*"]
+
+    # 演示访问令牌（仅用于比赛演示，支持随时轮换）
+    # 设置后所有 /api 请求需携带 Authorization: Bearer <token>
+    # 留空则不启用鉴权（仅开发环境）
+    DEMO_ACCESS_TOKEN: str = ""
+
+    # 识别接口限流（独立于通用限流）
+    RECOGNITION_RATE_LIMIT_PER_MINUTE: int = 10
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @model_validator(mode="after")
     def validate_production_cors(self):
         if not self.DEBUG and "*" in self.CORS_ORIGINS:
-            raise ValueError("生产环境 CORS_ORIGINS 必须配置明确域名")
+            raise ValueError(
+                "生产环境 CORS_ORIGINS 不得使用通配符 *。"
+                "原生 APK 用空列表 []；Web QA 用明确 Origin。"
+            )
         if self.AI_PROVIDER == "qwen" and not self.QWEN_API_KEY:
             raise ValueError("AI_PROVIDER=qwen 时必须配置 QWEN_API_KEY")
         return self

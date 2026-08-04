@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sqlite3
 import time
 import uuid
 
@@ -16,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
+from app.api.auth import demo_auth_middleware
 from app.api.routes import compatibility, inventory, recognition
 from app.config import settings
 
@@ -40,10 +42,8 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
 )
 
-
 def request_id_for(request: Request) -> str:
     return getattr(request.state, "request_id", "unknown")
-
 
 def error_response(
     request: Request, status_code: int, code: str, message: str,
@@ -61,12 +61,31 @@ def error_response(
         },
     )
 
-
 @app.middleware("http")
 async def request_context_middleware(request: Request, call_next):
     request_id = uuid.uuid4().hex[:16]
     request.state.request_id = request_id
     started = time.perf_counter()
+
+    # 演示令牌鉴权（在请求追踪之后，确保 401 也有 request_id）
+    path = request.url.path
+    if (
+        settings.DEMO_ACCESS_TOKEN
+        and path.startswith("/api")
+        and path not in ("/health", "/")
+    ):
+        auth_header = request.headers.get("Authorization", "")
+        token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
+        import hmac
+        if not hmac.compare_digest(token, settings.DEMO_ACCESS_TOKEN):
+            duration_ms = round((time.perf_counter() - started) * 1000, 2)
+            logger.info(json.dumps({
+                "event": "auth_rejected",
+                "request_id": request_id,
+                "path": path,
+                "duration_ms": duration_ms,
+            }, ensure_ascii=False))
+            return error_response(request, 401, "UNAUTHORIZED", "无效或缺失的访问令牌")
 
     response = await _safe_call(request, call_next)
 
@@ -85,7 +104,6 @@ async def request_context_middleware(request: Request, call_next):
     }, ensure_ascii=False))
     return response
 
-
 async def _safe_call(request: Request, call_next):
     try:
         return await call_next(request)
@@ -97,7 +115,6 @@ async def _safe_call(request: Request, call_next):
         return error_response(
             request, 500, "INTERNAL_ERROR", "服务器暂时无法处理请求"
         )
-
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -125,11 +142,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     message = exc.detail if isinstance(exc.detail, str) else fallback
     return error_response(request, exc.status_code, code, message)
 
-
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return error_response(request, 422, "VALIDATION_ERROR", "请求参数不完整或格式错误")
-
 
 @app.exception_handler(Exception)
 async def unexpected_exception_handler(request: Request, exc: Exception):
@@ -139,31 +154,38 @@ async def unexpected_exception_handler(request: Request, exc: Exception):
     )
     return error_response(request, 500, "INTERNAL_ERROR", "服务器暂时无法处理请求")
 
-
 # ── V2 路由注册 ────────────────────────────────────
 
 app.include_router(inventory.router, prefix="/api")
 app.include_router(compatibility.router, prefix="/api")
 app.include_router(recognition.router, prefix="/api")
 
-
 @app.get("/health")
 async def health_check():
-    """健康检查：验证进程存活 + SQLite 可连通。"""
-    import sqlite3
+    """健康检查：验证进程存活 + SQLite 可连通。
+
+    DB 不可用时返回 503，使 Docker healthcheck 真正失败。
+    """
     db_ok = True
+    db_error = ""
     try:
         conn = sqlite3.connect(str(settings.DATABASE_PATH))
         conn.execute("SELECT 1")
         conn.close()
-    except Exception:
+    except Exception as e:
         db_ok = False
-    return {
-        "status": "ok" if db_ok else "degraded",
-        "app": settings.APP_NAME,
-        "db": "ok" if db_ok else "error",
-    }
+        db_error = str(e)
 
+    status_code = 200 if db_ok else 503
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ok" if db_ok else "degraded",
+            "app": settings.APP_NAME,
+            "db": "ok" if db_ok else "error",
+            **({"db_error": db_error} if not db_ok else {}),
+        },
+    )
 
 @app.get("/")
 async def root():
@@ -173,7 +195,6 @@ async def root():
         "docs": "/docs",
         "health": "/health",
     }
-
 
 if __name__ == "__main__":
     import uvicorn
