@@ -79,10 +79,25 @@ export async function apiRequest<T>(
 /**
  * 构建 Authorization 头（供 intakeStore 的原生 fetch 调用使用）。
  */
-export function authHeaders(extra?: Record<string, string>): Record<string, string> {
+/**
+ * 构建 Authorization 头（纯函数，可测试）。
+ *
+ * @param token - Bearer 令牌值
+ * @param extra - 额外请求头
+ * @returns 合并后的请求头对象
+ */
+export function buildAuthHeaders(token: string, extra?: Record<string, string>): Record<string, string> {
   const headers: Record<string, string> = { ...extra };
-  if (DEMO_TOKEN) {
-    headers['Authorization'] = `Bearer ${DEMO_TOKEN}`;
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
   return headers;
+}
+
+/**
+ * 构建 Authorization 头（供 intakeStore 的原生 fetch 调用使用）。
+ * 从环境变量读取令牌，委托给 buildAuthHeaders。
+ */
+export function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  return buildAuthHeaders(DEMO_TOKEN, extra);
 }

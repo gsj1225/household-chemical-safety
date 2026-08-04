@@ -20,10 +20,38 @@ import assert from 'node:assert/strict';
 
 // ── 直接导入生产函数 ──────────────────────────────
 
-import { authHeaders, apiRequest, API_BASE, DEMO_TOKEN } from '../src/services/apiClient.ts';
+import { buildAuthHeaders, authHeaders, apiRequest, API_BASE, DEMO_TOKEN } from '../src/services/apiClient.ts';
 import { ApiError } from '../src/services/errors.ts';
 
 // ── authHeaders 测试 ─────────────────────────────
+
+// ── buildAuthHeaders 测试（纯函数，直接断言令牌值）──
+
+describe('buildAuthHeaders', () => {
+  test('注入 Bearer test-token', () => {
+    const headers = buildAuthHeaders('test-token');
+    assert.strictEqual(headers['Authorization'], 'Bearer test-token');
+  });
+
+  test('合并 extra headers', () => {
+    const headers = buildAuthHeaders('test-token', { 'Content-Type': 'application/json' });
+    assert.strictEqual(headers['Authorization'], 'Bearer test-token');
+    assert.strictEqual(headers['Content-Type'], 'application/json');
+  });
+
+  test('空令牌时不注入 Authorization', () => {
+    const headers = buildAuthHeaders('');
+    assert.ok(!('Authorization' in headers));
+  });
+
+  test('空令牌时仍保留 extra headers', () => {
+    const headers = buildAuthHeaders('', { 'X-Custom': 'test' });
+    assert.strictEqual(headers['X-Custom'], 'test');
+    assert.ok(!('Authorization' in headers));
+  });
+});
+
+// ── authHeaders 测试（委托给 buildAuthHeaders）──
 
 describe('authHeaders', () => {
   test('无令牌时不注入 Authorization', () => {

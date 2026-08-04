@@ -19,7 +19,7 @@
 | `eas.json` | `preview` 和 `production` profile，含 `EXPO_PUBLIC_API_BASE_URL` 注入 | 已修复 |
 | `EXPO_PUBLIC_API_BASE_URL` | 默认 `127.0.0.1`，编译时通过 EAS env 注入 | 部署时填入 |
 | `lanLocal` profile | **已删除**（不实现明文网络配置） | 不适用 |
-| EAS 占位符检测 | `eas-pre-build-check.sh` 脚本检测 PLACEHOLDER | 已修复 |
+| EAS 环境变量校验 | `eas-build-pre-install` 钩子校验 HTTPS 地址和令牌非空 | 已就绪 |
 | 相机/相册/文件存储 | 标准 Expo 插件，独立 APK 可用 | 无风险 |
 | 产品照片保存位置 | **设备本地**，不上传后端 | 仅保存在手机 |
 | Expo Go 专属逻辑 | 无残留 | 无风险 |
@@ -188,15 +188,17 @@ AI_PROVIDER=qwen → Qwen API 失败 → 前端提示重试
 - **正式产品**：必须改用用户认证（OAuth/OIDC）替代静态令牌
 - `QWEN_API_KEY` 等真正密钥**绝不**放入 `EXPO_PUBLIC_*` 变量或 APK
 
-### 5.3 EAS 占位符检测
+### 5.3 EAS 环境变量配置
 
-构建前必须运行：
+构建前在 EAS Dashboard 中设置以下环境变量：
 
-```bash
-cd mobile && bash scripts/eas-pre-build-check.sh
-```
+| 变量名 | 值 | 说明 |
+|--------|-----|------|
+| `EXPO_PUBLIC_API_BASE_URL` | `https://你的域名/api` | 后端 API 公网地址，必须 HTTPS |
+| `EXPO_PUBLIC_DEMO_ACCESS_TOKEN` | `<与后端一致的令牌>` | 演示访问令牌 |
 
-发现 `PLACEHOLDER` 立即失败，防止构建出连接错误地址的 APK。
+`eas.json` 不保存真实 URL 和令牌，通过 EAS 环境变量注入。
+构建时自动执行 `eas-build-pre-install` 钩子校验环境变量。
 
 ### 5.4 签名密钥管理
 
