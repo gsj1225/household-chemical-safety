@@ -168,7 +168,11 @@ flowchart LR
 
 具体 Agent 任务包见 [家庭化学品库实施计划](../implementation/家庭化学品库实施计划.md)。
 
-## 8. 配套资料
+## 8. 部署方案
+
+- [Android 演示版落地方案](../deployment/Android演示版落地方案.md)
+
+## 9. 配套资料
 
 - [产品方案](../product/家庭化学品安全方案.md)
 - [用户流程](../product/用户流程.md)
