@@ -1,54 +1,46 @@
 #!/usr/bin/env bash
-# EAS 构建前检查
+# EAS 构建前检查（eas-build-pre-install 钩子）
 #
 # 用法：
 #   ./scripts/eas-pre-build-check.sh
 #
 # 检测内容：
-#   1. eas.json 中不得包含 PLACEHOLDER（API 地址和演示令牌必须已配置）
-#   2. EXPO_PUBLIC_API_BASE_URL 必须以 https:// 开头
-#   3. EXPO_PUBLIC_DEMO_ACCESS_TOKEN 不得为空
+#   1. EXPO_PUBLIC_API_BASE_URL 环境变量已设置且以 https:// 开头
+#   2. EXPO_PUBLIC_DEMO_ACCESS_TOKEN 环境变量已设置且非空
+#
+# 环境变量可通过以下方式注入：
+#   - EAS Build 环境变量（Expo Dashboard → Build Profiles → Env）
+#   - Shell 导出：export EXPO_PUBLIC_API_BASE_URL=https://...
+#   - .env 文件（需 dotenv-cli 等工具加载）
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-EAS_JSON="${SCRIPT_DIR}/../eas.json"
-
-if [ ! -f "$EAS_JSON" ]; then
-  echo "ERROR: eas.json not found at $EAS_JSON" >&2
-  exit 1
-fi
-
 ERRORS=0
 
-# 1. 检测 PLACEHOLDER
-if grep -q "PLACEHOLDER" "$EAS_JSON"; then
-  echo "========================================" >&2
-  echo "ERROR: eas.json contains PLACEHOLDER values." >&2
-  echo "" >&2
-  echo "EXPO_PUBLIC_API_BASE_URL and EXPO_PUBLIC_DEMO_ACCESS_TOKEN" >&2
-  echo "must be set to real values before building the APK." >&2
-  echo "" >&2
-  echo "Found:" >&2
-  grep -n "PLACEHOLDER" "$EAS_JSON" >&2
-  echo "========================================" >&2
+# 1. 检测 EXPO_PUBLIC_API_BASE_URL
+API_URL="${EXPO_PUBLIC_API_BASE_URL:-}"
+if [ -z "$API_URL" ]; then
+  echo "ERROR: EXPO_PUBLIC_API_BASE_URL is not set." >&2
+  echo "  Set it via EAS Build environment variables or:" >&2
+  echo "  export EXPO_PUBLIC_API_BASE_URL=https://your-domain/api" >&2
   ERRORS=$((ERRORS + 1))
-fi
-
-# 2. 检测 HTTPS
-if grep -o '"EXPO_PUBLIC_API_BASE_URL"[[:space:]]*:[[:space:]]*"[^"]*"' "$EAS_JSON" | grep -qv 'https://'; then
+elif [[ ! "$API_URL" =~ ^https:// ]]; then
   echo "ERROR: EXPO_PUBLIC_API_BASE_URL must start with https://" >&2
-  grep -n "EXPO_PUBLIC_API_BASE_URL" "$EAS_JSON" >&2
+  echo "  Current: $API_URL" >&2
   ERRORS=$((ERRORS + 1))
+else
+  echo "  API URL: $API_URL"
 fi
 
-# 3. 检测演示令牌非空（排除 PLACEHOLDER 后检查）
-if ! grep -q "PLACEHOLDER" "$EAS_JSON"; then
-  TOKEN=$(grep -o '"EXPO_PUBLIC_DEMO_ACCESS_TOKEN"[[:space:]]*:[[:space:]]*"[^"]*"' "$EAS_JSON" | sed 's/.*: *"\(.*\)"/\1/')
-  if [ -z "$TOKEN" ]; then
-    echo "ERROR: EXPO_PUBLIC_DEMO_ACCESS_TOKEN is empty" >&2
-    ERRORS=$((ERRORS + 1))
-  fi
+# 2. 检测 EXPO_PUBLIC_DEMO_ACCESS_TOKEN
+DEMO_TOKEN="${EXPO_PUBLIC_DEMO_ACCESS_TOKEN:-}"
+if [ -z "$DEMO_TOKEN" ]; then
+  echo "ERROR: EXPO_PUBLIC_DEMO_ACCESS_TOKEN is not set." >&2
+  echo "  Set it via EAS Build environment variables or:" >&2
+  echo "  export EXPO_PUBLIC_DEMO_ACCESS_TOKEN=your-token" >&2
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  Demo token: configured (length: ${#DEMO_TOKEN})"
 fi
 
 if [ "$ERRORS" -gt 0 ]; then
@@ -57,7 +49,5 @@ if [ "$ERRORS" -gt 0 ]; then
   exit 1
 fi
 
-echo "OK: eas.json is ready for EAS Build."
-echo "  API URL: https (verified)"
-echo "  Demo token: configured"
+echo "OK: EAS build environment is ready."
 exit 0

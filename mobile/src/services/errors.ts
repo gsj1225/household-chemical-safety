@@ -5,14 +5,23 @@
  */
 
 export class ApiError extends Error {
+  readonly status?: number;
+  readonly code?: string;
+  readonly requestId?: string;
+  readonly retryAfterSeconds?: number;
+
   constructor(
     message: string,
-    public readonly status?: number,
-    public readonly code?: string,
-    public readonly requestId?: string,
-    public readonly retryAfterSeconds?: number,
+    status?: number,
+    code?: string,
+    requestId?: string,
+    retryAfterSeconds?: number,
   ) {
     super(message);
     this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.requestId = requestId;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }

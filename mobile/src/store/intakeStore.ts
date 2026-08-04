@@ -223,16 +223,9 @@ interface IntakeState {
 
 // ── API 配置 ──────────────────────────────────────
 
-const API_BASE = (
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000/api'
-).replace(/\/$/, '');
+import { authHeaders, API_BASE } from '../services/apiClient.ts';
 const AI_TIMEOUT_MS = 45_000;
 const REQUEST_TIMEOUT_MS = 15_000;
-
-// 从统一 apiClient 获取令牌注入能力
-import { authHeaders, API_BASE as SHARED_API_BASE } from '../services/apiClient';
-// 使用共享 API_BASE 保持一致性
-const _ = SHARED_API_BASE; // 确保导入不被 tree-shake
 
 // ── 内部请求函数 ──────────────────────────────────
 

@@ -11,7 +11,7 @@
  * 正式产品必须改用用户认证（OAuth/OIDC）替代静态令牌。
  */
 
-import { ApiError } from './errors';
+import { ApiError } from './errors.ts';
 
 // ── 配置 ──────────────────────────────────────────
 

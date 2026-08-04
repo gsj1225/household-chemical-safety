@@ -4,7 +4,7 @@
  * 对接后端 /api/inventory/* 接口。
  */
 
-import { apiRequest } from './apiClient';
+import { apiRequest } from './apiClient.ts';
 import type {
   InventoryProduct,
   ProductUpdateRequest,
