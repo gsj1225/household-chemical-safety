@@ -16,3 +16,8 @@ output/
 preview/
 preview_*.html
 images/generated*.jpg
+
+# Deploy secrets and temp files
+/.deploy_*
+/.temp-clone/
+/.rundata/

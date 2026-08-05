@@ -417,15 +417,15 @@ sudo tailscale serve --bg http://127.0.0.1:8000
 
 ```bash
 # Tailscale HTTPS 地址
-curl https://homechem-api.tailb5ce75.ts.net/health
+curl https://<TAILSCALE_HOST>/health
 
 # 无令牌
-curl https://homechem-api.tailb5ce75.ts.net/api/inventory/products
+curl https://<TAILSCALE_HOST>/api/inventory/products
 # 期望: 401
 
 # 带令牌
 TOKEN=$(sudo grep DEMO_ACCESS_TOKEN /opt/homechem/backend/.env | cut -d= -f2)
-curl -H "Authorization: Bearer $TOKEN" https://homechem-api.tailb5ce75.ts.net/api/inventory/products
+curl -H "Authorization: Bearer $TOKEN" https://<TAILSCALE_HOST>/api/inventory/products
 # 期望: 200
 ```
 
