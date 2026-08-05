@@ -1,0 +1,21 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 测试与工具缓存
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 数据目录（运行时挂载）
+data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
