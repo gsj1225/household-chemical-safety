@@ -1,3 +1,10 @@
+# 密钥与配置（绝不进入镜像）
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
 # Python 缓存
 __pycache__/
 *.py[cod]

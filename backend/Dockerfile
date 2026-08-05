@@ -6,11 +6,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# 安装依赖（使用清华镜像源加速下载）
+# 安装依赖（PIP_INDEX_URL 可配置，默认清华镜像加速国内构建）
+ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    -i https://pypi.tuna.tsinghua.edu.cn/simple \
-    --trusted-host pypi.tuna.tsinghua.edu.cn
+RUN pip install --no-cache-dir \
+    --index-url "${PIP_INDEX_URL}" \
+    -r requirements.txt
 
 # 复制代码
 COPY . .
