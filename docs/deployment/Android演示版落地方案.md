@@ -322,3 +322,127 @@ AI_PROVIDER=qwen → Qwen API 失败 → 前端提示重试
 | S5 APK 构建 | 1h | S3 + S4 + EAS 账号 | **需用户确认 EAS 账号可用** |
 | S6 冒烟验证 | 0.5h | S3 + S5 | — |
 | S7 比赛现场准备 | 0.5h | S6 | — |
+
+---
+
+## Tailscale 私有部署
+
+> 适用于比赛演示场景：不使用公网域名、DuckDNS 或 Nginx，
+> 通过 Tailscale Serve 提供私有 HTTPS，仅 Tailnet 内设备可访问。
+
+### 前置条件
+
+| 项目 | 要求 |
+|------|------|
+| VPS | Ubuntu 22.04+（腾讯云/阿里云均可） |
+| Docker | 使用 Ubuntu 自带 `docker.io` 包 |
+| Docker Compose | `docker-compose-v2` 包 |
+| Tailscale | 已安装并完成认证 |
+| 域名 | **不需要**。Tailscale 自动分配 `*.ts.net` 域名 |
+
+### 部署步骤
+
+#### 1. 安装软件
+
+```bash
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose-v2 git
+sudo systemctl enable docker && sudo systemctl start docker
+
+# Tailscale
+curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.noarmor.gpg | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.tailscale-keyring.list | sudo tee /etc/apt/sources.list.d/tailscale.list
+sudo apt-get update
+sudo apt-get install -y tailscale
+sudo systemctl enable tailscaled && sudo systemctl start tailscaled
+```
+
+#### 2. 配置 Docker 镜像加速（国内服务器）
+
+```bash
+echo '{"registry-mirrors":["https://mirror.ccs.tencentyun.com"]}' | sudo tee /etc/docker/daemon.json
+sudo systemctl daemon-reload && sudo systemctl restart docker
+```
+
+#### 3. 克隆仓库
+
+```bash
+sudo git clone --depth 1 https://github.com/gsj1225/home-chemical-inventory.git /opt/homechem
+sudo mkdir -p /opt/homechem/data
+```
+
+#### 4. 创建环境变量
+
+```bash
+sudo bash -c 'TOKEN=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))") && echo "AI_PROVIDER=mock
+QWEN_API_KEY=PLACEHOLDER_USER_FILL
+QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+QWEN_VL_MODEL=qwen3-vl-plus
+QWEN_TEXT_MODEL=qwen-flash
+DEBUG=false
+DATABASE_PATH=data/inventory.db
+CORS_ORIGINS=[]
+DEMO_ACCESS_TOKEN=$TOKEN" > /opt/homechem/backend/.env && chmod 600 /opt/homechem/backend/.env'
+```
+
+> `QWEN_API_KEY` 由用户在服务器终端自行填写。
+
+#### 5. 启动后端
+
+```bash
+cd /opt/homechem/deploy
+sudo docker compose up -d
+```
+
+验证：
+
+```bash
+curl http://127.0.0.1:8000/health
+# 期望: {"status":"ok","app":"家庭化学品库","db":"ok"}
+```
+
+#### 6. 配置 Tailscale
+
+```bash
+# 认证（会输出认证 URL，需浏览器打开授权）
+sudo tailscale up --hostname=homechem-api
+
+# 配置 HTTPS 反向代理
+sudo tailscale serve --bg http://127.0.0.1:8000
+```
+
+> 需在 Tailscale 管理控制台启用 MagicDNS 和 HTTPS Certificates。
+
+#### 7. 验证
+
+```bash
+# Tailscale HTTPS 地址
+curl https://homechem-api.tailb5ce75.ts.net/health
+
+# 无令牌
+curl https://homechem-api.tailb5ce75.ts.net/api/inventory/products
+# 期望: 401
+
+# 带令牌
+TOKEN=$(sudo grep DEMO_ACCESS_TOKEN /opt/homechem/backend/.env | cut -d= -f2)
+curl -H "Authorization: Bearer $TOKEN" https://homechem-api.tailb5ce75.ts.net/api/inventory/products
+# 期望: 200
+```
+
+### 与公网部署的区别
+
+| 项目 | 公网部署 | Tailscale 私有部署 |
+|------|---------|-------------------|
+| 域名 | 需要购买 | 不需要（`*.ts.net` 自动分配） |
+| HTTPS 证书 | Let's Encrypt / 自签 | Tailscale 自动签发 |
+| 反向代理 | Nginx | Tailscale Serve |
+| 访问范围 | 公网 | 仅 Tailnet 内设备 |
+| 防火墙 | 需开放 80/443 | 无需开放任何端口 |
+| 适用场景 | 正式发布 | 比赛演示、内部测试 |
+
+### 安全说明
+
+- 不启用 Tailscale Funnel（Funnel 会公开到互联网）
+- 不向公网开放 80、443、8000、8091 端口
+- SSH 端口 22 保留，建议限制来源 IP
+- `.env` 权限 600，不提交 Git，不打印到日志
