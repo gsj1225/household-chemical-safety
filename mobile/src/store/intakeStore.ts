@@ -224,57 +224,35 @@ interface IntakeState {
 // ── API 配置 ──────────────────────────────────────
 
 import { authHeaders, API_BASE } from '../services/apiClient.ts';
-const AI_TIMEOUT_MS = 45_000;
+import * as FileSystem from 'expo-file-system/legacy';
+import { uploadRecognitionPhoto, type NativeUploadFn } from '../services/recognitionUpload.ts';
 const REQUEST_TIMEOUT_MS = 15_000;
 
 // ── 内部请求函数 ──────────────────────────────────
 
+/**
+ * 原生上传通道：封装 expo-file-system 的 uploadAsync 为可注入签名。
+ * 背景：RN fetch + FormData 在 Android release 构建下 multipart 上传会
+ * 静默失败（"Network request failed"，请求不发出），uploadAsync 是
+ * Expo 官方推荐路径。逻辑主体在 services/recognitionUpload.ts（可测试）。
+ */
+const nativeRecognitionUpload: NativeUploadFn = (url, fileUri, options) =>
+  FileSystem.uploadAsync(url, fileUri, {
+    httpMethod: options.httpMethod,
+    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+    fieldName: options.fieldName,
+    mimeType: options.mimeType,
+    headers: options.headers,
+  });
+
 async function uploadForRecognition(imageUri: string): Promise<RecognitionDraft> {
   const photo = await photoAssetService.compressForUpload(imageUri);
-
-  const formData = new FormData();
-  if (Platform.OS === 'web') {
-    const blobResponse = await fetch(photo.uri);
-    const blob = await blobResponse.blob();
-    formData.append('image', blob, photo.name);
-  } else {
-    formData.append('image', {
-      uri: photo.uri,
-      type: photo.type,
-      name: photo.name,
-    } as unknown as Blob);
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(`${API_BASE}/inventory/recognition/recognize`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: formData,
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      let detail = `识别失败 (${response.status})`;
-      try {
-        const body = await response.json();
-        if (body?.error?.message) detail = body.error.message;
-      } catch { /* 非 JSON */ }
-      throw new ApiError(detail, response.status);
-    }
-
-    return (await response.json()) as RecognitionDraft;
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new ApiError('识别超时，请重试', undefined, 'REQUEST_TIMEOUT');
-    }
-    throw new ApiError('无法连接识别服务', undefined, 'NETWORK_UNAVAILABLE');
-  } finally {
-    clearTimeout(timeout);
-  }
+  return uploadRecognitionPhoto(photo, {
+    platform: Platform.OS,
+    apiBase: API_BASE,
+    headers: authHeaders(),
+    uploadFn: nativeRecognitionUpload,
+  });
 }
 
 async function checkDuplicatesApi(

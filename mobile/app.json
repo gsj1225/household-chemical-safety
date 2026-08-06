@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "家庭化学品安全检查",
-    "slug": "home-chemical-safety-check",
-    "version": "1.0.1",
+    "slug": "homechem-gsj-home-chemical-safety-check",
+    "version": "1.0.3",
     "orientation": "portrait",
     "plugins": [
       [
@@ -38,7 +38,7 @@
     },
     "android": {
       "package": "com.homechem.safety",
-      "versionCode": 2,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -49,6 +49,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "696adfa0-bba8-44dd-95f5-dd9f3ce350b8"
+      }
     }
   }
 }

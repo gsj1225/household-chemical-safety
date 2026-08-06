@@ -93,7 +93,7 @@ flowchart LR
 │  ├─ app/services/         InventoryService、RecognitionService、CompatibilityService
 │  ├─ app/data/             SQLite Repository 与 JSON 规则数据
 │  ├─ app/models/           Pydantic 模型
-│  ├─ tests/                pytest 测试（127 项）
+│  ├─ tests/                pytest 测试（165 项）
 │  └─ tests/_v1_archive/    V1 归档测试
 ├─ mobile/                  Expo React Native 应用
 │  ├─ src/screens/          Inventory、Intake、ProductDetail、ProductEdit、Compatibility
@@ -264,7 +264,7 @@ cd mobile
 npx expo export --platform web
 ```
 
-当前已验证：后端 127 项 + 移动端 103 项测试通过、TypeScript 类型检查通过、Expo Web 导出成功。
+当前已验证：后端 165 项 + 移动端 128 项测试通过、TypeScript 类型检查通过、Expo Web 导出成功。
 
 仓库已配置 GitHub Actions。推送到 `main`、向 `main` 提交 Pull Request 或手动触发时，云端会自动运行后端测试和前端类型检查与 Web 构建；工作流强制使用 Mock 模式，不需要 Qwen API Key，也不会消耗模型额度。
 

@@ -1,0 +1,51 @@
+# EAS Build ignore — 控制上传到 Expo 云端的文件范围
+# 参考 .gitignore，额外排除开发工具和本地配置
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+dist-push-check/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files — 云端构建用 EAS 环境变量，不依赖本地 .env
+.env
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# dev tools & archives
+.claude/
+CLAUDE.md
+AGENTS.md
+_v1_archive/
+*.log
