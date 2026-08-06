@@ -46,7 +46,11 @@ class TestHealthCheck:
     def test_db_unavailable_returns_503(self, client, tmp_path):
         """DB 不可用时返回 503，使 Docker healthcheck 失败。"""
         original_path = settings.DATABASE_PATH
-        settings.DATABASE_PATH = str(tmp_path / "nonexistent" / "missing.db")
+        # 用一个"文件"挡住目录创建：健康检查会先尝试创建父目录，
+        # 被同名文件阻塞时创建失败 → 连接失败 → 503
+        blocker = tmp_path / "blocker"
+        blocker.write_text("not a directory", encoding="utf-8")
+        settings.DATABASE_PATH = str(blocker / "missing.db")
         try:
             resp = client.get("/health")
             assert resp.status_code == 503

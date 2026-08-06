@@ -10,6 +10,7 @@ import logging
 import sqlite3
 import time
 import uuid
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -156,7 +157,10 @@ async def health_check():
     db_ok = True
     db_error = ""
     try:
-        conn = sqlite3.connect(str(settings.DATABASE_PATH))
+        # 全新环境（如 CI checkout）可能还没有数据目录，先确保父目录存在
+        db_path = Path(settings.DATABASE_PATH)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(db_path))
         conn.execute("SELECT 1")
         conn.close()
     except Exception as e:
