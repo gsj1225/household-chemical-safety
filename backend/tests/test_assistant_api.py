@@ -108,7 +108,7 @@ def client():
 class _UnknownAI(MockAI):
     """返回一个库存中不存在的 productId + 一个真实 productId。"""
 
-    async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context):
+    async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context, context_product_id=None):
         return AssistantDraft(
             answer="测试未知产品过滤",
             product_advice=[
@@ -119,12 +119,12 @@ class _UnknownAI(MockAI):
 
 
 class _TimeoutAI(MockAI):
-    async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context):
+    async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context, context_product_id=None):
         raise AIProviderTimeoutError("timeout")
 
 
 class _ErrorAI(MockAI):
-    async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context):
+    async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context, context_product_id=None):
         raise AIProviderError("error")
 
 
@@ -307,3 +307,45 @@ class TestAssistantDraftContract:
         draft = AssistantDraft.model_validate(payload)
         assert draft.product_advice[0].product_id == "p-jc"
         assert draft.safety_warnings[0].severity == "critical"
+
+    def test_product_name_backfilled_from_db(self, client):
+        """productName 必须由库存回填，不依赖 LLM。"""
+        resp = client.post(
+            "/api/assistant/ask",
+            data={"question": "洁厕灵能和84一起用吗"},
+            headers=AUTH,
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        names = {a["productName"] for a in body["inventoryAdvice"]}
+        assert "84消毒液" in names
+        assert "威猛先生洁厕灵" in names
+        for a in body["inventoryAdvice"]:
+            assert a["productName"], "productName 不允许为空"
+
+    def test_context_product_id_participates_in_compat(self, client):
+        """contextProductId 参与：当前产品与其他产品的 critical 关系进入证据。"""
+        resp = client.post(
+            "/api/assistant/ask",
+            data={
+                "question": "我能用84消毒液清洁吗",
+                "contextProductId": "p-84",
+            },
+            headers=AUTH,
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        # 结合当前产品的说明
+        assert "已结合当前产品「84消毒液」" in body["answer"]
+        # p-84(次氯酸钠) 与 p-jc(盐酸) 存在 critical 关系，应进入证据
+        assert any("混" in e or "混合" in e or "氯" in e for e in body["evidence"])
+        assert any(w["severity"] == "critical" for w in body["safetyWarnings"])
+
+    def test_context_product_unknown_id_safe(self, client):
+        """contextProductId 不在库存时不应报错，正常返回。"""
+        resp = client.post(
+            "/api/assistant/ask",
+            data={"question": "怎么清理", "contextProductId": "p-not-exist"},
+            headers=AUTH,
+        )
+        assert resp.status_code == 200

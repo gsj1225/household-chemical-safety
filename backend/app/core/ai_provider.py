@@ -58,6 +58,7 @@ class AIProvider(ABC):
         image_bytes: bytes | None,
         inventory_context: list[dict],
         compatibility_context: list[dict],
+        context_product_id: str | None = None,
     ) -> AssistantDraft:
         """回答家庭化学品库内的问题。
 

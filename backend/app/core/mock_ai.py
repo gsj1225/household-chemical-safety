@@ -192,10 +192,15 @@ class MockAI(AIProvider):
         image_bytes: bytes | None,
         inventory_context: list[dict],
         compatibility_context: list[dict],
+        context_product_id: str | None = None,
     ) -> AssistantDraft:
         """Mock 回答：按问题关键词返回确定性结果，覆盖各类测试场景。"""
         q = question or ""
         products = {p.get("productId"): p for p in inventory_context}
+        focus = (
+            next((p for p in inventory_context if p.get("productId") == context_product_id), None)
+            if context_product_id else None
+        )
 
         # 1. 超范围：误食/中毒/吸入/身体不适等
         out_keywords = ["误食", "中毒", "吸入", "身体不适", "急救", "呕吐", "晕厥"]
@@ -221,6 +226,10 @@ class MockAI(AIProvider):
         mixing = ("混" in q) or ("一起用" in q) or ("同时用" in q)
         advice = []
         warnings = []
+        if focus:
+            answer_prefix = f"已结合你家仓库中的「{focus.get('name','')}」来回答："
+        else:
+            answer_prefix = "根据你家的库存，我给出了下面的建议。"
         if mixing:
             for pid, p in products.items():
                 name = p.get("name", "")
@@ -267,7 +276,7 @@ class MockAI(AIProvider):
                 ))
 
         return AssistantDraft(
-            answer="根据你家的库存，我给出了下面的建议。",
+            answer=answer_prefix,
             product_advice=advice,
             general_advice=["通用建议：使用前请阅读产品标签，注意通风。"],
             safety_warnings=warnings,

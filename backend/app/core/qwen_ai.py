@@ -244,6 +244,7 @@ class QwenAI(AIProvider):
         image_bytes: bytes | None,
         inventory_context: list[dict],
         compatibility_context: list[dict],
+        context_product_id: str | None = None,
     ) -> AssistantDraft:
         """回答家庭化学品库内的问题，使用结构化 JSON 输出。
 
@@ -253,8 +254,13 @@ class QwenAI(AIProvider):
         inventory_text = self._json_dumps_safe(inventory_context)
         compat_text = self._json_dumps_safe(compatibility_context)
         history_text = self._json_dumps_safe(history[-12:]) if history else "[]"
+        # 当前关注产品（从产品详情页带入），作为回答焦点
         context_product = ""
-        # 从 inventory_context 中尝试带入 contextProductId（如适用）
+        if context_product_id:
+            context_product = self._json_dumps_safe({
+                "focusProductId": context_product_id,
+                "说明": "用户正从该产品详情页提问，请优先围绕它与仓库内其他产品的相容性、使用与储存展开。",
+            })
 
         prompt = (
             "你是家庭化学品安全助手，回答基于用户库存和相容性规则。\n"
@@ -267,6 +273,8 @@ class QwenAI(AIProvider):
             + compat_text
             + "\n\n最近对话历史(最多12条):\n"
             + history_text
+            + "\n\n当前关注产品(用户从产品详情页提问，focusProductId 标记于库存列表中):\n"
+            + context_product
             + "\n\n用户问题:\n"
             + question
             + "\n\n返回 JSON:\n"

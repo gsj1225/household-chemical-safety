@@ -24,6 +24,8 @@ class AssistantProductAdvice(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     product_id: str = Field(..., alias="productId")
+    # 产品名必须来自数据库，不允许由 LLM 返回；后端 _assemble 阶段由库存回填
+    product_name: str = Field(default="", alias="productName")
     recommendation: Literal["recommended", "not_recommended", "needs_information"]
     reason: str
     steps: list[str] = Field(default_factory=list)
