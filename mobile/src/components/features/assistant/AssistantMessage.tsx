@@ -34,7 +34,7 @@ export default function AssistantMessage({
       <View style={[styles.row, styles.userRow]}>
         <View style={[styles.bubble, styles.userBubble]}>
           {message.text ? (
-            <AppText variant="body">{message.text}</AppText>
+            <AppText variant="body" color="inverse">{message.text}</AppText>
           ) : null}
           {message.imageUri ? (
             <Image source={{ uri: message.imageUri }} style={styles.userImage} />

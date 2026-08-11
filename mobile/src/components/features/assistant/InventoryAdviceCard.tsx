@@ -35,7 +35,7 @@ export default function InventoryAdviceCard({
     <Surface variant="outlined" style={styles.card}>
       <View style={styles.header}>
         <AppText variant="label" style={styles.name}>
-          {advice.reason.split(/[，。]/)[0] || '产品'}
+          {advice.productName || '产品'}
         </AppText>
         <SemanticBadge label={meta.label} tone={meta.tone} />
       </View>

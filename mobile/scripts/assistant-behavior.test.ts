@@ -72,6 +72,7 @@ const sampleResponse: AssistantResponse = {
   inventoryAdvice: [
     {
       productId: 'p-84',
+      productName: '84消毒液',
       recommendation: 'recommended',
       reason: '84 消毒液适合表面消毒。',
       steps: ['1:10 稀释后使用'],
@@ -224,6 +225,12 @@ describe('响应数据流转', () => {
     const advice = msg.response.inventoryAdvice[0];
     assert.equal(advice.productId, 'p-84');
     assert.ok(advice.productId.length > 0);
+  });
+
+  test('productName 由后端提供并用于卡片标题', () => {
+    const msg = buildAssistantMessage(sampleResponse);
+    assert.ok(msg.response);
+    assert.equal(msg.response.inventoryAdvice[0].productName, '84消毒液');
   });
 
   test('generalAdvice 携带非库存建议', () => {

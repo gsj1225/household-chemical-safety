@@ -21,6 +21,7 @@ export type AssistantRecommendation =
 
 export interface AssistantProductAdvice {
   productId: string;
+  productName: string;
   recommendation: AssistantRecommendation;
   reason: string;
   steps: string[];

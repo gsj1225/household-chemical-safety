@@ -15,6 +15,7 @@ interface QuestionComposerProps {
   onChangeDraft: (text: string) => void;
   pendingImageUri: string | null;
   onAttach: () => void;
+  onTakePhoto: () => void;
   onClearAttachment: () => void;
   sending: boolean;
   canSend: boolean;
@@ -26,6 +27,7 @@ export default function QuestionComposer({
   onChangeDraft,
   pendingImageUri,
   onAttach,
+  onTakePhoto,
   onClearAttachment,
   sending,
   canSend,
@@ -53,9 +55,15 @@ export default function QuestionComposer({
 
       <View style={styles.actions}>
         <AppButton
-          label="添加照片"
+          label="相册"
           variant="secondary"
           onPress={onAttach}
+          disabled={sending || pendingImageUri != null}
+        />
+        <AppButton
+          label="拍照"
+          variant="secondary"
+          onPress={onTakePhoto}
           disabled={sending || pendingImageUri != null}
         />
         <AppButton

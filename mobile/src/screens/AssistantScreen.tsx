@@ -5,7 +5,7 @@
  * 库存卡 → ProductDetail；风险卡 → RelationDetail；"查看仓库" → Inventory。
  */
 
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   useNavigation,
@@ -20,7 +20,10 @@ import ScreenScroll from '../components/primitives/ScreenScroll';
 import StateMessage from '../components/primitives/StateMessage';
 import Surface from '../components/primitives/Surface';
 import { AssistantMessage, QuestionComposer } from '../components/features/assistant';
-import { pickImageFromLibrary } from '../services/imagePicker';
+import {
+  pickImageFromLibrary,
+  takePhotoFromCamera,
+} from '../services/imagePicker';
 import { useAssistantStore } from '../store/assistantStore';
 import { canSend } from '../view-models/assistant';
 import type { RootStackParamList } from '../types';
@@ -28,6 +31,8 @@ import type { RootStackParamList } from '../types';
 export default function AssistantScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<RootStackParamList, 'Assistant'>>();
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
   const {
     messages,
     draft,
@@ -48,8 +53,21 @@ export default function AssistantScreen() {
   }, [route.params?.contextProductId, setContextProductId]);
 
   const handleAttach = useCallback(async () => {
-    const uri = await pickImageFromLibrary();
-    if (uri) attachPhoto(uri);
+    setPhotoError(null);
+    const res = await pickImageFromLibrary();
+    if (res.status === 'picked') attachPhoto(res.uri);
+    else if (res.status === 'denied') {
+      setPhotoError('未获得相册访问权限，请在系统设置中允许后重试。');
+    }
+  }, [attachPhoto]);
+
+  const handleTakePhoto = useCallback(async () => {
+    setPhotoError(null);
+    const res = await takePhotoFromCamera();
+    if (res.status === 'picked') attachPhoto(res.uri);
+    else if (res.status === 'denied') {
+      setPhotoError('未获得相机权限，请在系统设置中允许后重试。');
+    }
   }, [attachPhoto]);
 
   const handleSend = useCallback(() => {
@@ -121,11 +139,17 @@ export default function AssistantScreen() {
       </ScreenScroll>
 
       <View style={styles.composer}>
+        {photoError ? (
+          <AppText variant="caption" color="warning" style={styles.photoError}>
+            {photoError}
+          </AppText>
+        ) : null}
         <QuestionComposer
           draft={draft}
           onChangeDraft={setDraft}
           pendingImageUri={pendingImageUri}
           onAttach={handleAttach}
+          onTakePhoto={handleTakePhoto}
           onClearAttachment={clearAttachment}
           sending={sending}
           canSend={canSend(draft, pendingImageUri, sending)}
@@ -171,5 +195,8 @@ const styles = StyleSheet.create({
     maxWidth: 520,
     width: '100%',
     alignSelf: 'center',
+  },
+  photoError: {
+    marginBottom: rawTokens.space[2],
   },
 });
