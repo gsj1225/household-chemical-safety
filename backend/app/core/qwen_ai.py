@@ -14,6 +14,11 @@ from app.core.exceptions import AIProviderError, AIProviderTimeoutError
 from app.core.risk_engine import RiskEngine
 from app.models.report import ReportData
 from app.models.risk import RiskAssessment
+from app.models.assistant import (
+    AssistantDraft,
+    AssistantProductAdvice,
+    AssistantSafetyWarning,
+)
 from app.models.scan import PanoramaArea, PanoramaResult, ProductIdentification
 from app.utils.image import image_bytes_to_data_url
 from app.utils.reporting import build_report
@@ -231,3 +236,64 @@ class QwenAI(AIProvider):
             "qwen_call operation=%s model=%s status=%s duration_ms=%.2f",
             operation, model, status, (time.perf_counter() - started) * 1000,
         )
+
+    async def answer_household_question(
+        self,
+        question: str,
+        history: list[dict],
+        image_bytes: bytes | None,
+        inventory_context: list[dict],
+        compatibility_context: list[dict],
+    ) -> AssistantDraft:
+        """回答家庭化学品库内的问题，使用结构化 JSON 输出。
+
+        只允许引用传入的 inventory_context 中的 productId，不允许编造产品。
+        LLM 输出仅视为候选回答，由 AssistantService 校验与兜底。
+        """
+        inventory_text = self._json_dumps_safe(inventory_context)
+        compat_text = self._json_dumps_safe(compatibility_context)
+        history_text = self._json_dumps_safe(history[-12:]) if history else "[]"
+        context_product = ""
+        # 从 inventory_context 中尝试带入 contextProductId（如适用）
+
+        prompt = (
+            "你是家庭化学品安全助手，回答基于用户库存和相容性规则。\n"
+            "安全第一：不得给出误食、中毒、吸入、身体不适等意外处置建议；"
+            "不得编造产品、成分、用途或绝对安全结论。\n"
+            "只允许引用下面库存列表中真实存在的 productId，不得只凭产品名称。\n"
+            "用户库存:\n"
+            + inventory_text
+            + "\n\n相容性关系(参考，最终以本地规则为准):\n"
+            + compat_text
+            + "\n\n最近对话历史(最多12条):\n"
+            + history_text
+            + "\n\n用户问题:\n"
+            + question
+            + "\n\n返回 JSON:\n"
+            + '{"answer":"中文回答","needs_clarification":false,'
+            + '"clarification_questions":[],"product_advice":[{"productId":"必须是库存中的id",'
+            + '"recommendation":"recommended|not_recommended|needs_information","reason":"原因",'
+            + '"steps":["步骤"],"cautions":["注意"]}],"general_advice":["非库存通用建议"],'
+            + '"safety_warnings":[{"severity":"critical|attention|unknown","title":"标题",'
+            + '"description":"描述","relationId":"可选","recommended_action":"建议"}],"out_of_scope":false}'
+        )
+
+        if image_bytes:
+            payload = await self._vision_json(
+                "assistant_ask", image_bytes, prompt
+            )
+        else:
+            payload = await self._chat_json(
+                "assistant_ask",
+                settings.QWEN_TEXT_MODEL,
+                [{"role": "user", "content": prompt}],
+            )
+
+        return self._validate(payload, AssistantDraft, "assistant_ask")
+
+    @staticmethod
+    def _json_dumps_safe(data) -> str:
+        try:
+            return json.dumps(data, ensure_ascii=False)[:6000]
+        except (TypeError, ValueError):
+            return "[]"

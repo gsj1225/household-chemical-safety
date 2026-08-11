@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from app.api.auth import demo_auth_middleware
-from app.api.routes import compatibility, inventory, recognition
+from app.api.routes import assistant, compatibility, inventory, recognition
 from app.config import settings
 
 logging.basicConfig(
@@ -147,6 +147,7 @@ async def unexpected_exception_handler(request: Request, exc: Exception):
 app.include_router(inventory.router, prefix="/api")
 app.include_router(compatibility.router, prefix="/api")
 app.include_router(recognition.router, prefix="/api")
+app.include_router(assistant.router, prefix="/api")
 
 @app.get("/health")
 async def health_check():

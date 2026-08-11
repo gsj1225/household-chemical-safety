@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from app.models.scan import PanoramaResult, ProductIdentification
 from app.models.risk import RiskAssessment
 from app.models.report import ReportData
+from app.models.assistant import AssistantDraft
 
 
 class AIProvider(ABC):
@@ -47,4 +48,20 @@ class AIProvider(ABC):
         scene_label: str = "当前场景",
     ) -> ReportData:
         """生成最终排雷报告。"""
+        pass
+
+    @abstractmethod
+    async def answer_household_question(
+        self,
+        question: str,
+        history: list[dict],
+        image_bytes: bytes | None,
+        inventory_context: list[dict],
+        compatibility_context: list[dict],
+    ) -> AssistantDraft:
+        """回答家庭化学品库内的问题。
+
+        返回结构化候选（AssistantDraft），只允许引用传入的 productId。
+        输出仅视为候选回答，不能直接作为安全结论；由 AssistantService 校验。
+        """
         pass

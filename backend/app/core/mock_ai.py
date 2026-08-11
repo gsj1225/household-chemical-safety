@@ -15,6 +15,11 @@ from app.models.scan import (
 )
 from app.models.risk import RiskAssessment
 from app.models.report import ReportData
+from app.models.assistant import (
+    AssistantDraft,
+    AssistantProductAdvice,
+    AssistantSafetyWarning,
+)
 from app.core.risk_engine import RiskEngine
 from app.utils.reporting import build_report
 
@@ -179,3 +184,91 @@ class MockAI(AIProvider):
     ) -> ReportData:
         """使用确定性逻辑生成排雷报告。"""
         return build_report(scan_results, total_mines, scene_label)
+
+    async def answer_household_question(
+        self,
+        question: str,
+        history: list[dict],
+        image_bytes: bytes | None,
+        inventory_context: list[dict],
+        compatibility_context: list[dict],
+    ) -> AssistantDraft:
+        """Mock 回答：按问题关键词返回确定性结果，覆盖各类测试场景。"""
+        q = question or ""
+        products = {p.get("productId"): p for p in inventory_context}
+
+        # 1. 超范围：误食/中毒/吸入/身体不适等
+        out_keywords = ["误食", "中毒", "吸入", "身体不适", "急救", "呕吐", "晕厥"]
+        if any(k in q for k in out_keywords):
+            return AssistantDraft(
+                answer="抱歉，关于误食、中毒或身体不适等意外情况，我无法提供处理建议。请立即联系急救或前往医院。",
+                out_of_scope=True,
+            )
+
+        # 2. 需要追问：信息不足
+        clarify_keywords = ["什么", "怎么区分", "不确定", "哪个"]
+        if any(k in q for k in clarify_keywords):
+            return AssistantDraft(
+                answer="我需要更多信息来给出准确建议，可以先回答下面几个问题。",
+                needs_clarification=True,
+                clarification_questions=[
+                    "你主要想处理什么场景？",
+                    "产品标签上还有哪些成分信息？",
+                ],
+            )
+
+        # 3. 混用场景：推荐洁厕+消毒（让服务层用引擎复核并剥离混用步骤）
+        mixing = ("混" in q) or ("一起用" in q) or ("同时用" in q)
+        advice = []
+        warnings = []
+        if mixing:
+            for pid, p in products.items():
+                name = p.get("name", "")
+                if "洁厕" in name or "盐酸" in str(p.get("category", "")):
+                    advice.append(AssistantProductAdvice(
+                        product_id=pid,
+                        recommendation="recommended",
+                        reason="用于清洁马桶",
+                        steps=["倒入洁厕剂", "与消毒液混合使用"],
+                        cautions=["佩戴手套"],
+                    ))
+                elif "消毒" in name or "84" in name:
+                    advice.append(AssistantProductAdvice(
+                        product_id=pid,
+                        recommendation="recommended",
+                        reason="用于消毒",
+                        steps=["稀释后擦拭表面", "与洁厕剂混合使用"],
+                        cautions=["通风"],
+                    ))
+            warnings.append(AssistantSafetyWarning(
+                severity="critical",
+                title="禁止混用",
+                description="洁厕剂与含氯消毒剂混合会产生有毒氯气。",
+                recommended_action="请勿混合使用，分开清洁。",
+            ))
+        else:
+            # 4. 常规推荐：挑选一个非消毒剂产品
+            recommended = []
+            for pid, p in products.items():
+                name = p.get("name", "")
+                if "消毒" in name or "84" in name:
+                    continue
+                recommended.append(pid)
+                if len(recommended) >= 1:
+                    break
+            for pid in recommended:
+                p = products[pid]
+                advice.append(AssistantProductAdvice(
+                    product_id=pid,
+                    recommendation="recommended",
+                    reason="{}适合用于当前清洁需求".format(p.get("name", "该产品")),
+                    steps=["佩戴手套", "按标签比例稀释使用"],
+                    cautions=["避免接触眼睛"],
+                ))
+
+        return AssistantDraft(
+            answer="根据你家的库存，我给出了下面的建议。",
+            product_advice=advice,
+            general_advice=["通用建议：使用前请阅读产品标签，注意通风。"],
+            safety_warnings=warnings,
+        )

@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     # 识别接口限流（独立于通用限流）
     RECOGNITION_RATE_LIMIT_PER_MINUTE: int = 10
 
+    # 助手问答限流（独立于通用限流）
+    ASSISTANT_RATE_LIMIT_PER_MINUTE: int = 8
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @model_validator(mode="after")

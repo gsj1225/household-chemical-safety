@@ -9,6 +9,7 @@ from app.data.inventory_repository import InventoryRepository
 from app.data.repository import ChallengeRepository
 from app.services.compatibility_service import CompatibilityService
 from app.services.inventory_service import InventoryService
+from app.services.assistant_service import AssistantService
 
 # 单例缓存
 _ai_provider_instance: AIProvider | None = None
@@ -17,6 +18,7 @@ _inventory_repository_instance: InventoryRepository | None = None
 _inventory_service_instance: InventoryService | None = None
 _compatibility_engine_instance: CompatibilityEngine | None = None
 _compatibility_service_instance: CompatibilityService | None = None
+_assistant_service_instance: AssistantService | None = None
 
 
 def get_ai_provider() -> AIProvider:
@@ -71,3 +73,11 @@ def get_compatibility_service() -> CompatibilityService:
         engine = get_compatibility_engine()
         _compatibility_service_instance = CompatibilityService(repo, engine)
     return _compatibility_service_instance
+
+def get_assistant_service() -> AssistantService:
+    global _assistant_service_instance
+    if _assistant_service_instance is None:
+        repo = get_inventory_repository()
+        engine = get_compatibility_engine()
+        _assistant_service_instance = AssistantService(repo, engine)
+    return _assistant_service_instance
