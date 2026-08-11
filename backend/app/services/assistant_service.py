@@ -103,6 +103,22 @@ class AssistantService:
         by_id = {p.id: p for p in products}
         context_product = by_id.get(context_product_id) if context_product_id else None
 
+        # 5a. 超范围兜底：LLM 返回 outOfScope 时必须清空所有产品/通用建议与操作。
+        #     安全边界由后端保证，不依赖移动端隐藏卡片。
+        if draft.out_of_scope:
+            return AssistantResponse(
+                answer=draft.answer
+                or "抱歉，关于误食、中毒、吸入或身体不适等意外情况，"
+                "我无法提供处理建议。请立即联系急救或前往医院。",
+                needs_clarification=False,
+                clarification_questions=[],
+                inventory_advice=[],
+                general_advice=[],
+                safety_warnings=[],
+                out_of_scope=True,
+                evidence=[],
+            )
+
         # 5. 校验 productId 属于库存 + 回填 productName + needs_information 兜底
         valid_advice: list[AssistantProductAdvice] = []
         dropped_unknown = False

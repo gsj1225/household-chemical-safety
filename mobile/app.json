@@ -2,7 +2,7 @@
   "expo": {
     "name": "家庭化学品安全检查",
     "slug": "homechem-gsj-home-chemical-safety-check",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "plugins": [
       [
@@ -38,7 +38,7 @@
     },
     "android": {
       "package": "com.homechem.safety",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

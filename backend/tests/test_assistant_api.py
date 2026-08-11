@@ -15,7 +15,11 @@ from app.core.mock_ai import MockAI
 from app.core.rate_limit import rate_limiter
 from app.data.inventory_repository import InventoryRepository
 from app.main import app
-from app.models.assistant import AssistantDraft, AssistantProductAdvice
+from app.models.assistant import (
+    AssistantDraft,
+    AssistantProductAdvice,
+    AssistantSafetyWarning,
+)
 from app.models.inventory import (
     ConfirmedFact,
     InformationStatus,
@@ -126,6 +130,22 @@ class _TimeoutAI(MockAI):
 class _ErrorAI(MockAI):
     async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context, context_product_id=None):
         raise AIProviderError("error")
+
+class _OutOfScopeWithAdviceAI(MockAI):
+    """LLM 误返回 outOfScope + 产品建议/通用建议，后端必须兜底清空。"""
+
+    async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context, context_product_id=None):
+        return AssistantDraft(
+            answer="该问题超出我的回答范围。",
+            out_of_scope=True,
+            product_advice=[
+                AssistantProductAdvice(product_id="p-84", recommendation="recommended", reason="x", steps=["使用"], cautions=[]),
+            ],
+            general_advice=["通用建议：注意通风。"],
+            safety_warnings=[
+                AssistantSafetyWarning(severity="attention", title="注意", description="d", relation_id=None, recommended_action="a")
+            ],
+        )
 
 
 class TestAssistantApi:
@@ -349,3 +369,21 @@ class TestAssistantDraftContract:
             headers=AUTH,
         )
         assert resp.status_code == 200
+
+    def test_out_of_scope_clears_llm_advice(self, tmp_path):
+        """LLM 返回 outOfScope=true 且同时带产品建议时，后端必须清空产品/通用建议。"""
+        c, _, _ = _build_client(
+            str(tmp_path / "oos.db"), _OutOfScopeWithAdviceAI()
+        )
+        resp = c.post(
+            "/api/assistant/ask",
+            data={"question": "某种异常情况"},
+            headers=AUTH,
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["outOfScope"] is True
+        assert body["inventoryAdvice"] == []
+        assert body["generalAdvice"] == []
+        assert body["safetyWarnings"] == []
+        assert body["clarificationQuestions"] == []
