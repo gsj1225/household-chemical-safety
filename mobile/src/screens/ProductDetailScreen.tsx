@@ -93,6 +93,10 @@ export default function ProductDetailScreen() {
     navigation.navigate('IntakeFlow', { rescanProductId: productId });
   }, [navigation, productId]);
 
+  const handleAskAssistant = useCallback(() => {
+    navigation.navigate('Assistant', { contextProductId: productId });
+  }, [navigation, productId]);
+
   const handleDelete = useCallback(async () => {
     if (!detail) return;
     setDeleting(true);
@@ -331,6 +335,7 @@ export default function ProductDetailScreen() {
         <View style={styles.actions}>
           <AppButton label="编辑" variant="primary" onPress={handleEdit} />
           <AppButton label="重新扫描" variant="secondary" onPress={handleRescan} />
+          <AppButton label="问问助手" variant="secondary" onPress={handleAskAssistant} />
           <AppButton
             label="删除"
             variant="danger"

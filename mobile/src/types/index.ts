@@ -13,4 +13,5 @@ export type RootStackParamList = {
   ProductEdit: { productId: string };
   Compatibility: undefined;
   RelationDetail: { relationId: string };
+  Assistant: { contextProductId?: string } | undefined;
 };

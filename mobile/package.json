@@ -30,7 +30,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test:v2": "node --experimental-strip-types --no-warnings --test scripts/v2-behavior.test.ts scripts/store-behavior.test.ts scripts/grid-layout.test.ts scripts/reduced-motion.test.ts scripts/api-client.test.ts scripts/recognition-upload.test.ts",
+    "test:v2": "node --experimental-strip-types --no-warnings --test scripts/v2-behavior.test.ts scripts/store-behavior.test.ts scripts/grid-layout.test.ts scripts/reduced-motion.test.ts scripts/api-client.test.ts scripts/recognition-upload.test.ts scripts/assistant-behavior.test.ts",
     "eas-build-pre-install": "bash scripts/eas-pre-build-check.sh",
     "prebuild": "npm run eas-build-pre-install && npx expo prebuild",
     "eas:build:preview": "npx eas-cli@latest build --profile preview --platform android"

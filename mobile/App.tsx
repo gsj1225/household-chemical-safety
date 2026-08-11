@@ -16,6 +16,7 @@ import ProductDetailScreen from './src/screens/ProductDetailScreen';
 import ProductEditScreen from './src/screens/ProductEditScreen';
 import CompatibilityScreen from './src/screens/CompatibilityScreen';
 import RelationDetailScreen from './src/screens/RelationDetailScreen';
+import AssistantScreen from './src/screens/AssistantScreen';
 import { semanticColors } from './src/theme/tokens';
 import type { RootStackParamList } from './src/types';
 
@@ -67,6 +68,11 @@ export default function App() {
             name="RelationDetail"
             component={RelationDetailScreen}
             options={{ title: '关系详情', headerShown: false }}
+          />
+          <Stack.Screen
+            name="Assistant"
+            component={AssistantScreen}
+            options={{ title: '家庭化学品助手', headerShown: false }}
           />
         </Stack.Navigator>
       </NavigationContainer>

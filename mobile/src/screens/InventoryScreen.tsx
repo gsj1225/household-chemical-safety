@@ -117,11 +117,16 @@ export default function InventoryScreen() {
     navigation.navigate('Compatibility');
   }, [navigation]);
 
+  const handleOpenAssistant = useCallback(() => {
+    navigation.navigate('Assistant');
+  }, [navigation]);
+
   return (
     <ScreenSafeArea>
       <View style={styles.header}>
         <AppText variant="title">我的化学品库</AppText>
         <View style={styles.headerActions}>
+          <AppButton label="问答" variant="secondary" onPress={handleOpenAssistant} />
           <AppButton label="相容性" variant="secondary" onPress={handleOpenCompatibility} />
           <AppButton label="+ 添加" variant="primary" onPress={handleAddProduct} />
         </View>
