@@ -246,7 +246,7 @@ export default function ProductEditScreen() {
       lastSaveSnapshotRef.current = null;
       originalRef.current = null;
       await refresh();
-      navigation.navigate('ProductDetail', { productId });
+      navigation.popTo('Inventory');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '保存失败，请重试');
     } finally {

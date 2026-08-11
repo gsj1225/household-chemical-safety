@@ -39,7 +39,7 @@ export default function IntakeFlowScreen() {
 
   const handleDone = () => {
     reset();
-    navigation.navigate('Inventory');
+    navigation.popTo('Inventory');
   };
 
   const handleCancel = () => {

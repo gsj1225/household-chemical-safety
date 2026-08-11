@@ -110,7 +110,7 @@ export default function ProductDetailScreen() {
       await refresh();
       deleteOperationIdRef.current = null;
       setDeleteDialogVisible(false);
-      navigation.navigate('Inventory');
+      navigation.popTo('Inventory');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '删除失败');
       // 不重置 operationId：重试应复用同一 ID
