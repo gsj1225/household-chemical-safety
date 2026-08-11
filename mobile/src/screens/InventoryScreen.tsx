@@ -6,7 +6,7 @@
 
 import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { rawTokens, semanticColors } from '../theme/tokens';
 import AppText from '../components/primitives/AppText';
 import ScreenSafeArea from '../components/primitives/ScreenSafeArea';
@@ -53,25 +53,48 @@ export default function InventoryScreen() {
     refresh();
   }, [setSearch, refresh]);
 
-  // 异步加载产品封面
-  useEffect(() => {
-    if (items.length === 0) return;
-    let cancelled = false;
-    (async () => {
-      const uris: Record<string, string | null> = {};
-      await Promise.all(
-        items.map(async (p) => {
-          try {
-            uris[p.productId] = await photoAssetService.getCoverUri(p.productId);
-          } catch {
-            uris[p.productId] = null;
-          }
-        })
-      );
-      if (!cancelled) setCoverUris(uris);
-    })();
-    return () => { cancelled = true; };
-  }, [items]);
+  // 封面加载：逐项读取，单个失败不影响其他；屏幕获得焦点时重新检查
+  useFocusEffect(
+    useCallback(() => {
+      if (items.length === 0) {
+        setCoverUris({});
+        return;
+      }
+      let cancelled = false;
+
+      // 清理已删除产品的封面 URI 映射，避免旧图片残留
+      const validIds = new Set(items.map((p) => p.productId));
+      setCoverUris((prev) => {
+        let changed = false;
+        const next: Record<string, string | null> = {};
+        for (const id of Object.keys(prev)) {
+          if (validIds.has(id)) next[id] = prev[id];
+          else changed = true;
+        }
+        return changed ? next : prev;
+      });
+
+      // 逐个读取封面，每个 URI 成功后立即更新对应卡片
+      for (const p of items) {
+        photoAssetService
+          .getCoverUri(p.productId)
+          .then((uri) => {
+            if (cancelled) return;
+            setCoverUris((prev) =>
+              prev[p.productId] === uri ? prev : { ...prev, [p.productId]: uri },
+            );
+          })
+          .catch(() => {
+            if (cancelled) return;
+            setCoverUris((prev) =>
+              prev[p.productId] === null ? prev : { ...prev, [p.productId]: null },
+            );
+          });
+      }
+
+      return () => { cancelled = true; };
+    }, [items]),
+  );
 
   const handleRetry = useCallback(() => {
     refresh();
