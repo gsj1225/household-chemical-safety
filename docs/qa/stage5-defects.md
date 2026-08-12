@@ -2,12 +2,11 @@
 
 > 依据 Stage 5 全链路联调与 Visual QA 记录。严重级别：P0 阻塞 / P1 高 / P2 中 / P3 低 / INFO 观察。
 
-## P1 — 移动端与后端外部域名白名单不一致
+## P1 — 移动端与后端外部域名白名单需在接入真实外部检索时保持同步
 
-- **现象**：移动端 `EXTERNAL_SOURCE_ALLOWLIST` 为空（`mobile/src/config/externalAllowlist.ts`），后端 QA 配置 `EXTERNAL_KNOWLEDGE_ALLOWLIST=["safe.gov"]`。
-- **影响**：即便后端在开启外部检索（`EXTERNAL_KNOWLEDGE_ENABLED=true`）时返回外部来源，移动端因 `canOpenExternalSource` 空白名单全拒，`ExternalSourceCard` 一律显示「来源不可访问」，不会打开任何链接。
-- **评估**：这是**保守且安全**的默认（移动端白名单从空开始），符合"默认外部搜索关闭时不得伪造外部命中"。但两端配置需在接入真实外部检索前统一：将后端 allowlist 的权威域名同步到移动端 `EXTERNAL_SOURCE_ALLOWLIST`。
-- **建议**：接入真实外部源时，两端白名单保持一致，并走审核流程。
+- **现象**：当前外部真实网络未接入，移动端 `EXTERNAL_SOURCE_ALLOWLIST`（`mobile/src/config/externalAllowlist.ts`）与后端 `EXTERNAL_KNOWLEDGE_ALLOWLIST` 均为空，`ExternalKnowledgeProvider` 统一返回 `external_fail`，不产生任何外部来源。
+- **影响**：暂无实际外部来源需要打开；`ExternalSourceCard` 不会显示（无 external_hit）。
+- **建议**：日后接入真实外部检索时，将后端 allowlist 的权威域名同步到移动端 `EXTERNAL_SOURCE_ALLOWLIST`，并走审核流程，两端保持一致。
 
 ## P2 — external_hit 暂不宣称完成（外部未接入真实网络）
 

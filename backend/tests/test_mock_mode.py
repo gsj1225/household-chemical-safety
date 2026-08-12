@@ -1,13 +1,14 @@
-"""Mock 模式启动测试（模拟生产配置）。
+"""Mock 依赖注入测试（仅单元测试用，不代表生产可用 Mock）。
 
-注意：此测试使用 FastAPI TestClient 模拟生产配置（DEBUG=false +
-DEMO_ACCESS_TOKEN），不是真实的 Docker 容器启动测试。
-真实的 Docker 容器验证待执行（标记为 TODO）。
-
-覆盖：
-- AI_PROVIDER=mock + DEBUG=false + 有令牌时后端可正常响应
-- Mock 模式下鉴权正常工作
-- Mock 模式下识别接口正常
+重要说明：
+- 本测试通过 FastAPI `dependency_overrides` 将 `get_ai_provider` 替换为 MockAI，
+  属于**单元测试依赖注入**，用于在无外部依赖下验证鉴权 / 健康 / 识别路由的
+  装配正确性。
+- 它**不代表生产 DEBUG=false 可以使用 Mock**：生产配置（`app/config.py`）已强制
+  `AI_PROVIDER=qwen` 且必须配置 `QWEN_API_KEY`，未配置时明确报错、禁止静默回退。
+- MockAI / fake_search 仅用于单元测试依赖注入，不用于产品运行、截图验收或演示。
+- 本测试修改的是全局 `settings` 对象，不触发 `Settings()` 构造校验；真实生产
+  校验由 `test_config.py` 覆盖。
 """
 
 import pytest
@@ -24,8 +25,10 @@ from app.services.inventory_service import InventoryService
 
 @pytest.fixture
 def mock_mode_client(tmp_path):
-    """模拟生产 Mock 模式：DEBUG=false, AI_PROVIDER=mock, 有令牌。
+    """通过 dependency_overrides 注入 MockAI 的依赖注入夹具。
 
+    仅验证 TestClient 装配下的健康/鉴权/识别路由；不代表生产 DEBUG=false 可用
+    Mock（生产已强制 AI_PROVIDER=qwen）。
     注意：这不是真实的 Docker 容器测试。
     真实 Docker 验证（TODO）：
       docker build -t homechem-api backend/

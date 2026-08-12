@@ -8,7 +8,7 @@
 - 说明：生产 Mock 已彻底移除；问答正式流程使用真实 Qwen，本地知识库读真实 `backend/data/knowledge/*.json`，库存与相容性读真实数据库与 CompatibilityEngine。移动端真实 UI 截图阶段使用受控场景（本地静态服务），服务端验收均为真实 Qwen。
 - 移动端：Expo Web（`dist` 静态服务 `127.0.0.1:8090`），API 指向本地后端，携带鉴权 token
 - 仓库数据：蓝月亮洗衣液（laundry）、威猛先生洁厕灵（toilet_cleaner/盐酸）、84 消毒液（disinfectant/次氯酸钠）
-- 触发问题经真实 `POST /api/assistant/ask`（multipart FormData + Bearer 鉴权 + X-Real-IP 限流分离）与 MockAI 关键词意图提取。
+- 触发问题经真实 `POST /api/assistant/ask`（multipart FormData + Bearer 鉴权 + X-Real-IP 限流分离）；**意图提取与回答组织均由真实 Qwen 完成**，本地知识库读取真实 JSON，库存与相容性读取真实 SQLite 与 CompatibilityEngine 规则。
 
 ## 1. 状态覆盖矩阵
 
@@ -70,6 +70,22 @@
 | 今天天气怎么样 | no_match | — | 无 | ✅ |
 
 > 说明：早期 HTTP 观测到 no_match 系 curl form-data 中文编码乱码所致（Qwen 收到乱码提取意图错误），改用 Python requests 以 UTF-8 正确编码后真实 Qwen 链路稳定返回 local_hit。此为测试工具编码问题，非业务缺陷。
+
+### 可复现验收方法（不含任何密钥）
+
+提供脚本 `backend/scripts/qa_real_qwen.py`（不含 API Key / token / 服务器地址 / 个人路径，全部经环境变量传入）。前置与运行：
+
+```bash
+# 1) 启动真实后端（QWEN_API_KEY 由 backend/.env 提供，或用环境变量覆盖）
+cd backend
+AI_PROVIDER=qwen python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
+
+# 2) 在另一终端运行验收脚本（QA_TOKEN 设为后端 DEMO_ACCESS_TOKEN）
+QA_TOKEN=<后端 DEMO_ACCESS_TOKEN> python backend/scripts/qa_real_qwen.py
+# 可选：QA_API_BASE=http://127.0.0.1:8001/api（默认即此值）
+```
+
+脚本以 UTF-8 multipart 请求 + Bearer 鉴权发送 local_hit / local_hit_no_inventory / outOfScope / no_match 四个问题，并对 `knowledgeStatus`、推荐产品名、`outOfScope` 等关键字段断言；任一失败即退出码 1。**不配置 QWEN_API_KEY 时不会伪造 Mock 结果，本脚本仅向真实后端发请求。**
 
 ## 6. 待执行项（未在本环境完成）
 
