@@ -20,6 +20,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 _ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 _SEMVER_RE = re.compile(r"^\d+\.\d+(\.\d+)?$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# 白名单域名格式：至少一个点分部分（如 example.com / gov.example）
+_DOMAIN_RE = re.compile(
+    r"^(?=.{1,253}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$"
+)
 
 SourceType = Literal["local_kb", "warehouse", "rule", "external"]
 
@@ -43,6 +47,20 @@ class SourceRef(BaseModel):
         if v and not v.startswith("https://"):
             raise ValueError("external url 只允许 https")
         return v
+
+    @model_validator(mode="after")
+    def _external_required(self) -> "SourceRef":
+        """type=external 时必须补齐 domain/https url/retrievedAt，且 domain 符合域名格式。"""
+        if self.type == "external":
+            if not self.domain:
+                raise ValueError("external 来源必须提供 domain")
+            if not self.url.startswith("https://"):
+                raise ValueError("external 来源必须提供 https url")
+            if not self.retrieved_at:
+                raise ValueError("external 来源必须提供 retrievedAt")
+            if not _DOMAIN_RE.match(self.domain):
+                raise ValueError("external 来源 domain 不符合域名格式")
+        return self
 
 
 class KnowledgeStep(BaseModel):
@@ -84,6 +102,8 @@ class KnowledgeEntry(BaseModel):
     reviewed_at: str = Field(alias="reviewedAt")
     version: str
     confidence: Literal["reviewed", "provisional"]
+    # 结构化禁用成分/危害关键词：产品成分/标签/危害命中即 not_recommended
+    forbidden_terms: list[str] = Field(default_factory=list, alias="forbiddenTerms")
 
     @field_validator("id")
     @classmethod

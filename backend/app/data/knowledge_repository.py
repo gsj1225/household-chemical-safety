@@ -157,7 +157,16 @@ class KnowledgeRepository:
             for s, e, fields in top
         ]
 
-        # 状态判定
+        # 材质未知：query.surface 为空时，不能把 topic/alias 命中直接视为可执行 local_hit。
+        # 有相关 reviewed/候选条目 → insufficient（要求补充材质）；无任何候选 → no_match。
+        if not query.surface:
+            any_candidate = any(
+                s >= HIT_THRESHOLD or (0 < s < HIT_THRESHOLD) for s, _e, _f in top
+            )
+            local_status = "insufficient" if any_candidate else "no_match"
+            return KnowledgeResult(local_status=local_status, matches=matches)
+
+        # 状态判定（材质已知）
         reviewed_hit = any(s >= HIT_THRESHOLD and e.confidence == "reviewed" for s, e, _ in top)
         if reviewed_hit:
             local_status = "local_hit"

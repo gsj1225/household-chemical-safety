@@ -98,8 +98,8 @@ class AssistantService:
         allow_external_photo_upload: bool = False,
     ) -> AssistantResponse:
         """执行问答编排，返回安全的结构化回答。"""
-        # 1. 超范围前置短路：不调用任何 LLM、不检索知识库
-        if self._classifier.is_out_of_scope(question):
+        # 1. 超范围前置短路：不调用任何 LLM、不检索知识库（方案 B，传入文字+图片）
+        if self._classifier.is_out_of_scope(question, image_bytes):
             return self._out_of_scope_response()
 
         # 2. 读取库存和相容性关系
@@ -219,6 +219,10 @@ class AssistantService:
         )
 
     def _build_knowledge_evidence(self, local_result) -> list[KnowledgeEvidence]:
+        # 仅完整 local_hit 才生成知识步骤与库存候选；
+        # insufficient（材质未知/provisional/no_match）不返回可执行步骤，也不生成库存推荐。
+        if local_result.local_status != "local_hit":
+            return []
         evidence: list[KnowledgeEvidence] = []
         for match in local_result.matches:
             entry = match.entry
@@ -318,11 +322,17 @@ class AssistantService:
         entry: Any | None,
         steps: list[str],
     ) -> AssistantProductAdvice:
-        """对候选产品做完整安全核验，返回推荐结论。
+        """对候选产品做完整确定性安全核验，返回推荐结论。
 
-        判定链：信息完整性 → 标签/成分 → 危险性 →（引擎在外部复核）。
-        只有全部通过才 recommended；否则 needs_information 或 not_recommended。
-        不使用 LLM 的 product_advice 作为安全结论。
+        判定链（P1-1）：
+          1. information_status 必须 complete
+          2. 必须有可核验的产品标签或成分
+          3. 知识条目适用条件（excluded_surfaces / tag_condition）与产品信息匹配
+          4. 产品成分/标签/危害不得违反知识条目的 prohibited_actions / warnings / forbidden_terms
+          5. CompatibilityEngine 在外部统一复核
+          6. 全部通过才 recommended；否则 needs_information / not_recommended。
+
+        不使用 LLM 的 product_advice 作为安全结论；不因类别匹配即推荐。
         """
         base = AssistantProductAdvice(
             product_id=product.id,
@@ -333,6 +343,11 @@ class AssistantService:
             cautions=[],
         )
 
+        ingredients = [f.display_value for f in product.ingredients]
+        labels = [f.display_value for f in product.label_warnings]
+        hazards = [h.text for h in product.hazards]
+        product_text = " ".join(ingredients + labels + hazards)
+
         # 1. 信息完整性
         if product.information_status != InformationStatus.complete:
             return base.model_copy(update={
@@ -342,54 +357,56 @@ class AssistantService:
                 "cautions": ["成分信息不完整，暂无法确认是否适合使用。"],
             })
 
-        # 2. 标签/成分检查：知识条目要求核对材质标签时，产品须有标签/成分信息
-        if entry and entry.tag_condition:
-            has_label = bool(product.ingredients) or bool(product.label_warnings)
-            if not has_label:
-                return base.model_copy(update={
-                    "recommendation": "needs_information",
-                    "reason": "缺少产品标签/成分信息，无法核对适用性。",
-                    "steps": [],
-                    "cautions": ["缺少产品标签/成分信息，无法核对适用性。"],
-                })
+        # 2. 必须有可核验的产品标签或成分
+        if not (ingredients or labels or hazards):
+            return base.model_copy(update={
+                "recommendation": "needs_information",
+                "reason": "缺少可核验的产品标签或成分信息，无法判断适用性。",
+                "steps": [],
+                "cautions": ["缺少可核验的产品标签或成分信息，无法判断适用性。"],
+            })
 
-        # 3. 危险性检查：产品危害与知识条目禁止事项/警告冲突 → not_recommended
-        conflict = self._find_hazard_conflict(product, entry)
+        # 3. 知识条目适用条件匹配：排除材质命中 → 标签明确不适用
+        if entry is not None:
+            for ex in entry.excluded_surfaces:
+                if ex and ex in product_text:
+                    return base.model_copy(update={
+                        "recommendation": "not_recommended",
+                        "reason": f"产品明确不适用于该材质：{ex}",
+                        "steps": [],
+                        "cautions": [f"产品明确不适用于该材质：{ex}"],
+                    })
+
+        # 4. 危险性/成分/标签冲突检查（确定性）
+        conflict = self._find_product_conflict(entry, product_text)
         if conflict:
             return base.model_copy(update={
                 "recommendation": "not_recommended",
-                "reason": f"产品危害与知识建议冲突：{conflict}",
+                "reason": f"产品成分/危害与知识禁用条件冲突：{conflict}",
                 "steps": [],
-                "cautions": [f"产品危害与知识建议冲突：{conflict}"],
+                "cautions": [f"产品成分/危害与知识禁用条件冲突：{conflict}"],
             })
 
-        # 4. 全部通过 → recommended
+        # 5. CompatibilityEngine 在外部统一复核；6. 全部通过 → recommended
         return base.model_copy(update={
             "reason": "该产品类别适用，且已通过成分、标签与安全性核验。",
             "steps": list(steps),
             "cautions": [],
         })
 
-    def _find_hazard_conflict(self, product: Any, entry: Any | None) -> str | None:
-        """返回首个与知识条目冲突的产品危害文本，无冲突则 None。"""
+    def _find_product_conflict(self, entry: Any | None, product_text: str) -> str | None:
+        """返回首个与知识条目冲突的禁用条件，无冲突则 None。"""
         if entry is None:
             return None
-        hazard_texts = [h.text for h in product.hazards]
-        if not hazard_texts:
-            return None
-        checks = [p for p in entry.prohibited_actions if p] + [w for w in entry.warnings if w]
-        for htext in hazard_texts:
-            for phrase in checks:
-                if self._text_overlap(htext, phrase):
-                    return phrase
+        # 结构化禁用词（确定性，优先）
+        for term in entry.forbidden_terms:
+            if term and term in product_text:
+                return term
+        # 知识条目自由文本禁用条件：产品文本包含完整禁止短语（含 tag_condition）
+        for phrase in list(entry.prohibited_actions) + list(entry.warnings) + [entry.tag_condition]:
+            if phrase and len(phrase) >= 2 and phrase in product_text:
+                return phrase
         return None
-
-    @staticmethod
-    def _text_overlap(a: str, b: str) -> bool:
-        """判断两个文本是否存在实质包含关系（用于危害冲突识别）。"""
-        if len(a) < 2 or len(b) < 2:
-            return False
-        return a in b or b in a
 
     @staticmethod
     def _top_knowledge_steps(knowledge_evidence: list[KnowledgeEvidence]) -> list[str]:
@@ -409,6 +426,9 @@ class AssistantService:
         attempted = False
         failed = False
 
+        # P2-1：图片不会发送给外部 Provider。
+        # 首期 ExternalKnowledgeProvider 只接收结构化 KnowledgeQuery，不接收 image_bytes；
+        # 图片仅用于污渍/材质/场景识别。allowExternalPhotoUpload 字段为未来扩展预留。
         if local_result.local_status in ("insufficient", "no_match"):
             eligible = (
                 allow_external_search

@@ -61,5 +61,9 @@
   ],
   "reviewed_at": "2026-08-12",
   "version": "1.0",
-  "confidence": "reviewed"
+  "confidence": "reviewed",
+  "forbidden_terms": [
+    "漂白成分",
+    "强碱性清洁剂"
+  ]
 }

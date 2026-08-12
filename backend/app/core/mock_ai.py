@@ -289,6 +289,16 @@ class MockAI(AIProvider):
 
     # ── 两次 LLM 调用（知识库优先）────────────────────
 
+    # 关键词 → 标准材质词（用于调用①提取 surface；与知识条目 surfaces/excluded_surfaces 对齐）
+    _SURFACE_MAP: list[tuple[str, str]] = [
+        ("可水洗织物", "可水洗织物"), ("水洗织物", "可水洗织物"),
+        ("厨房台面", "厨房台面"), ("台面", "厨房台面"), ("玻璃", "玻璃"),
+        ("瓷砖", "瓷砖"), ("陶瓷", "陶瓷"), ("不锈钢", "不锈钢"), ("马桶", "马桶"),
+        ("真丝", "需干洗面料"), ("需干洗", "需干洗面料"), ("干洗面料", "需干洗面料"),
+        ("毛料", "需干洗面料"), ("羊毛", "需干洗面料"), ("皮革", "皮革"),
+        ("硬质桌面", "硬质桌面"), ("桌面", "硬质桌面"), ("多孔", "多孔易扩散的浅色面料"),
+    ]
+
     # 关键词 → 标准别名（与知识库条目 aliases 对齐）
     _KEYWORD_ALIASES: list[tuple[str, list[str]]] = [
         ("油污", ["油污", "油渍"]), ("油渍", ["油污", "油渍"]), ("机油", ["油污", "油渍"]),
@@ -313,7 +323,7 @@ class MockAI(AIProvider):
         compatibility_context: list[dict],
         context_product_id: str | None = None,
     ) -> KnowledgeIntentDraft:
-        """Mock 调用①：按关键词提取意图别名，不决定 entry_id/产品/结论。"""
+        """Mock 调用①：按关键词提取意图别名与材质，不决定 entry_id/产品/结论。"""
         q = question or ""
         aliases: list[str] = []
         for kw, al in self._KEYWORD_ALIASES:
@@ -321,9 +331,14 @@ class MockAI(AIProvider):
                 for a in al:
                     if a not in aliases:
                         aliases.append(a)
-        if not aliases:
+        surface = None
+        for kw, surf in self._SURFACE_MAP:
+            if kw in q:
+                surface = surf
+                break
+        if not aliases and surface is None:
             return KnowledgeIntentDraft()
-        return KnowledgeIntentDraft(knowledge_intent=KnowledgeIntent(aliases=aliases))
+        return KnowledgeIntentDraft(knowledge_intent=KnowledgeIntent(aliases=aliases, surface=surface))
 
     async def generate_narrative(
         self,

@@ -160,8 +160,10 @@ class TestAssistantApi:
             assert a["productId"] in known
 
     def test_needs_information_not_recommended(self, client):
-        resp = client.post("/api/assistant/ask", data={"question": "洗衣液能去油污吗"}, headers=AUTH)
+        resp = client.post("/api/assistant/ask", data={"question": "洗衣液能去除可水洗织物上的油污吗"}, headers=AUTH)
         body = resp.json()
+        # 油污 + 可水洗织物 → oil local_hit；p-need(laundry) 信息不完整 → needs_information
+        assert body["knowledgeStatus"] == "local_hit"
         for a in body["inventoryAdvice"]:
             if a["productId"] == "p-need":
                 assert a["recommendation"] == "needs_information"

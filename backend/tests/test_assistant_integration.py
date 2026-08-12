@@ -48,14 +48,15 @@ AUTH = {"Authorization": f"Bearer {TOKEN}"}
 
 
 def _entry(eid, topic="主题", aliases=None, steps=None, cats=None,
-           confidence="reviewed", warnings=None):
+           confidence="reviewed", warnings=None, surfaces=None, excluded=None):
     return {
         "id": eid, "topic": topic, "aliases": aliases or [topic],
-        "surfaces": [], "excluded_surfaces": [], "scene": [],
+        "surfaces": surfaces or [], "excluded_surfaces": excluded or [], "scene": [],
         "steps": [{"order": i + 1, "text": s} for i, s in enumerate(steps or [])],
         "allowed_product_categories": cats or [],
         "warnings": warnings or [], "prohibited_actions": [], "stop_conditions": [],
-        "tag_condition": "", "sources": [{"type": "local_kb", "title": "家庭安全知识库", "url": ""}],
+        "tag_condition": "", "forbidden_terms": [],
+        "sources": [{"type": "local_kb", "title": "家庭安全知识库", "url": ""}],
         "reviewed_at": "2026-08-12", "version": "1.0", "confidence": confidence,
     }
 
@@ -76,14 +77,16 @@ def _prod(pid, name, category, status=InformationStatus.complete, ingredients=()
 
 
 class FixedIntentAI(MockAI):
-    def __init__(self, aliases=None, narrative="已按知识库给出建议。"):
+    def __init__(self, aliases=None, narrative="已按知识库给出建议。", surface=None):
         self._aliases = aliases or []
         self._narrative = narrative
+        self._surface = surface
 
     async def extract_knowledge_intent(self, *a, **k):
-        if not self._aliases:
+        if not self._aliases and self._surface is None:
             return KnowledgeIntentDraft()
-        return KnowledgeIntentDraft(knowledge_intent=KnowledgeIntent(aliases=self._aliases))
+        return KnowledgeIntentDraft(knowledge_intent=KnowledgeIntent(
+            aliases=self._aliases, surface=self._surface))
 
     async def generate_narrative(self, *a, **k):
         return AssistantNarrativeDraft(answer=self._narrative)
@@ -121,9 +124,9 @@ def _restore():
 class TestSixStateIntegration:
     def test_state1_local_hit(self):
         c = _make_client(
-            [_entry("lime", "水垢", aliases=["马桶"], cats=["toilet_cleaner"], steps=["保持通风"])],
-            [_prod("p-jc", "威猛先生洁厕灵", ProductCategory.toilet_cleaner)],
-            ai=FixedIntentAI(aliases=["马桶"]),
+            [_entry("lime", "水垢", aliases=["马桶"], surfaces=["马桶"], cats=["toilet_cleaner"], steps=["保持通风"])],
+            [_prod("p-jc", "威猛先生洁厕灵", ProductCategory.toilet_cleaner, ingredients=["盐酸"])],
+            ai=FixedIntentAI(aliases=["马桶"], surface="马桶"),
         )
         r = c.post("/api/assistant/ask", data={"question": "马桶怎么清洁"}, headers=AUTH)
         assert r.status_code == 200
@@ -135,9 +138,9 @@ class TestSixStateIntegration:
 
     def test_state2_local_hit_no_inventory(self):
         c = _make_client(
-            [_entry("ink", "墨水", aliases=["墨水"], cats=["stain_remover"], steps=["测试"])],
+            [_entry("ink", "墨水", aliases=["墨水"], surfaces=["硬质桌面"], cats=["stain_remover"], steps=["测试"])],
             [_prod("p-jc", "威猛先生洁厕灵", ProductCategory.toilet_cleaner)],
-            ai=FixedIntentAI(aliases=["墨水"]),
+            ai=FixedIntentAI(aliases=["墨水"], surface="硬质桌面"),
         )
         r = c.post("/api/assistant/ask", data={"question": "怎么除墨水"}, headers=AUTH)
         b = r.json()

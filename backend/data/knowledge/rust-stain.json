@@ -56,5 +56,9 @@
   ],
   "reviewed_at": "2026-08-12",
   "version": "1.0",
-  "confidence": "reviewed"
+  "confidence": "reviewed",
+  "forbidden_terms": [
+    "强酸",
+    "盐酸"
+  ]
 }
