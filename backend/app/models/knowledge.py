@@ -211,6 +211,7 @@ class KnowledgeEvidence(BaseModel):
     topic: str
     surfaces: list[str] = Field(default_factory=list)
     excluded_surfaces: list[str] = Field(default_factory=list, alias="excludedSurfaces")
+    reviewed_at: str = Field(alias="reviewedAt")
     steps: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     prohibited_actions: list[str] = Field(

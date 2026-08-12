@@ -151,11 +151,45 @@ export function orderedSources(sources: SourceRef[]): SourceRef[] {
   });
 }
 
+// ── 库存产品卡渲染判定 ────────────────────────────
+
+/**
+ * 是否渲染「我的仓库产品建议」卡片。
+ * 仅 local_hit 才可能有通过安全校验的库存候选；
+ * local_hit_no_inventory/insufficient/no_match/external_hit/external_fail 均不得泄漏产品操作卡片。
+ */
+export function canRenderInventoryAdvice(knowledgeStatus: KnowledgeStatus): boolean {
+  return knowledgeStatus === 'local_hit';
+}
+
 // ── 外部来源安全 ──────────────────────────────────
 
-/** 仅 https 的外部来源允许打开跳转 */
-export function canOpenExternalSource(url: string): boolean {
-  return typeof url === 'string' && url.startsWith('https://');
+/**
+ * 校验外部来源 URL 是否允许打开跳转。
+ *
+ * 必须同时满足：
+ *  1. 协议为 https；
+ *  2. hostname 完整命中白名单中的某个域名（精确匹配，不允许子域名）；
+ *  3. 不允许通过子域名、端口、用户名密码、编码等方式绕过匹配。
+ *
+ * allowlist 由配置或响应安全传入，禁止在组件内硬编码测试域名。
+ */
+export function canOpenExternalSource(
+  url: string,
+  allowlist: readonly string[],
+): boolean {
+  if (typeof url !== 'string' || url.length === 0) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  // 仅 https 允许打开（覆盖 http/javascript/data 等协议）
+  if (parsed.protocol !== 'https:') return false;
+  // hostname 精确匹配白名单（URL 解析已剥离端口、userinfo、路径、编码，hostname 为小写纯净域名）
+  if (!allowlist.includes(parsed.hostname)) return false;
+  return true;
 }
 
 // ── 可发送判定 ────────────────────────────────────

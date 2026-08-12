@@ -66,6 +66,8 @@ export interface KnowledgeEvidence {
   prohibitedActions: string[];
   stopConditions: string[];
   tagCondition: string;
+  /** 知识审核日期（YYYY-MM-DD），缺失时安全降级为占位符。 */
+  reviewedAt?: string;
   sources: SourceRef[];
   confidence: 'reviewed';
 }

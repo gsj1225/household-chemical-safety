@@ -19,13 +19,19 @@ import Surface from '../../primitives/Surface';
 import SemanticBadge from '../../primitives/SemanticBadge';
 import { canOpenExternalSource } from '../../../view-models/assistant';
 import type { SourceRef } from '../../../types/assistant';
+import { EXTERNAL_SOURCE_ALLOWLIST } from '../../../config/externalAllowlist';
 
 interface ExternalSourceCardProps {
   source: SourceRef;
+  /** 外部域名白名单，默认使用全局安全配置；可由上层传入自定义受控白名单。 */
+  allowlist?: readonly string[];
 }
 
-export default function ExternalSourceCard({ source }: ExternalSourceCardProps) {
-  const openable = canOpenExternalSource(source.url);
+export default function ExternalSourceCard({
+  source,
+  allowlist = EXTERNAL_SOURCE_ALLOWLIST,
+}: ExternalSourceCardProps) {
+  const openable = canOpenExternalSource(source.url, allowlist);
 
   const handleOpen = () => {
     if (!openable) return;

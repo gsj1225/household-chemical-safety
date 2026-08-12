@@ -17,7 +17,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { rawTokens, semanticColors } from '../../../theme/tokens';
 import AppText from '../../primitives/AppText';
 import Surface from '../../primitives/Surface';
-import { normalizeAssistantResponse, type NormalizedAssistantResponse } from '../../../view-models/assistant';
+import { canRenderInventoryAdvice, normalizeAssistantResponse, type NormalizedAssistantResponse } from '../../../view-models/assistant';
 import InventoryAdviceCard from './InventoryAdviceCard';
 import GeneralAdviceCard from './GeneralAdviceCard';
 import SafetyWarningCard from './SafetyWarningCard';
@@ -156,10 +156,13 @@ export default function AssistantMessage({
         {/* 优先级 3：知识库建议 / 库存状态 */}
         {renderByStatus(r)}
 
-        {/* 优先级 4：我的仓库产品建议 */}
-        {r.inventoryAdvice.map((advice, i) => (
-          <InventoryAdviceCard key={i} advice={advice} onPress={onPressProduct} />
-        ))}
+        {/* 优先级 4：我的仓库产品建议（仅 local_hit 渲染库存候选；
+            其他状态均不得泄漏产品操作卡片，判定逻辑见 canRenderInventoryAdvice） */}
+        {canRenderInventoryAdvice(r.knowledgeStatus)
+          ? r.inventoryAdvice.map((advice, i) => (
+              <InventoryAdviceCard key={i} advice={advice} onPress={onPressProduct} />
+            ))
+          : null}
 
         {/* 优先级 5：外部来源（仅 external_hit） */}
         {r.knowledgeStatus === 'external_hit' && r.externalSources.length > 0

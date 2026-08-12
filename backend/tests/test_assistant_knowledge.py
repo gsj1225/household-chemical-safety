@@ -662,6 +662,23 @@ class TestSourceTraceability:
         for k in resp.knowledge:
             assert any(s.ref == k.entry_id for s in k.sources)
 
+    def test_knowledge_evidence_reviewed_at_traceable(self):
+        """reviewedAt 必须回填知识条目的审核日期，且与 KnowledgeEntry.reviewedAt 对齐。"""
+        entry = _entry_v2("oil", "油污", aliases=["油污"], surfaces=["可水洗织物"], cats=["laundry"], steps=["按标签处理"])
+        entry["reviewed_at"] = "2026-07-20"
+        svc, _ = _build_service(
+            [entry],
+            [_prod("p-a", "洗衣液", ProductCategory.laundry)],
+        )
+        resp = _run(svc.ask("问题", [], None, None, SurfaceIntentAI(aliases=["油污"], surface="可水洗织物")))
+        assert resp.knowledge
+        for k in resp.knowledge:
+            assert k.reviewed_at == "2026-07-20"
+        # 与知识库条目对齐
+        kb_entry = svc._kb.get("oil")
+        assert kb_entry is not None
+        assert kb_entry.reviewed_at == "2026-07-20"
+
 class TestKnowledgeStepValidation:
     def test_order_must_be_positive(self):
         e = _entry_v2("x", "甲", steps=["a"])

@@ -108,6 +108,7 @@ export default function KnowledgeAdviceCard({
         <View style={styles.evidence}>
           <AppText variant="caption" color="muted">entryId：{knowledge.entryId}</AppText>
           <AppText variant="caption" color="muted">version：{entryVersion(knowledge)}</AppText>
+          <AppText variant="caption" color="muted">审核日期：{knowledge.reviewedAt || '—'}</AppText>
           {knowledge.excludedSurfaces.length > 0 ? (
             <AppText variant="caption" color="muted">
               不适用材质：{knowledge.excludedSurfaces.join('、')}

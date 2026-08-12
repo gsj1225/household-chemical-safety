@@ -38,6 +38,7 @@ import {
   dedupeSources,
   orderedSources,
   canOpenExternalSource,
+  canRenderInventoryAdvice,
   DEFAULT_KNOWLEDGE_STATUS,
   MAX_HISTORY,
   type AssistantUiState,
@@ -388,6 +389,7 @@ const reviewedKnowledge: KnowledgeEvidence = {
   prohibitedActions: [],
   stopConditions: ['若变色立即停止'],
   tagCondition: '',
+  reviewedAt: '2026-07-20',
   sources: [localKbRef],
   confidence: 'reviewed',
 };
@@ -412,6 +414,22 @@ describe('知识状态渲染数据', () => {
     assert.equal(msg.response.knowledge?.length, 1);
     assert.equal(msg.response.knowledge?.[0].entryId, 'lime');
     assert.equal(msg.response.knowledge?.[0].confidence, 'reviewed');
+  });
+
+  test('reviewedAt 字段映射与缺失安全降级', () => {
+    // 字段映射：后端 reviewedAt 透传到知识卡
+    const withDate = kbResponse();
+    assert.equal(withDate.knowledge?.[0].reviewedAt, '2026-07-20');
+    // 归一化后仍保留
+    const normalized = normalizeAssistantResponse(withDate);
+    assert.equal(normalized.knowledge?.[0].reviewedAt, '2026-07-20');
+
+    // 缺失降级：旧后端无 reviewedAt 时不崩溃，UI 用占位符
+    const legacy = kbResponse({
+      knowledge: [{ ...reviewedKnowledge, reviewedAt: undefined }],
+    });
+    const normalizedLegacy = normalizeAssistantResponse(legacy);
+    assert.equal(normalizedLegacy.knowledge?.[0].reviewedAt, undefined);
   });
 
   test('local_hit_no_inventory 无库存但有知识', () => {
@@ -517,11 +535,54 @@ describe('来源去重与排序', () => {
     );
   });
 
-  test('非 HTTPS 外部 URL 不可打开', () => {
-    assert.equal(canOpenExternalSource('https://example.com/x'), true);
-    assert.equal(canOpenExternalSource('http://example.com/x'), false);
-    assert.equal(canOpenExternalSource(''), false);
-    assert.equal(canOpenExternalSource('javascript:alert(1)'), false);
+  test('外部 URL 需 https 且 hostname 完整命中白名单', () => {
+    const allow = ['example.com', 'safe.gov'];
+    assert.equal(canOpenExternalSource('https://example.com/x', allow), true);
+    assert.equal(canOpenExternalSource('https://safe.gov/path', allow), true);
+    // 协议不符
+    assert.equal(canOpenExternalSource('http://example.com/x', allow), false);
+    // 空/非法 URL
+    assert.equal(canOpenExternalSource('', allow), false);
+    assert.equal(canOpenExternalSource('not-a-url', allow), false);
+    assert.equal(canOpenExternalSource('javascript:alert(1)', allow), false);
+    assert.equal(canOpenExternalSource('data:text/html,x', allow), false);
+    // 不在白名单
+    assert.equal(canOpenExternalSource('https://evil.net/x', allow), false);
+  });
+
+  test('禁止子域名/端口/用户名密码/编码绕过白名单', () => {
+    const allow = ['example.com'];
+    // 子域名不得命中
+    assert.equal(canOpenExternalSource('https://sub.example.com/x', allow), false);
+    assert.equal(canOpenExternalSource('https://notexample.com/x', allow), false);
+    assert.equal(canOpenExternalSource('https://example.com.evil.net/x', allow), false);
+    // 端口不得绕过（URL.hostname 不含端口，仍精确匹配）
+    assert.equal(canOpenExternalSource('https://example.com:8080/x', allow), true);
+    // 用户名密码形式 hostname 仍为 example.com，正常放行；不构成绕过
+    assert.equal(canOpenExternalSource('https://user:pass@example.com/x', allow), true);
+    // 大小写、编码规范化后仍命中（不绕过）
+    assert.equal(canOpenExternalSource('https://EXAMPLE.com/x', allow), true);
+    // 空白白名单默认不可打开
+    assert.equal(canOpenExternalSource('https://example.com/x', []), false);
+  });
+});
+
+describe('库存产品卡渲染判定', () => {
+  test('仅 local_hit 渲染库存产品卡', () => {
+    assert.equal(canRenderInventoryAdvice('local_hit'), true);
+  });
+
+  test('其他状态均不渲染库存产品卡（不泄漏）', () => {
+    const blocked: Array<Parameters<typeof canRenderInventoryAdvice>[0]> = [
+      'local_hit_no_inventory',
+      'insufficient',
+      'no_match',
+      'external_hit',
+      'external_fail',
+    ];
+    for (const status of blocked) {
+      assert.equal(canRenderInventoryAdvice(status), false, status);
+    }
   });
 });
 

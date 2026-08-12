@@ -236,6 +236,7 @@ class AssistantService:
                 topic=entry.topic,
                 surfaces=list(entry.surfaces),
                 excluded_surfaces=list(entry.excluded_surfaces),
+                reviewed_at=entry.reviewed_at,
                 steps=entry.ordered_steps(),
                 warnings=list(entry.warnings),
                 prohibited_actions=list(entry.prohibited_actions),
