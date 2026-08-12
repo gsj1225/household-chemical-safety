@@ -103,8 +103,6 @@ export const photoAssetService = {
   async getCoverUri(productId: string): Promise<string | null> {
     const uri = `${COVERS_DIR}${productId}.jpg`;
     const info = await FileSystem.getInfoAsync(uri);
-    // TODO(DEBUG): 定位 Android 冷启动封面加载问题后删除
-    console.log(`[getCoverUri] ${productId} exists=${info.exists} uri=${uri}`);
     return info.exists ? uri : null;
   },
 

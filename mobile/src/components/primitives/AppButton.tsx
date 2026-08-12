@@ -5,6 +5,8 @@ import {
   StyleSheet,
   View,
   type PressableProps,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { componentTokens, semanticColors } from '../../theme/tokens';
 import AppText from './AppText';
@@ -17,6 +19,8 @@ interface AppButtonProps extends Omit<PressableProps, 'children' | 'disabled' | 
   loading?: boolean;
   disabled?: boolean;
   leading?: React.ReactNode;
+  /** 透传到 Pressable 的布局样式（如 flex，用于均匀铺满） */
+  style?: StyleProp<ViewStyle>;
 }
 
 export default function AppButton({
@@ -26,6 +30,7 @@ export default function AppButton({
   disabled = false,
   leading,
   accessibilityLabel,
+  style: customStyle,
   ...props
 }: AppButtonProps) {
   const unavailable = disabled || loading;
@@ -47,6 +52,7 @@ export default function AppButton({
         styles[variant],
         pressed && !unavailable ? styles[`${variant}Pressed`] : undefined,
         unavailable ? styles.disabled : undefined,
+        customStyle,
       ]}
     >
       {loading ? (

@@ -10,5 +10,6 @@ export default ({ config }) => {
     ...config,
     name: isQA ? 'QA Fixture' : config.name,
     entry: isQA ? './QAApp.tsx' : undefined,
+    plugins: [...(config.plugins ?? []), 'expo-image'],
   };
 };

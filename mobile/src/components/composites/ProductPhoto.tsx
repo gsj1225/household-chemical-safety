@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { semanticColors, rawTokens, componentTokens } from '../../theme/tokens';
 import AppText from '../primitives/AppText';
 
@@ -14,15 +15,16 @@ interface ProductPhotoProps {
 
 type LoadStatus = 'loading' | 'loaded' | 'error';
 
-/** 加载失败后的本地重试次数上限（Android 冷启动首次解码可能失败） */
+/** 加载失败后的本地重试次数上限 */
 const MAX_LOCAL_RETRY = 1;
 /** 失败后重试延迟（ms） */
 const RETRY_DELAY_MS = 200;
 
 /**
- * 产品照片组件——3:4 容器 contain 展示
+ * 产品照片组件——3:4 容器 cover 展示
  * 缺失图片时显示占位状态；图片加载含 loading/loaded/error 三态，
  * 失败时本地延迟重试一次，避免 Android 冷启动首次解码竞态导致空白灰块。
+ * 使用 expo-image（cachePolicy=none）以获得更可靠的本地 file:// 解码。
  */
 export default function ProductPhoto({
   uri,
@@ -34,7 +36,7 @@ export default function ProductPhoto({
   const [retryCount, setRetryCount] = useState(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // URI 改变时重置加载状态和重试计数
+  // URI 改变时重置加载状态与重试计数
   useEffect(() => {
     if (retryTimer.current) clearTimeout(retryTimer.current);
     setStatus('loading');
@@ -85,19 +87,18 @@ export default function ProductPhoto({
     >
       <Image
         key={`${uri}-${retryCount}`}
-        source={{ uri }}
+        source={uri}
         style={styles.image}
-        resizeMode="cover"
+        contentFit="cover"
+        cachePolicy="none"
+        transition={0}
         onLoadStart={() => {
-          console.log(`[ProductPhoto] onLoadStart: ${productName} ${uri}`);
           setStatus('loading');
         }}
         onLoad={() => {
-          console.log(`[ProductPhoto] onLoad: ${productName}`);
           setStatus('loaded');
         }}
-        onError={(e) => {
-          console.log(`[ProductPhoto] onError: ${productName} ${uri}`, e.nativeEvent?.error);
+        onError={() => {
           setStatus('error');
         }}
       />

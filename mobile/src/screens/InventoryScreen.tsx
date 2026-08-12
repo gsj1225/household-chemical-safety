@@ -5,7 +5,7 @@
  */
 
 import React, { useEffect, useCallback, useState, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { rawTokens, semanticColors } from '../theme/tokens';
 import AppText from '../components/primitives/AppText';
@@ -17,6 +17,8 @@ import AppButton from '../components/primitives/AppButton';
 import TextField from '../components/primitives/TextField';
 import ProductGrid, { type ProductGridItem } from '../components/composites/ProductGrid';
 import { photoAssetService } from '../services/photoAssetService';
+import { getHeaderMode } from '../view-models/headerLayout';
+import { pruneCoverMap, loadCoverUris } from '../view-models/coverLoader';
 import {
   useInventoryStore,
   selectInventoryView,
@@ -28,11 +30,12 @@ export default function InventoryScreen() {
   const { items, summary, loadState, errorMessage, searchQuery, load, refresh, setSearch } =
     useInventoryStore();
   const navigation = useNavigation<any>();
+  const { width: windowWidth } = useWindowDimensions();
+  const headerMode = getHeaderMode(windowWidth);
 
   const viewState = useInventoryStore(selectInventoryView);
   const [coverUris, setCoverUris] = useState<Record<string, string | null>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   useEffect(() => {
     load();
   }, [load]);
@@ -53,46 +56,29 @@ export default function InventoryScreen() {
     refresh();
   }, [setSearch, refresh]);
 
-  // 封面加载：逐项读取，单个失败不影响其他；屏幕获得焦点时重新检查
+  // 封面加载：产品列表返回后立即逐项读取，每个 URI 成功后即更新对应卡片；
+  // 单个失败不影响其他产品；不依赖进入详情页后的二次导航。
   useFocusEffect(
     useCallback(() => {
+      let cancelled = false;
       if (items.length === 0) {
         setCoverUris({});
-        return;
+      } else {
+        // 清理已删除产品的封面 URI，避免旧图片残留
+        setCoverUris((prev) =>
+          pruneCoverMap(prev, new Set(items.map((p) => p.productId))),
+        );
+        // 逐个读取封面，读取成功立即更新
+        void loadCoverUris(
+          items,
+          (productId) => photoAssetService.getCoverUri(productId),
+          setCoverUris,
+          () => cancelled,
+        );
       }
-      let cancelled = false;
-
-      // 清理已删除产品的封面 URI 映射，避免旧图片残留
-      const validIds = new Set(items.map((p) => p.productId));
-      setCoverUris((prev) => {
-        let changed = false;
-        const next: Record<string, string | null> = {};
-        for (const id of Object.keys(prev)) {
-          if (validIds.has(id)) next[id] = prev[id];
-          else changed = true;
-        }
-        return changed ? next : prev;
-      });
-
-      // 逐个读取封面，每个 URI 成功后立即更新对应卡片
-      for (const p of items) {
-        photoAssetService
-          .getCoverUri(p.productId)
-          .then((uri) => {
-            if (cancelled) return;
-            setCoverUris((prev) =>
-              prev[p.productId] === uri ? prev : { ...prev, [p.productId]: uri },
-            );
-          })
-          .catch(() => {
-            if (cancelled) return;
-            setCoverUris((prev) =>
-              prev[p.productId] === null ? prev : { ...prev, [p.productId]: null },
-            );
-          });
-      }
-
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }, [items]),
   );
 
@@ -123,12 +109,14 @@ export default function InventoryScreen() {
 
   return (
     <ScreenSafeArea>
-      <View style={styles.header}>
-        <AppText variant="title">我的化学品库</AppText>
-        <View style={styles.headerActions}>
-          <AppButton label="问答" variant="secondary" onPress={handleOpenAssistant} />
-          <AppButton label="相容性" variant="secondary" onPress={handleOpenCompatibility} />
-          <AppButton label="+ 添加" variant="primary" onPress={handleAddProduct} />
+      <View style={[styles.header, headerMode === 'stacked' ? styles.headerStacked : styles.headerRow]}>
+        <AppText variant="title" style={headerMode === 'stacked' ? styles.headerTitleStacked : undefined}>
+          我的化学品库
+        </AppText>
+        <View style={[styles.headerActions, headerMode === 'stacked' ? styles.headerActionsStacked : undefined]}>
+          <AppButton label="问答" variant="secondary" onPress={handleOpenAssistant} style={headerMode === 'stacked' ? styles.headerButton : undefined} />
+          <AppButton label="相容性" variant="secondary" onPress={handleOpenCompatibility} style={headerMode === 'stacked' ? styles.headerButton : undefined} />
+          <AppButton label="+ 添加" variant="primary" onPress={handleAddProduct} style={headerMode === 'stacked' ? styles.headerButton : undefined} />
         </View>
       </View>
       <ScreenScroll variant="list">
@@ -256,9 +244,6 @@ function InventoryContent({
 const styles = StyleSheet.create({
 
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: rawTokens.space[4],
     paddingTop: rawTokens.space[4],
     paddingBottom: rawTokens.space[2],
@@ -266,9 +251,28 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerStacked: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: rawTokens.space[3],
+  },
+  headerTitleStacked: {
+    alignSelf: 'flex-start',
+  },
   headerActions: {
     flexDirection: 'row',
     gap: rawTokens.space[2],
+  },
+  headerActionsStacked: {
+    width: '100%',
+  },
+  headerButton: {
+    flex: 1,
   },
   centering: {
     flex: 1,

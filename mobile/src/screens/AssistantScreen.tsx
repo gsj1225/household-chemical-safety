@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import {
   useNavigation,
   useRoute,
@@ -107,6 +107,7 @@ export default function AssistantScreen() {
         <AppButton label="查看仓库" variant="secondary" onPress={handleGoInventory} />
       </View>
 
+      <KeyboardAvoidingView style={styles.avoiding} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScreenScroll variant="list" style={styles.scroll}>
         {messages.length === 0 ? (
           <View style={styles.empty}>
@@ -156,6 +157,7 @@ export default function AssistantScreen() {
           onSend={handleSend}
         />
       </View>
+      </KeyboardAvoidingView>
     </ScreenSafeArea>
   );
 }
@@ -171,6 +173,9 @@ const styles = StyleSheet.create({
     maxWidth: 520,
     width: '100%',
     alignSelf: 'center',
+  },
+  avoiding: {
+    flex: 1,
   },
   scroll: {
     flex: 1,

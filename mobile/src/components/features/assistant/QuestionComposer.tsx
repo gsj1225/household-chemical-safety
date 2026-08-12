@@ -9,6 +9,12 @@ import { rawTokens, semanticColors } from '../../../theme/tokens';
 import AppText from '../../primitives/AppText';
 import TextField from '../../primitives/TextField';
 import AppButton from '../../primitives/AppButton';
+import {
+  COMPOSER_ACTION_GAP,
+  ATTACH_BUTTON_MIN_WIDTH,
+  CAMERA_BUTTON_MIN_WIDTH,
+  SEND_BUTTON_MIN_WIDTH,
+} from '../../../view-models/composerLayout';
 
 interface QuestionComposerProps {
   draft: string;
@@ -39,7 +45,7 @@ export default function QuestionComposer({
         label=""
         value={draft}
         onChangeText={onChangeDraft}
-        placeholder="问点什么，例如：洁厕灵能和84一起用吗？"
+        placeholder="问点什么"
         multiline
         editable={!sending}
       />
@@ -59,12 +65,14 @@ export default function QuestionComposer({
           variant="secondary"
           onPress={onAttach}
           disabled={sending || pendingImageUri != null}
+          style={styles.attachButton}
         />
         <AppButton
           label="拍照"
           variant="secondary"
           onPress={onTakePhoto}
           disabled={sending || pendingImageUri != null}
+          style={styles.cameraButton}
         />
         <AppButton
           label={sending ? '发送中…' : '发送'}
@@ -72,6 +80,7 @@ export default function QuestionComposer({
           onPress={onSend}
           disabled={!canSend}
           loading={sending}
+          style={styles.sendButton}
         />
       </View>
     </View>
@@ -95,7 +104,16 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: rawTokens.space[2],
+    justifyContent: 'flex-start',
+    gap: COMPOSER_ACTION_GAP,
+  },
+  attachButton: {
+    minWidth: ATTACH_BUTTON_MIN_WIDTH,
+  },
+  cameraButton: {
+    minWidth: CAMERA_BUTTON_MIN_WIDTH,
+  },
+  sendButton: {
+    minWidth: SEND_BUTTON_MIN_WIDTH,
   },
 });
