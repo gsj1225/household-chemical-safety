@@ -78,6 +78,24 @@ class ExternalKnowledgeProvider:
             if isawaitable(result):
                 result = await result
             return result
+        # 受控 Mock：仅当显式开启外部检索（EXTERNAL_KNOWLEDGE_ENABLED）且配置了
+        # 白名单时，返回一个固定模拟外部来源（不连真实网络），用于 Stage 5 QA 验证
+        # external_hit 的 UI 渲染。默认关闭时完全不影响生产（仍视为失败）。
+        if settings.EXTERNAL_KNOWLEDGE_ENABLED and self._allowlist:
+            domain = next(iter(self._allowlist))
+            topic = (query.topic or "general").strip() or "general"
+            return ExternalSearchResult(
+                sources=[SourceRef(
+                    type="external",
+                    title="受控外部资料（Mock）",
+                    domain=domain,
+                    url=f"https://{domain}/knowledge/{topic}",
+                    ref=f"ext-{topic}",
+                    version="1.0",
+                    retrieved_at="2026-08-12",
+                )],
+                failed=False,
+            )
         # 默认：外部未实现/不可用 → 视为失败
         return ExternalSearchResult(sources=[], failed=True)
 

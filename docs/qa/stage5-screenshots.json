@@ -1,0 +1,69 @@
+{
+  "stage": "Stage 5",
+  "date": "2026-08-12",
+  "screenshots_dir": "deliverables/stage5/screenshots/",
+  "content_assertion_method": "真实 UI 提问后，取 DOM innerText 断言 + 视觉模型（view_image）复核关键截图；截图均为真实组件（AssistantScreen/KnowledgeAdviceCard/InventoryAdviceCard/SourceLayersCard/ExternalSourceCard）渲染，非 QA 假页面",
+  "screenshots": [
+    {
+      "file": "local_hit_first.png",
+      "bytes": 67371,
+      "scene": "local_hit 首屏",
+      "assertions": ["油污知识卡", "安全提醒(注意)", "蓝月亮推荐提及", "无外部分层(需滚动)"],
+      "passed": true
+    },
+    {
+      "file": "local_hit_bottom2.png",
+      "bytes": 53604,
+      "scene": "local_hit 底部(滚动消息容器)",
+      "assertions": ["蓝月亮推荐卡(√推荐)", "查看产品→入口", "来源分层(本地知识库/我家仓库)", "查看依据入口"],
+      "passed": true
+    },
+    {
+      "file": "local_hit_evidence_expanded.png",
+      "bytes": 63072,
+      "scene": "知识卡 查看依据 展开",
+      "assertions": ["entryId：oil-stain", "version：1.0", "审核日期：2026-08-12", "不适用材质", "tagCondition(使用前必须核对产品标签的适用材质)"],
+      "passed": true
+    },
+    {
+      "file": "no_inventory.png",
+      "bytes": 52646,
+      "scene": "local_hit_no_inventory",
+      "assertions": ["胶渍知识卡保留", "库存中暂无通过安全校验的合适产品", "无查看产品", "无推荐标签"],
+      "passed": true
+    },
+    {
+      "file": "insufficient.png",
+      "bytes": 36181,
+      "scene": "insufficient(材质未知)",
+      "assertions": ["无知识卡", "无产品卡", "显示：现有信息不足，暂无法给出可靠建议。可以补充污渍类型、材质或场景后重试"],
+      "passed": true
+    },
+    {
+      "file": "no_match.png",
+      "bytes": 38128,
+      "scene": "no_match",
+      "assertions": ["暂无足够依据给出具体建议", "无知识卡", "无产品卡", "无外部来源"],
+      "passed": true
+    },
+    {
+      "file": "outofscope.png",
+      "bytes": 54663,
+      "scene": "outOfScope",
+      "assertions": ["无法提供处理建议，请立即联系急救", "超出回答范围", "无产品卡", "无知识卡"],
+      "passed": true
+    },
+    {
+      "file": "critical.png",
+      "bytes": 78106,
+      "scene": "critical(产品详情进入问答, contextProductId=84消毒液)",
+      "assertions": ["含氯消毒剂 × 酸性清洁剂(严重)", "查看关系详情→可跳转", "安全规则来源", "无产品操作卡(no_match+critical)"],
+      "passed": true
+    }
+  ],
+  "summary": {
+    "total_screenshots": 10,
+    "asserted_screenshots": 8,
+    "all_assertions_passed": true
+  }
+}
