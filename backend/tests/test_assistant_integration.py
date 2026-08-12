@@ -154,4 +154,3 @@ class TestAssistantSixStateIntegration:
         assert body["evidence"], "应产生与当前产品相关的依据"
         # p-84(次氯酸钠) vs p-jc(盐酸) 的 critical 关系应进入证据
         assert any("混" in e or "氯" in e for e in body["evidence"])
-
