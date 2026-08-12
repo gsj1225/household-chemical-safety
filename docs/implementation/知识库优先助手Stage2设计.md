@@ -1,6 +1,6 @@
 # 知识库优先的家庭化学品助手 — Stage 2 设计（问答结果页与来源展示）
 
-> 版本：v1.4（修订：超范围判断前置 / knowledgeStatus 状态转换补全 / 第二次 LLM 调用门槛 / provisional UI 矛盾）
+> 版本：v1.4.1（修订：清除 provisional 残留歧义——KnowledgeAdviceCard 仅处理 reviewed，provisional 仅经 pendingKnowledgeNotice 文案展示）
 > 日期：2026-08-12
 
 ## 本版本修订内容（v1.3 → v1.4）
@@ -391,7 +391,7 @@ allow_external_photo_upload: bool = Field(False, alias="allowExternalPhotoUpload
 
 | 组件 | 职责 | 数据 |
 |---|---|---|
-| `KnowledgeAdviceCard` | 知识条目：主题/适用材质/步骤/来源 +「待审核」徽章 | `KnowledgeEvidence` |
+| `KnowledgeAdviceCard` | 仅展示已审核 reviewed 知识条目的主题、适用材质、步骤、来源；**不处理 provisional** | `KnowledgeEvidence` |
 | `ExternalSourceCard` | 外部来源：标题/域名/检索时间 +「外部资料」徽章 + `[打开来源]` | `SourceRef(type=external)` |
 | `SourceLayersCard` | 四类来源汇总（固定顺序） | `sources[]` |
 
