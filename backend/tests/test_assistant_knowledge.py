@@ -31,17 +31,24 @@ from app.core.mock_ai import MockAI
 from app.core.safety_scope_classifier import SafetyScopeClassifier
 from app.data.inventory_repository import InventoryRepository
 from app.data.knowledge_repository import KnowledgeLoadError, KnowledgeRepository
+from app.models.assistant import (
+    AssistantProductAdvice,
+    AssistantSafetyWarning,
+    LegacyAssistantDraft,
+)
 from app.models.inventory import (
     ConfirmedFact,
     InformationStatus,
     ProductCategory,
     ProductCreate,
+    SafetyStatement,
 )
 from app.models.knowledge import (
     AssistantNarrativeDraft,
     KnowledgeIntent,
     KnowledgeIntentDraft,
     KnowledgeQuery,
+    KnowledgeStep,
     SourceRef,
 )
 from app.services.assistant_service import AssistantService
@@ -384,3 +391,288 @@ class TestSafetyEnforcement:
         for a in resp.inventory_advice:
             for s in a.steps:
                 assert "混" not in s and "混合" not in s
+
+# ══════════════════════════════════════════════════════════════
+# 追加：4 个阻塞问题修复的回归测试
+#   P1 产品推荐不能只凭类别
+#   P2 排除材质必须参与检索
+#   P3 隔离旧 LegacyAssistantDraft
+#   P4 本地来源追溯 + KnowledgeStep 校验
+# ══════════════════════════════════════════════════════════════
+
+def _entry_v2(eid, topic="主题", aliases=None, surfaces=None, excluded=None, scene=None,
+              steps=None, cats=None, warnings=None, prohibited=None, tag_condition="",
+              confidence="reviewed", version="1.0"):
+    """比 _entry 更完整的条目构造，支持 excluded_surfaces/tag_condition/prohibited。"""
+    return {
+        "id": eid, "topic": topic, "aliases": aliases or [topic],
+        "surfaces": surfaces or [], "excluded_surfaces": excluded or [], "scene": scene or [],
+        "steps": [{"order": i + 1, "text": s} for i, s in enumerate(steps or [])],
+        "allowed_product_categories": cats or [],
+        "warnings": warnings or [], "prohibited_actions": prohibited or [], "stop_conditions": [],
+        "tag_condition": tag_condition,
+        "sources": [{"type": "local_kb", "title": "家庭安全知识库", "ref": eid, "version": version, "url": ""}],
+        "reviewed_at": "2026-08-12", "version": version, "confidence": confidence,
+    }
+
+class SurfaceIntentAI(MockAI):
+    """返回固定别名 + 材质的意图，用于材质检索测试。"""
+
+    def __init__(self, aliases=None, surface=None, narrative="已按知识库给出建议。"):
+        self._aliases = aliases or []
+        self._surface = surface
+        self._narrative = narrative
+
+    async def extract_knowledge_intent(self, *a, **k):
+        if not self._aliases and not self._surface:
+            return KnowledgeIntentDraft()
+        return KnowledgeIntentDraft(knowledge_intent=KnowledgeIntent(
+            aliases=self._aliases, surface=self._surface))
+
+    async def generate_narrative(self, *a, **k):
+        return AssistantNarrativeDraft(answer=self._narrative)
+
+class TraceAI(MockAI):
+    """记录被调用方法，验证新流程只走两次 LLM 调用。"""
+
+    def __init__(self, aliases=None, narrative="已按知识库给出建议。"):
+        self.calls: list[str] = []
+        self._aliases = aliases or []
+        self._narrative = narrative
+
+    async def extract_knowledge_intent(self, *a, **k):
+        self.calls.append("extract_knowledge_intent")
+        if not self._aliases:
+            return KnowledgeIntentDraft()
+        return KnowledgeIntentDraft(knowledge_intent=KnowledgeIntent(aliases=self._aliases))
+
+    async def generate_narrative(self, *a, **k):
+        self.calls.append("generate_narrative")
+        return AssistantNarrativeDraft(answer=self._narrative)
+
+    async def answer_household_question(self, *a, **k):
+        self.calls.append("answer_household_question")
+        return LegacyAssistantDraft(answer="legacy")
+
+class LegacyOverrideAI(MockAI):
+    """旧路径若被调用会返回越权内容；新流程绝不调用它。"""
+
+    async def extract_knowledge_intent(self, *a, **k):
+        return KnowledgeIntentDraft(knowledge_intent=KnowledgeIntent(aliases=["马桶"]))
+
+    async def generate_narrative(self, *a, **k):
+        return AssistantNarrativeDraft(answer="按知识库建议处理。")
+
+    async def answer_household_question(self, *a, **k):
+        return LegacyAssistantDraft(
+            answer="旧接口越权建议",
+            out_of_scope=True,
+            product_advice=[
+                AssistantProductAdvice(product_id="p-fake", recommendation="recommended",
+                                       reason="LLM 伪造推荐")
+            ],
+            safety_warnings=[
+                AssistantSafetyWarning(severity="critical", title="LLM 伪造警告",
+                                       description="x", recommended_action="x")
+            ],
+        )
+
+
+# ── P1 产品推荐不能只凭类别 ──────────────────────
+
+class TestProductRecommendation:
+    def _svc(self, entry, product):
+        return _build_service([entry], [product])
+
+    def test_tag_mismatch_not_recommended(self):
+        # 类别匹配、信息完整，但知识条目要求核对标签而产品无标签/成分 → needs_information
+        entry = _entry_v2("oil", "油污", aliases=["油污"], cats=["laundry"],
+                          tag_condition="使用前必须核对产品标签", steps=["按标签使用"])
+        svc, _ = self._svc(entry, _prod("p-a", "普通洗衣液", ProductCategory.laundry))
+        resp = _run(svc.ask("问题", [], None, None, FixedIntentAI(aliases=["油污"])))
+        a = resp.inventory_advice[0]
+        assert a.recommendation == "needs_information"
+
+    def test_incomplete_info_not_recommended(self):
+        entry = _entry_v2("oil", "油污", aliases=["油污"], cats=["laundry"], steps=["按标签使用"])
+        svc, _ = self._svc(entry, _prod("p-a", "未知", ProductCategory.laundry,
+                                        status=InformationStatus.needs_information))
+        resp = _run(svc.ask("问题", [], None, None, FixedIntentAI(aliases=["油污"])))
+        assert resp.inventory_advice[0].recommendation == "needs_information"
+
+    def test_hazard_conflict_not_recommended(self):
+        # 类别匹配但产品危害与知识条目禁止事项冲突 → not_recommended
+        entry = _entry_v2("oil", "油污", aliases=["油污"], cats=["laundry"],
+                          prohibited=["不得混合不同清洁产品"], steps=["按标签使用"])
+        prod = ProductCreate(
+            productId="p-a", operationId="op-a", name="强效漂白液",
+            category=ProductCategory.laundry, information_status=InformationStatus.complete,
+            ingredients=[ConfirmedFact(display_value="次氯酸钠")],
+            hazards=[SafetyStatement(text="不得混合不同清洁产品")],
+        )
+        svc, _ = _build_service([entry], [prod])
+        resp = _run(svc.ask("问题", [], None, None, FixedIntentAI(aliases=["油污"])))
+        assert resp.inventory_advice[0].recommendation == "not_recommended"
+
+    def test_full_pass_recommended(self):
+        # 类别+标签+信息+无危害冲突 全部通过 → recommended
+        entry = _entry_v2("oil", "油污", aliases=["油污"], cats=["laundry"],
+                          tag_condition="使用前必须核对产品标签", steps=["按标签使用"])
+        prod = _prod("p-a", "专用洗衣液", ProductCategory.laundry, ingredients=["表面活性剂"])
+        svc, _ = self._svc(entry, prod)
+        resp = _run(svc.ask("问题", [], None, None, FixedIntentAI(aliases=["油污"])))
+        a = resp.inventory_advice[0]
+        assert a.recommendation == "recommended"
+        assert a.product_name == "专用洗衣液"
+
+
+# ── P2 排除材质必须参与检索 ──────────────────────
+
+class TestSurfaceExclusion:
+    OIL = _entry_v2("oil", "油污", aliases=["油污", "油渍"], surfaces=["可水洗织物"],
+                    excluded=["需干洗面料", "未确认的特殊面料"], cats=["laundry"], steps=["按标签处理"])
+
+    def _svc(self):
+        return _build_service([self.OIL], [_prod("p-a", "洗衣液", ProductCategory.laundry)])
+
+    def test_excluded_surface_no_local_hit(self):
+        svc, _ = self._svc()
+        resp = _run(svc.ask("问题", [], None, None, SurfaceIntentAI(aliases=["油污"], surface="需干洗面料")))
+        assert resp.knowledge_status != "local_hit"
+        assert resp.knowledge == []
+        assert resp.inventory_advice == []
+
+    def test_unknown_material_no_local_hit(self):
+        svc, _ = self._svc()
+        resp = _run(svc.ask("问题", [], None, None, SurfaceIntentAI(aliases=["油污"], surface="未知特殊材质")))
+        assert resp.knowledge_status != "local_hit"
+        assert resp.knowledge == []
+
+    def test_topic_hit_but_surface_mismatch(self):
+        # topic 命中但材质不在 entry.surfaces → 不得视为完整 local_hit
+        svc, _ = self._svc()
+        resp = _run(svc.ask("问题", [], None, None, SurfaceIntentAI(aliases=["油污"], surface="皮革")))
+        assert resp.knowledge_status != "local_hit"
+        assert resp.knowledge == []
+
+    def test_surface_match_is_local_hit(self):
+        svc, _ = self._svc()
+        resp = _run(svc.ask("问题", [], None, None, SurfaceIntentAI(aliases=["油污"], surface="可水洗织物")))
+        assert resp.knowledge_status == "local_hit"
+        assert resp.knowledge
+
+    def test_repository_excluded_surface(self):
+        # 直接验证 KnowledgeRepository 层：excluded 命中不返回该条目
+        kb = KnowledgeRepository(_write_kb([self.OIL]))
+        r = kb.search(KnowledgeQuery(aliases=["油污"], surface="需干洗面料"))
+        assert r.matches == []
+        assert r.local_status != "local_hit"
+
+
+# ── P3 隔离旧 LegacyAssistantDraft ───────────────
+
+class TestLegacyIsolation:
+    def test_new_flow_does_not_call_legacy(self):
+        svc, _ = _build_service(
+            [_entry_v2("lime", "水垢", aliases=["马桶"], cats=["toilet_cleaner"], steps=["保持通风"])],
+            [_prod("p-jc", "洁厕灵", ProductCategory.toilet_cleaner)],
+        )
+        ai = TraceAI(aliases=["马桶"])
+        resp = _run(svc.ask("问题", [], None, None, ai))
+        assert "extract_knowledge_intent" in ai.calls
+        assert "generate_narrative" in ai.calls
+        assert "answer_household_question" not in ai.calls
+        assert resp.out_of_scope is False
+
+    def test_legacy_overreach_not_adopted(self):
+        # 即使旧路径返回越权内容，最终结构化响应也不采用
+        svc, _ = _build_service(
+            [_entry_v2("lime", "水垢", aliases=["马桶"], cats=["toilet_cleaner"], steps=["保持通风"])],
+            [_prod("p-jc", "洁厕灵", ProductCategory.toilet_cleaner)],
+        )
+        resp = _run(svc.ask("问题", [], None, None, LegacyOverrideAI()))
+        assert resp.out_of_scope is False
+        assert resp.answer != "旧接口越权建议"
+        ids = [a.product_id for a in resp.inventory_advice]
+        assert "p-fake" not in ids
+        assert resp.inventory_advice[0].product_name == "洁厕灵"
+        assert all(w.title != "LLM 伪造警告" for w in resp.safety_warnings)
+
+
+# ── P4 本地来源追溯 + KnowledgeStep 校验 ─────────
+
+class TestSourceTraceability:
+    def test_real_entries_source_has_ref_and_version(self):
+        kb = KnowledgeRepository()
+        assert len(kb.entries) == 10
+        for e in kb.entries:
+            local = [s for s in e.sources if s.type == "local_kb"]
+            assert local, f"{e.id} 缺少 local_kb 来源"
+            for s in local:
+                assert s.ref == e.id, f"{e.id} 来源 ref 未追溯"
+                assert s.version == e.version, f"{e.id} 来源 version 未追溯"
+
+    def test_source_ref_unique_per_entry(self):
+        kb = KnowledgeRepository()
+        for e in kb.entries:
+            refs = [s.ref for s in e.sources if s.type == "local_kb"]
+            assert len(refs) == len(set(refs)), f"{e.id} 来源 ref 重复"
+
+    def test_dedup_does_not_lose_different_entries(self):
+        # 两个不同条目来源 type=local_kb 但 ref 不同，去重后都保留
+        svc, _ = _build_service(
+            [
+                _entry_v2("e1", "甲", aliases=["x1"], steps=["a"]),
+                _entry_v2("e2", "乙", aliases=["x2"], steps=["b"]),
+            ],
+            [_prod("p-jc", "洁厕灵", ProductCategory.toilet_cleaner)],
+        )
+        # 两个条目都命中（模拟多知识证据），来源应含 e1 与 e2 两条
+        resp = _run(svc.ask("问题", [], None, None, FixedIntentAI(aliases=["x1"])))
+        refs = {s.ref for s in resp.sources if s.type == "local_kb"}
+        assert "e1" in refs
+
+    def test_knowledge_evidence_sources_traceable(self):
+        svc, _ = _build_service(
+            [_entry_v2("oil", "油污", aliases=["油污"], surfaces=["可水洗织物"], cats=["laundry"], steps=["按标签处理"])],
+            [_prod("p-a", "洗衣液", ProductCategory.laundry)],
+        )
+        resp = _run(svc.ask("问题", [], None, None, SurfaceIntentAI(aliases=["油污"], surface="可水洗织物")))
+        assert resp.knowledge
+        for k in resp.knowledge:
+            assert any(s.ref == k.entry_id for s in k.sources)
+
+class TestKnowledgeStepValidation:
+    def test_order_must_be_positive(self):
+        e = _entry_v2("x", "甲", steps=["a"])
+        e["steps"] = [{"order": 0, "text": "a"}]
+        with pytest.raises(KnowledgeLoadError):
+            KnowledgeRepository(_write_kb([e]))
+
+    def test_reviewed_order_must_start_at_1(self):
+        e = _entry_v2("x", "甲", steps=["a", "b"])
+        e["steps"] = [{"order": 2, "text": "a"}, {"order": 3, "text": "b"}]
+        with pytest.raises(KnowledgeLoadError):
+            KnowledgeRepository(_write_kb([e]))
+
+    def test_reviewed_order_must_be_continuous(self):
+        e = _entry_v2("x", "甲", steps=["a", "b", "c"])
+        e["steps"] = [{"order": 1, "text": "a"}, {"order": 2, "text": "b"}, {"order": 4, "text": "c"}]
+        with pytest.raises(KnowledgeLoadError):
+            KnowledgeRepository(_write_kb([e]))
+
+    def test_reviewed_order_no_duplicate(self):
+        e = _entry_v2("x", "甲", steps=["a", "b"])
+        e["steps"] = [{"order": 1, "text": "a"}, {"order": 1, "text": "b"}]
+        with pytest.raises(KnowledgeLoadError):
+            KnowledgeRepository(_write_kb([e]))
+
+    def test_step_model_order_positive(self):
+        with pytest.raises(Exception):
+            KnowledgeStep(order=0, text="x")
+
+    def test_valid_continuous_order_ok(self):
+        kb = KnowledgeRepository(_write_kb([
+            _entry_v2("x", "甲", aliases=["甲"], steps=["a", "b", "c"])
+        ]))
+        assert kb.get("x") is not None

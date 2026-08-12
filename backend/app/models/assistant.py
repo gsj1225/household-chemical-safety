@@ -74,14 +74,14 @@ class AssistantResponse(BaseModel):
     sources: list[SourceRef] = Field(default_factory=list)
     pending_knowledge_notice: str = Field(default="", alias="pendingKnowledgeNotice")
 
-# ── AI 候选草稿（未经验证，不能直接作为安全结论）──
+# ── Legacy AI 候选草稿（已废弃，新知识库优先流程不调用）──
 
-class AssistantDraft(BaseModel):
-    """LLM 输出的结构化候选，需经 AssistantService 校验后才能进入 AssistantResponse。
+class LegacyAssistantDraft(BaseModel):
+    """[legacy] 旧版单次 LLM 输出草稿。
 
-    - productId 必须属于当前库存，否则丢弃；
-    - 关系为 critical 时强制生成 safetyWarnings 并删除混用步骤；
-    - needs_information 产品不能被标记为 recommended。
+    仅被旧接口 answer_household_question 使用；新问答流程不使用本模型，
+    也不会用其 product_advice/safety_warnings/out_of_scope 覆盖 AssistantResponse。
+    新流程只使用 KnowledgeIntentDraft 与 AssistantNarrativeDraft。
     """
 
     model_config = ConfigDict(populate_by_name=True)

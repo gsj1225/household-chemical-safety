@@ -48,7 +48,9 @@
     {
       "type": "local_kb",
       "title": "家庭安全知识库",
-      "url": ""
+      "url": "",
+      "ref": "cosmetic-stain",
+      "version": "1.0"
     }
   ],
   "reviewed_at": "2026-08-12",

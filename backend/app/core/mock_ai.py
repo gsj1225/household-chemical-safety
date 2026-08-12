@@ -16,7 +16,7 @@ from app.models.scan import (
 from app.models.risk import RiskAssessment
 from app.models.report import ReportData
 from app.models.assistant import (
-    AssistantDraft,
+    LegacyAssistantDraft,
     AssistantProductAdvice,
     AssistantSafetyWarning,
 )
@@ -198,8 +198,8 @@ class MockAI(AIProvider):
         inventory_context: list[dict],
         compatibility_context: list[dict],
         context_product_id: str | None = None,
-    ) -> AssistantDraft:
-        """Mock 回答：按问题关键词返回确定性结果，覆盖各类测试场景。"""
+    ) -> LegacyAssistantDraft:
+        """[legacy] Mock 回答：旧接口兼容，新知识库流程不调用。"""
         q = question or ""
         products = {p.get("productId"): p for p in inventory_context}
         focus = (
@@ -210,7 +210,7 @@ class MockAI(AIProvider):
         # 1. 超范围：误食/中毒/吸入/身体不适等
         out_keywords = ["误食", "中毒", "吸入", "身体不适", "急救", "呕吐", "晕厥"]
         if any(k in q for k in out_keywords):
-            return AssistantDraft(
+            return LegacyAssistantDraft(
                 answer="抱歉，关于误食、中毒或身体不适等意外情况，我无法提供处理建议。请立即联系急救或前往医院。",
                 out_of_scope=True,
             )
@@ -218,7 +218,7 @@ class MockAI(AIProvider):
         # 2. 需要追问：信息不足
         clarify_keywords = ["什么", "怎么区分", "不确定", "哪个"]
         if any(k in q for k in clarify_keywords):
-            return AssistantDraft(
+            return LegacyAssistantDraft(
                 answer="我需要更多信息来给出准确建议，可以先回答下面几个问题。",
                 needs_clarification=True,
                 clarification_questions=[
@@ -280,7 +280,7 @@ class MockAI(AIProvider):
                     cautions=["避免接触眼睛"],
                 ))
 
-        return AssistantDraft(
+        return LegacyAssistantDraft(
             answer=answer_prefix,
             product_advice=advice,
             general_advice=["通用建议：使用前请阅读产品标签，注意通风。"],

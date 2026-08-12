@@ -87,9 +87,16 @@ class KnowledgeRepository:
     def get(self, entry_id: str) -> KnowledgeEntry | None:
         return self._by_id.get(entry_id)
 
-    def _entry_score(self, entry: KnowledgeEntry, query: KnowledgeQuery) -> tuple[float, list[str]]:
+    def _entry_score(
+        self, entry: KnowledgeEntry, query: KnowledgeQuery
+    ) -> tuple[float, list[str], bool]:
+        """返回 (score, fields, surface_blocked)。
+
+        surface_blocked 为 True 表示材质不适用/被排除，该条目不得提供正式知识建议。
+        """
         score = 0.0
         fields: list[str] = []
+        surface_blocked = False
         q_aliases = {_normalize(a) for a in query.aliases}
         entry_aliases = {_normalize(a) for a in entry.aliases}
         entry_topic = _normalize(entry.topic)
@@ -105,26 +112,34 @@ class KnowledgeRepository:
         if hit_alias:
             score += _W_ALIAS
 
-        # 材质匹配
+        # 材质匹配：排除材质命中 → 不得提供正式建议；
+        # query.surface 已知但不在 entry.surfaces → 材质不匹配，同样不得视为完整命中。
         if query.surface:
             q_surf = _normalize(query.surface)
-            if any(_normalize(s) == q_surf for s in entry.surfaces):
+            if any(_normalize(s) == q_surf for s in entry.excluded_surfaces):
+                surface_blocked = True
+            elif any(_normalize(s) == q_surf for s in entry.surfaces):
                 score += _W_SURFACE
                 fields.append("surface")
+            else:
+                surface_blocked = True
 
         # 场景匹配
-        if query.scene:
+        if query.scene and not surface_blocked:
             q_scene = _normalize(query.scene)
             if any(_normalize(s) == q_scene for s in entry.scene):
                 score += _W_SCENE
                 fields.append("scene")
 
-        return round(min(score, 1.0), 4), fields
+        return round(min(score, 1.0), 4), fields, surface_blocked
 
     def search(self, query: KnowledgeQuery) -> KnowledgeResult:
         scored: list[tuple[float, KnowledgeEntry, list[str]]] = []
         for entry in self._entries:
-            score, fields = self._entry_score(entry, query)
+            score, fields, surface_blocked = self._entry_score(entry, query)
+            # 材质不适用/被排除的条目不参与候选，不能仅凭 topic/alias 绕过材质不匹配
+            if surface_blocked:
+                continue
             if score > 0:
                 scored.append((score, entry, fields))
 

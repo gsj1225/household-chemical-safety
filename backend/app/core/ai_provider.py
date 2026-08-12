@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from app.models.scan import PanoramaResult, ProductIdentification
 from app.models.risk import RiskAssessment
 from app.models.report import ReportData
-from app.models.assistant import AssistantDraft
+from app.models.assistant import LegacyAssistantDraft
 from app.models.knowledge import (
     AssistantNarrativeDraft,
     KnowledgeIntentDraft,
@@ -63,10 +63,10 @@ class AIProvider(ABC):
         inventory_context: list[dict],
         compatibility_context: list[dict],
         context_product_id: str | None = None,
-    ) -> AssistantDraft:
-        """[legacy] 回答家庭化学品库内的问题（单次调用，用于旧接口兼容）。
+    ) -> LegacyAssistantDraft:
+        """[legacy] 回答家庭化学品库内的问题（单次调用，仅用于旧接口兼容）。
 
-        返回结构化候选（AssistantDraft）。新知识库优先流程使用
+        返回 LegacyAssistantDraft。新知识库优先流程不使用本方法，只使用
         extract_knowledge_intent + generate_narrative 两次调用。
         """
         pass

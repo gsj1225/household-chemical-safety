@@ -15,7 +15,7 @@ from app.core.risk_engine import RiskEngine
 from app.models.report import ReportData
 from app.models.risk import RiskAssessment
 from app.models.assistant import (
-    AssistantDraft,
+    LegacyAssistantDraft,
     AssistantProductAdvice,
     AssistantSafetyWarning,
 )
@@ -250,8 +250,8 @@ class QwenAI(AIProvider):
         inventory_context: list[dict],
         compatibility_context: list[dict],
         context_product_id: str | None = None,
-    ) -> AssistantDraft:
-        """回答家庭化学品库内的问题，使用结构化 JSON 输出。
+    ) -> LegacyAssistantDraft:
+        """[legacy] 回答家庭化学品库内的问题，使用结构化 JSON 输出。
 
         只允许引用传入的 inventory_context 中的 productId，不允许编造产品。
         LLM 输出仅视为候选回答，由 AssistantService 校验与兜底。
@@ -302,7 +302,7 @@ class QwenAI(AIProvider):
                 [{"role": "user", "content": prompt}],
             )
 
-        return self._validate(payload, AssistantDraft, "assistant_ask")
+        return self._validate(payload, LegacyAssistantDraft, "assistant_ask")
 
     async def extract_knowledge_intent(
         self,

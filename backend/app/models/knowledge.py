@@ -51,6 +51,13 @@ class KnowledgeStep(BaseModel):
     order: int
     text: str
 
+    @field_validator("order")
+    @classmethod
+    def _order_positive(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("order 必须是正整数")
+        return v
+
 
 class KnowledgeEntry(BaseModel):
     """知识库条目（仓库内 JSON，一条一文件）。"""
@@ -103,6 +110,11 @@ class KnowledgeEntry(BaseModel):
     def _reviewed_requires_steps(self) -> "KnowledgeEntry":
         if self.confidence == "reviewed" and not self.steps:
             raise ValueError("reviewed 条目必须包含可执行 steps")
+        if self.confidence == "reviewed":
+            orders = [s.order for s in self.steps]
+            expected = set(range(1, len(orders) + 1))
+            if len(orders) != len(set(orders)) or set(orders) != expected:
+                raise ValueError("reviewed 条目 steps order 必须从 1 开始连续且不重复")
         return self
 
     def ordered_steps(self) -> list[str]:

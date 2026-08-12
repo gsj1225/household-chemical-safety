@@ -264,36 +264,21 @@ class AssistantService:
             if entry:
                 allowed.update(entry.allowed_product_categories)
 
-        safe_advice: list[AssistantProductAdvice] = []
-        needs_advice: list[AssistantProductAdvice] = []
+        # 主适用知识条目（用于标签/危险性核验）
+        primary_entry = (
+            self._kb.get(knowledge_evidence[0].entry_id) if knowledge_evidence else None
+        )
         steps = self._top_knowledge_steps(knowledge_evidence)
 
+        inventory_advice: list[AssistantProductAdvice] = []
         for p in products:
+            # allowed_product_categories 仅筛候选，不能仅凭类别推荐
             if p.category.value not in allowed:
                 continue
-            if p.information_status == InformationStatus.needs_information:
-                needs_advice.append(AssistantProductAdvice(
-                    product_id=p.id,
-                    product_name=p.name,
-                    recommendation="needs_information",
-                    reason="成分信息不完整，暂无法确认是否适合使用。",
-                    steps=[],
-                    cautions=["成分信息不完整，暂无法确认是否适合使用。"],
-                ))
-            else:
-                safe_advice.append(AssistantProductAdvice(
-                    product_id=p.id,
-                    product_name=p.name,
-                    recommendation="recommended",
-                    reason=f"该产品类别适用于当前问题。",
-                    steps=list(steps),
-                    cautions=[],
-                ))
-
-        inventory_advice = safe_advice + needs_advice
+            inventory_advice.append(self._evaluate_candidate(p, primary_entry, steps))
 
         # 引擎复核：推荐产品两两 + 上下文产品 vs 所有其他
-        recommended = [a for a in safe_advice if a.recommendation == "recommended"]
+        recommended = [a for a in inventory_advice if a.recommendation == "recommended"]
         pairs: list[tuple[Any, Any]] = []
         for i in range(len(recommended)):
             for j in range(i + 1, len(recommended)):
@@ -326,6 +311,85 @@ class AssistantService:
                 seen_titles.add(w.title)
 
         return inventory_advice, warnings, evidence
+
+    def _evaluate_candidate(
+        self,
+        product: Any,
+        entry: Any | None,
+        steps: list[str],
+    ) -> AssistantProductAdvice:
+        """对候选产品做完整安全核验，返回推荐结论。
+
+        判定链：信息完整性 → 标签/成分 → 危险性 →（引擎在外部复核）。
+        只有全部通过才 recommended；否则 needs_information 或 not_recommended。
+        不使用 LLM 的 product_advice 作为安全结论。
+        """
+        base = AssistantProductAdvice(
+            product_id=product.id,
+            product_name=product.name,
+            recommendation="recommended",
+            reason="",
+            steps=list(steps),
+            cautions=[],
+        )
+
+        # 1. 信息完整性
+        if product.information_status != InformationStatus.complete:
+            return base.model_copy(update={
+                "recommendation": "needs_information",
+                "reason": "成分信息不完整，暂无法确认是否适合使用。",
+                "steps": [],
+                "cautions": ["成分信息不完整，暂无法确认是否适合使用。"],
+            })
+
+        # 2. 标签/成分检查：知识条目要求核对材质标签时，产品须有标签/成分信息
+        if entry and entry.tag_condition:
+            has_label = bool(product.ingredients) or bool(product.label_warnings)
+            if not has_label:
+                return base.model_copy(update={
+                    "recommendation": "needs_information",
+                    "reason": "缺少产品标签/成分信息，无法核对适用性。",
+                    "steps": [],
+                    "cautions": ["缺少产品标签/成分信息，无法核对适用性。"],
+                })
+
+        # 3. 危险性检查：产品危害与知识条目禁止事项/警告冲突 → not_recommended
+        conflict = self._find_hazard_conflict(product, entry)
+        if conflict:
+            return base.model_copy(update={
+                "recommendation": "not_recommended",
+                "reason": f"产品危害与知识建议冲突：{conflict}",
+                "steps": [],
+                "cautions": [f"产品危害与知识建议冲突：{conflict}"],
+            })
+
+        # 4. 全部通过 → recommended
+        return base.model_copy(update={
+            "reason": "该产品类别适用，且已通过成分、标签与安全性核验。",
+            "steps": list(steps),
+            "cautions": [],
+        })
+
+    def _find_hazard_conflict(self, product: Any, entry: Any | None) -> str | None:
+        """返回首个与知识条目冲突的产品危害文本，无冲突则 None。"""
+        if entry is None:
+            return None
+        hazard_texts = [h.text for h in product.hazards]
+        if not hazard_texts:
+            return None
+        checks = [p for p in entry.prohibited_actions if p] + [w for w in entry.warnings if w]
+        for htext in hazard_texts:
+            for phrase in checks:
+                if self._text_overlap(htext, phrase):
+                    return phrase
+        return None
+
+    @staticmethod
+    def _text_overlap(a: str, b: str) -> bool:
+        """判断两个文本是否存在实质包含关系（用于危害冲突识别）。"""
+        if len(a) < 2 or len(b) < 2:
+            return False
+        return a in b or b in a
 
     @staticmethod
     def _top_knowledge_steps(knowledge_evidence: list[KnowledgeEvidence]) -> list[str]:

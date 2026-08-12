@@ -53,7 +53,9 @@
     {
       "type": "local_kb",
       "title": "家庭安全知识库",
-      "url": ""
+      "url": "",
+      "ref": "common-surfaces",
+      "version": "1.0"
     }
   ],
   "reviewed_at": "2026-08-12",
