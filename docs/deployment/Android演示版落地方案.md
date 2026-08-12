@@ -58,14 +58,14 @@
 
 ### 2.1 定位
 
-**单家庭、比赛演示版**。一个受控演示库存，SQLite + 持久化磁盘，Android APK 直接安装，真实 Qwen 或 Mock 回退，临时公网后端。
+**单家庭、比赛演示版**。一个受控演示库存，SQLite + 持久化磁盘，Android APK 直接安装，真实 Qwen（正式问答必须真实 Qwen，不提供 Mock 回退），临时公网后端。
 
 ### 2.2 允许
 
 - 一个受控演示库存（所有设备共享同一库存，视为"一个家庭"）
 - SQLite + 持久化磁盘
 - Android APK 直接安装
-- 真实 Qwen 识别或 Mock 回退
+- 真实 Qwen 识别（不提供 Mock 回退）
 - 临时公网后端（有效域名 + 受信任 HTTPS）
 - 演示访问令牌（支持轮换）
 
@@ -96,7 +96,7 @@ Android APK（离线可启动）
       → DemoAuth 中间件（Bearer token 校验）
       → InventoryService / RecognitionService / CompatibilityService
         → SQLite（持久化磁盘卷）
-        → Qwen API（公网调用，失败时可切换 Mock）
+        → Qwen API（公网调用，失败时提示错误并重试，不切换 Mock）
 ```
 
 ### 3.2 数据流向
@@ -293,7 +293,7 @@ Android APK（离线可启动）
 | 风险 | 等级 | 缓解措施 |
 |------|------|---------|
 | 公网部署后所有设备共享库存 | 中 | 定位为"单家庭演示版" |
-| Qwen API 配额耗尽 | 中 | Mock 回退 |
+| Qwen API 配额耗尽 | 中 | 提示错误并重试，不切 Mock（MockAI 仅单元测试注入） |
 | VPS 网络中断 | 低 | 无局域网备用（自签证书不可用） |
 | 演示令牌泄漏 | 低 | 支持随时轮换（修改环境变量重启） |
 

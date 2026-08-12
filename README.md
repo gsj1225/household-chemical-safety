@@ -39,7 +39,7 @@
 - 信息完整性：产品信息不完整时标记为 `needs_information`，提示用户补拍
 - 幂等操作：创建和修改携带 operationId，防止超时重试重复创建
 - 乐观并发：修改和删除携带 expectedRevision，防止陈旧覆盖
-- 提供 Mock AI 模式，无 API Key 也可以进行本地开发和流程演示
+- 正式问答必须使用真实 Qwen（AI_PROVIDER=qwen）；MockAI 仅用于单元测试依赖注入，不用于运行/演示
 
 ## 工作流程
 
@@ -266,7 +266,7 @@ npx expo export --platform web
 
 当前已验证：后端 165 项 + 移动端 128 项测试通过、TypeScript 类型检查通过、Expo Web 导出成功。
 
-仓库已配置 GitHub Actions。推送到 `main`、向 `main` 提交 Pull Request 或手动触发时，云端会自动运行后端测试和前端类型检查与 Web 构建；工作流强制使用 Mock 模式，不需要 Qwen API Key，也不会消耗模型额度。
+仓库已配置 GitHub Actions。推送到 `main`、向 `main` 提交 Pull Request 或手动触发时，云端会自动运行后端测试和前端类型检查与 Web 构建；工作流以 MockAI 作为单元测试依赖注入（不需要 Qwen API Key，也不消耗模型额度），仅用于验证测试逻辑，不代表产品正式运行；正式问答必须使用真实 Qwen。
 
 ## 主要 API
 
@@ -306,7 +306,7 @@ npx expo export --platform web
 
 ### 为什么没有 API Key
 
-密钥属于个人机密，不应随代码分发。下载者需要复制 `backend/.env.example` 并配置自己的密钥，或者继续使用默认 Mock 模式。
+密钥属于个人机密，不应随代码分发。下载者需要复制 `backend/.env.example` 并配置自己的 `QWEN_API_KEY`；正式问答必须使用真实 Qwen，不存在默认 Mock 运行模式。
 
 ### 识别结果可以直接视为安全结论吗
 
