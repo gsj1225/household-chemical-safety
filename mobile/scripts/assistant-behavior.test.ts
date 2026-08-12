@@ -550,20 +550,46 @@ describe('来源去重与排序', () => {
     assert.equal(canOpenExternalSource('https://evil.net/x', allow), false);
   });
 
-  test('禁止子域名/端口/用户名密码/编码绕过白名单', () => {
+  test('合法 https 默认端口通过', () => {
     const allow = ['example.com'];
-    // 子域名不得命中
+    assert.equal(canOpenExternalSource('https://example.com/x', allow), true);
+    assert.equal(canOpenExternalSource('https://example.com/path?q=1', allow), true);
+  });
+
+  test('非默认端口拒绝', () => {
+    const allow = ['example.com'];
+    assert.equal(canOpenExternalSource('https://example.com:8080/x', allow), false);
+    assert.equal(canOpenExternalSource('https://example.com:8443/x', allow), false);
+  });
+
+  test('用户名密码拒绝', () => {
+    const allow = ['example.com'];
+    assert.equal(canOpenExternalSource('https://user:pass@example.com/x', allow), false);
+    assert.equal(canOpenExternalSource('https://user@example.com/x', allow), false);
+  });
+
+  test('子域名与仿冒域名拒绝', () => {
+    const allow = ['example.com'];
+    // 子域名
     assert.equal(canOpenExternalSource('https://sub.example.com/x', allow), false);
+    assert.equal(canOpenExternalSource('https://www.example.com/x', allow), false);
+    // 仿冒域名
     assert.equal(canOpenExternalSource('https://notexample.com/x', allow), false);
     assert.equal(canOpenExternalSource('https://example.com.evil.net/x', allow), false);
-    // 端口不得绕过（URL.hostname 不含端口，仍精确匹配）
-    assert.equal(canOpenExternalSource('https://example.com:8080/x', allow), true);
-    // 用户名密码形式 hostname 仍为 example.com，正常放行；不构成绕过
-    assert.equal(canOpenExternalSource('https://user:pass@example.com/x', allow), true);
-    // 大小写、编码规范化后仍命中（不绕过）
+  });
+
+  test('大小写域名按规范化规则处理', () => {
+    const allow = ['example.com'];
+    // URL 解析将 hostname 小写化后精确匹配，大小写变体仍命中（非绕过）
     assert.equal(canOpenExternalSource('https://EXAMPLE.com/x', allow), true);
-    // 空白白名单默认不可打开
+    assert.equal(canOpenExternalSource('https://Example.COM/x', allow), true);
+    // 但 hostname 仍是 example.com，不构成子域名
+    assert.equal(canOpenExternalSource('https://EXAMPLE.COM.EVIL.NET/x', allow), false);
+  });
+
+  test('白名单为空时全部拒绝', () => {
     assert.equal(canOpenExternalSource('https://example.com/x', []), false);
+    assert.equal(canOpenExternalSource('https://safe.gov/x', []), false);
   });
 });
 

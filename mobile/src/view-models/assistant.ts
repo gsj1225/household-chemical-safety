@@ -169,16 +169,20 @@ export function canRenderInventoryAdvice(knowledgeStatus: KnowledgeStatus): bool
  *
  * 必须同时满足：
  *  1. 协议为 https；
- *  2. hostname 完整命中白名单中的某个域名（精确匹配，不允许子域名）；
- *  3. 不允许通过子域名、端口、用户名密码、编码等方式绕过匹配。
+ *  2. 非默认端口（端口必须为空）；
+ *  3. 不含用户名、密码（userinfo 必须为空）；
+ *  4. hostname 完整命中白名单中的某个域名（精确匹配，不允许子域名）；
+ *  5. 不允许通过子域名、仿冒域名、http/javascript/data 等协议或编码方式绕过。
  *
- * allowlist 由配置或响应安全传入，禁止在组件内硬编码测试域名。
+ * allowlist 由配置或响应安全传入，禁止在组件内硬编码测试域名；白名单为空时全部拒绝。
  */
 export function canOpenExternalSource(
   url: string,
   allowlist: readonly string[],
 ): boolean {
   if (typeof url !== 'string' || url.length === 0) return false;
+  // 白名单为空时全部拒绝
+  if (allowlist.length === 0) return false;
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -187,6 +191,10 @@ export function canOpenExternalSource(
   }
   // 仅 https 允许打开（覆盖 http/javascript/data 等协议）
   if (parsed.protocol !== 'https:') return false;
+  // 非默认端口拒绝（端口必须为空）
+  if (parsed.port !== '') return false;
+  // 用户名、密码拒绝（userinfo 必须为空）
+  if (parsed.username !== '' || parsed.password !== '') return false;
   // hostname 精确匹配白名单（URL 解析已剥离端口、userinfo、路径、编码，hostname 为小写纯净域名）
   if (!allowlist.includes(parsed.hostname)) return false;
   return true;
