@@ -2,7 +2,7 @@
   "stage": "Stage 5",
   "date": "2026-08-12",
   "screenshots_dir": "deliverables/stage5/screenshots/",
-  "content_assertion_method": "真实 UI 提问后，取 DOM innerText 断言 + 视觉模型（view_image）复核关键截图；截图均为真实组件（AssistantScreen/KnowledgeAdviceCard/InventoryAdviceCard/SourceLayersCard/ExternalSourceCard）渲染，非 QA 假页面",
+  "content_assertion_method": "组件视觉验收（受控响应）：真实 React 组件在受控响应下渲染后，取 DOM innerText 断言 + 视觉模型（view_image）复核关键截图。截图均为真实组件（AssistantScreen/KnowledgeAdviceCard/InventoryAdviceCard/SourceLayersCard/ExternalSourceCard）渲染，非 QA 假页面；但输入为受控响应（本地静态服务），仅证明 UI 渲染逻辑正确，不代表真实问答链路通过。真实问答 UI 全链路截图标记为待执行。",
   "screenshots": [
     {
       "file": "local_hit_first.png",

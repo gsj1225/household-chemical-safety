@@ -193,23 +193,7 @@ docker compose start api
 
 ---
 
-## 4. Mock 回退
-
-Qwen 不可用时快速切换到 Mock：
-
-```bash
-vi /opt/homechem/backend/.env
-# 改为 AI_PROVIDER=mock
-
-cd /opt/homechem/deploy
-docker compose restart api
-
-curl http://localhost:8000/health
-```
-
----
-
-## 5. 回滚
+## 4. 回滚
 
 ```bash
 cd /opt/homechem/deploy
@@ -220,7 +204,7 @@ docker compose up -d
 
 ---
 
-## 6. 冒烟检查清单
+## 5. 冒烟检查清单
 
 | 步骤 | 命令 | 预期 |
 |------|------|------|

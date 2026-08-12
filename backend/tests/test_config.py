@@ -106,3 +106,60 @@ def test_production_accepts_real_qwen():
         QWEN_API_KEY="sk-test",
     )
     assert configured.AI_PROVIDER == "qwen"
+
+
+# ---------------------------------------------------------------------------
+# 环境变量模板测试：确认默认/部署模板不会把生产或演示问答配置成 Mock
+# ---------------------------------------------------------------------------
+from pathlib import Path
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+
+
+def _read_key_value(env_text: str):
+    """解析 .env 文本为 {KEY: VALUE}，忽略注释与空行。"""
+    result = {}
+    for raw in env_text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        result[key.strip()] = value.strip()
+    return result
+
+
+def _assert_template_not_mock(env_path: Path, label: str):
+    assert env_path.exists(), f"{label} 模板文件缺失：{env_path}"
+    kv = _read_key_value(env_path.read_text(encoding="utf-8"))
+
+    # AI_PROVIDER 必须为 qwen，绝不能是 mock
+    assert kv.get("AI_PROVIDER") == "qwen", (
+        f"{label} 默认模板 AI_PROVIDER 必须是 qwen，实际为 {kv.get('AI_PROVIDER')!r}"
+    )
+
+    # 生产/部署模板必须 DEBUG=false
+    assert kv.get("DEBUG") == "false", (
+        f"{label} 默认模板 DEBUG 必须为 false，实际为 {kv.get('DEBUG')!r}"
+    )
+
+    # 不允许出现 AI_PROVIDER=mock 的配置行
+    assert "AI_PROVIDER=mock" not in env_path.read_text(encoding="utf-8"), (
+        f"{label} 默认模板中出现 AI_PROVIDER=mock，禁止"
+    )
+
+
+def test_backend_env_template_defaults_to_real_qwen():
+    """backend/.env.example 默认模板不得把生产/演示问答配成 Mock。"""
+    _assert_template_not_mock(BACKEND_DIR / ".env.example", "backend")
+
+
+def test_deploy_env_template_defaults_to_real_qwen():
+    """deploy/.env.example 默认模板不得把生产/演示问答配成 Mock。"""
+    _assert_template_not_mock(BACKEND_DIR.parent / "deploy" / ".env.example", "deploy")
+
+
+def test_backend_env_template_has_empty_secret_placeholders():
+    """backend/.env.example 的密钥/令牌必须留空占位，禁止预填真实值。"""
+    kv = _read_key_value((BACKEND_DIR / ".env.example").read_text(encoding="utf-8"))
+    assert kv.get("QWEN_API_KEY", "").strip() == "" or "replace" in kv.get("QWEN_API_KEY", "").lower()
+    assert kv.get("DEMO_ACCESS_TOKEN", "").strip() == ""

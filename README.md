@@ -161,7 +161,7 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - 健康检查：<http://127.0.0.1:8000/health>
 - API 文档：<http://127.0.0.1:8000/docs>
 
-默认 `AI_PROVIDER=mock`，不需要模型密钥。
+默认模板 `AI_PROVIDER=qwen`，正式问答必须配置真实 `QWEN_API_KEY`（在 `backend/.env` 中填入，`DEBUG=false` 时未配置会明确报错）。MockAI / fake_search 仅存在于单元测试注入，不用于任何运行/演示环境。
 
 ### 3. 配置并启动前端
 

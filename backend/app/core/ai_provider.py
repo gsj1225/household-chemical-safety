@@ -1,7 +1,8 @@
 """AI 能力抽象接口。
 
-当前由 MockAI 实现，后期由 QwenAI 实现。
-切换方式：修改环境变量 AI_PROVIDER=mock / qwen
+正式问答使用真实 Qwen（AI_PROVIDER=qwen，生产 DEBUG=false 强制）。
+MockAI 仅用于单元测试依赖注入（test_mock_mode.py），不用于任何运行/演示环境。
+切换方式：修改环境变量 AI_PROVIDER=qwen
 """
 
 from abc import ABC, abstractmethod

@@ -33,7 +33,7 @@
 | SQLite 数据库路径 | `data/inventory.db` | 已修复 |
 | 服务重启后数据 | SQLite 文件在磁盘上则保留；容器需挂载 volume | 部署时配置持久卷 |
 | Qwen API Key 读取 | 环境变量 `QWEN_API_KEY`，`.env` 在 `.gitignore` 中 | 安全 |
-| Mock/真实 Qwen 切换 | `AI_PROVIDER=mock`（默认）或 `qwen`，环境变量切换 | 可用 |
+| AI 提供者 | `AI_PROVIDER=qwen`（正式问答必须真实 Qwen），环境变量切换 | 可用 |
 | CORS | DEBUG=false 禁止 `*`；原生 APK 用 `[]`，Web QA 用明确 Origin | 已修复 |
 | 演示令牌 | `DEMO_ACCESS_TOKEN` 环境变量，设置后 /api 需 Bearer 认证 | 已修复 |
 | 识别限流 | `RECOGNITION_RATE_LIMIT_PER_MINUTE` 独立限流 | 已修复 |
@@ -109,12 +109,10 @@ Android APK（离线可启动）
 | 识别上传照片 | **内存临时** | 识别完成后丢弃 |
 | 演示令牌 | APK 编译时注入 + 后端环境变量 | 不存 Qwen Key |
 
-### 3.3 AI 不可用时回退
+### 3.3 AI 不可用时行为
 
-```
-AI_PROVIDER=qwen → Qwen API 失败 → 前端提示重试
-手动切换 AI_PROVIDER=mock → 预设产品库 → 演示流程不中断
-```
+正式问答必须使用真实 Qwen（`AI_PROVIDER=qwen`）。Qwen API 失败时前端提示重试。
+禁止通过切换 `AI_PROVIDER=mock` 回退——Mock 仅存在于单元测试注入，不用于演示/生产环境。
 
 ### 3.4 后端离线时应用行为
 
@@ -127,7 +125,7 @@ AI_PROVIDER=qwen → Qwen API 失败 → 前端提示重试
 |------|---------|---------|
 | 后端崩溃 | 重启容器 | < 30s |
 | SQLite 损坏 | 恢复最近备份 | < 2min |
-| Qwen 不可用 | 切换 `AI_PROVIDER=mock` 重启 | < 1min |
+| Qwen 不可用 | 检查 `QWEN_API_KEY`/网络后重启，不切 Mock | < 2min |
 | APK 崩溃 | 重新安装 APK | < 2min |
 | 网络中断 | 无法恢复（不支持局域网备用） | — |
 
@@ -374,7 +372,7 @@ sudo mkdir -p /opt/homechem/data
 #### 4. 创建环境变量
 
 ```bash
-sudo bash -c 'TOKEN=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))") && echo "AI_PROVIDER=mock
+sudo bash -c 'TOKEN=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))") && echo "AI_PROVIDER=qwen
 QWEN_API_KEY=PLACEHOLDER_USER_FILL
 QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 QWEN_VL_MODEL=qwen3-vl-plus
