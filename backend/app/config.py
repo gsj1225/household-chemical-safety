@@ -73,6 +73,17 @@ class Settings(BaseSettings):
                     "生产环境（DEBUG=false）必须设置 DEMO_ACCESS_TOKEN。"
                     "生成令牌：python -c \"import secrets; print(secrets.token_urlsafe(24))\""
                 )
+            # 生产正式问答必须使用真实 Qwen Provider，禁止静默回退 Mock
+            if self.AI_PROVIDER != "qwen":
+                raise ValueError(
+                    "生产环境（DEBUG=false）必须使用真实 AI Provider"
+                    "（AI_PROVIDER=qwen），禁止回退 Mock。"
+                )
+            if not self.QWEN_API_KEY:
+                raise ValueError(
+                    "生产环境（DEBUG=false）使用 AI_PROVIDER=qwen 时必须配置"
+                    " QWEN_API_KEY，禁止静默回退 Mock。"
+                )
         if self.AI_PROVIDER == "qwen" and not self.QWEN_API_KEY:
             raise ValueError("AI_PROVIDER=qwen 时必须配置 QWEN_API_KEY")
         return self

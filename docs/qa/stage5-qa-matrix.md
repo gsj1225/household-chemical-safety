@@ -1,10 +1,11 @@
 # Stage 5 全链路联调与 Visual QA 矩阵
 
 > 验证目标：Stage 3 后端 + Stage 4 移动端真实接口与真实组件渲染。
-> 不修改业务契约，不复制 QA 假组件；使用真实后端 HTTP 接口 + 受控 MockAI（经过正式路由、鉴权、FormData 解析与移动端 API）。
+> 不修改业务契约，不复制 QA 假组件；使用真实后端 HTTP 接口（经过正式路由、鉴权、FormData 解析与移动端 API）。
 
 - 日期：2026-08-12
-- 后端：`AI_PROVIDER=mock`，本地实例 `127.0.0.1:8001`，鉴权 `Bearer qa_stage5_token`
+- 后端：**真实 Qwen Provider（`AI_PROVIDER=qwen`，通义千问 qwen-flash）**，本地实例 `127.0.0.1:8001`，鉴权 `Bearer qa_stage5_token`
+- 说明：生产 Mock 已彻底移除；问答正式流程使用真实 Qwen，本地知识库读真实 `backend/data/knowledge/*.json`，库存与相容性读真实数据库与 CompatibilityEngine。移动端真实 UI 截图阶段使用受控场景（本地静态服务），服务端验收均为真实 Qwen。
 - 移动端：Expo Web（`dist` 静态服务 `127.0.0.1:8090`），API 指向本地后端，携带鉴权 token
 - 仓库数据：蓝月亮洗衣液（laundry）、威猛先生洁厕灵（toilet_cleaner/盐酸）、84 消毒液（disinfectant/次氯酸钠）
 - 触发问题经真实 `POST /api/assistant/ask`（multipart FormData + Bearer 鉴权 + X-Real-IP 限流分离）与 MockAI 关键词意图提取。
@@ -17,7 +18,7 @@
 | local_hit_no_inventory | 可水洗织物上的胶带残留怎么去除 | `local_hit_no_inventory` | 胶渍知识卡保留 +「库存中暂无通过安全校验的合适产品」+ 无产品卡/无查看产品入口 | ✅ |
 | insufficient | 油污怎么清洗（无材质词） | `insufficient` | 无知识卡/无产品卡；显示「现有信息不足…可以补充污渍类型、材质或场景后重试」追问文案 | ✅ |
 | no_match | 今天天气怎么样 | `no_match` | 无知识卡/无产品卡/无外部来源；显示「暂无足够依据给出具体建议」 | ✅ |
-| external_hit | 今天天气（`allowExternalSearch=true` + `EXTERNAL_KNOWLEDGE_ENABLED=true` + 受控 mock 源） | `external_hit` | 接口返回 `externalSources`（safe.gov）✓；移动端真实 UI 默认关闭外部搜索，UI 渲染由纯函数与单元测试覆盖 | ✅（接口）/ ⚠️ UI 见缺陷清单 |
+| external_hit | 未接入真实外部网络，**暂不宣称完成** | — | 外部搜索未接真实网络，统一 `external_fail`；不构造伪造标题/URL/检索日期，不返回 externalSources | ⏸ 待接入 |
 | external_fail | 由后端单元测试覆盖（`test_external_fail`） | `external_fail` | 不显示外部建议 | ✅（单测） |
 | outOfScope | 误食了漂白剂怎么办 | `out_of_scope=true` | 隐藏产品/知识/外部操作；显示「超出回答范围」急救警示；无产品卡/无知识卡 | ✅ |
 | critical | 从 84 产品详情「问问助手」进入（contextProductId）问「这个产品怎么安全使用」 | `no_match` + critical 警告 | 「含氯消毒剂 × 酸性清洁剂」严重警告置顶 +「查看关系详情→」跳转 + 安全规则来源 | ✅ |
@@ -57,7 +58,20 @@
 | `git diff --check` | 通过 |
 | 截图内容断言 | 全部通过（见 screenshots.json） |
 
-## 5. 待执行项（未在本环境完成）
+## 5. 真实 Qwen 服务端验收记录
+
+> 服务端问答链路已切换为真实 Qwen（`AI_PROVIDER=qwen`），本地知识库 + 真实库存数据库 + CompatibilityEngine 全链路。以下为真实 Qwen HTTP 验收结果（Python requests，UTF-8 编码，鉴权 + FormData）：
+
+| 真实问题 | knowledgeStatus | knowledge | 库存推荐 | 结果 |
+|----------|----------------|-----------|---------|------|
+| 可水洗织物上的油污怎么清洗 | local_hit | 油污 | 蓝月亮洗衣液 recommended | ✅ 真实 Qwen 生成叙述 |
+| 可水洗织物上的胶带残留怎么去除 | local_hit_no_inventory | 胶渍 | 无 | ✅ |
+| 误食了漂白剂怎么办 | no_match（outOfScope=true） | — | 无 | ✅ 急救警示 |
+| 今天天气怎么样 | no_match | — | 无 | ✅ |
+
+> 说明：早期 HTTP 观测到 no_match 系 curl form-data 中文编码乱码所致（Qwen 收到乱码提取意图错误），改用 Python requests 以 UTF-8 正确编码后真实 Qwen 链路稳定返回 local_hit。此为测试工具编码问题，非业务缺陷。
+
+## 6. 待执行项（未在本环境完成）
 
 - Android 真机验证（问答入口/拍照相册权限/图片+文字发送/返回仓库/键盘与滚动/网络失败重试）——需真机，标记为**待执行**，未写成通过。
 - iOS 真机验证——**待执行**。

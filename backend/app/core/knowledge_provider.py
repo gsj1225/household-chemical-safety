@@ -73,30 +73,15 @@ class ExternalKnowledgeProvider:
         self._fake_search = fake_search
 
     async def search(self, query: KnowledgeQuery) -> ExternalSearchResult:
+        # fake_search 仅供单元测试注入；生产链路（deps 默认构造）不会传入，
+        # 因此生产下永不走此分支。
         if self._fake_search is not None:
             result = self._fake_search(query)
             if isawaitable(result):
                 result = await result
             return result
-        # 受控 Mock：仅当显式开启外部检索（EXTERNAL_KNOWLEDGE_ENABLED）且配置了
-        # 白名单时，返回一个固定模拟外部来源（不连真实网络），用于 Stage 5 QA 验证
-        # external_hit 的 UI 渲染。默认关闭时完全不影响生产（仍视为失败）。
-        if settings.EXTERNAL_KNOWLEDGE_ENABLED and self._allowlist:
-            domain = next(iter(self._allowlist))
-            topic = (query.topic or "general").strip() or "general"
-            return ExternalSearchResult(
-                sources=[SourceRef(
-                    type="external",
-                    title="受控外部资料（Mock）",
-                    domain=domain,
-                    url=f"https://{domain}/knowledge/{topic}",
-                    ref=f"ext-{topic}",
-                    version="1.0",
-                    retrieved_at="2026-08-12",
-                )],
-                failed=False,
-            )
-        # 默认：外部未实现/不可用 → 视为失败
+        # 外部真实网络尚未接入：统一视为失败，不构造任何伪造标题/URL/检索日期，
+        # 也不返回 externalSources。调用方据此得到 external_fail。
         return ExternalSearchResult(sources=[], failed=True)
 
     def filter_allowed(self, sources: list[SourceRef]) -> list[SourceRef]:

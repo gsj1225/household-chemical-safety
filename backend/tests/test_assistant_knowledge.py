@@ -359,6 +359,23 @@ class TestExternal:
         with pytest.raises(Exception):
             SourceRef(type="external", title="Bad", domain="evil.com", url="http://evil.com/x")
 
+    def test_production_provider_never_returns_mock_source(self):
+        """生产链路（默认构造，无 fake_search 注入）即使开启外部检索，
+        也不构造伪造标题/URL/检索日期，统一 external_fail。"""
+        settings.EXTERNAL_KNOWLEDGE_ENABLED = True
+        # 生产默认构造：不传 external_provider → ExternalKnowledgeProvider()（无 fake_search）
+        svc, _ = _build_service(
+            [_entry("lime", "水垢", aliases=["无匹配"], steps=["s"])],
+            [_prod("p-jc", "洁厕灵", ProductCategory.toilet_cleaner)],
+        )
+        resp = _run(svc.ask("问题", [], None, None, FixedIntentAI(aliases=["无匹配"]), allow_external_search=True))
+        assert resp.knowledge_status == "external_fail"
+        assert resp.external_sources == []
+        # 直接验证默认 provider 的 search 不返回任何伪造字段
+        r = _run(ExternalKnowledgeProvider().search(KnowledgeQuery(topic="whatever")))
+        assert r.failed is True
+        assert r.sources == []
+
 
 # ── 来源 / 越权 / critical ───────────────────────
 
