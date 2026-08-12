@@ -1,7 +1,14 @@
 # 知识库优先的家庭化学品助手 — Stage 2 设计（问答结果页与来源展示）
 
-> 版本：v1.3（修订：拆分两次 LLM 调用 / out_of_scope 后端判定 / 状态转换表 / alias 落位 / 检索常量 / 来源去重 / 外部 https 白名单）
+> 版本：v1.4（修订：超范围判断前置 / knowledgeStatus 状态转换补全 / 第二次 LLM 调用门槛 / provisional UI 矛盾）
 > 日期：2026-08-12
+
+## 本版本修订内容（v1.3 → v1.4）
+
+1. **超范围判断前置**：`SafetyScopeClassifier` 提到流程最前，`outOfScope=true` 时立即返回，不调用任何 LLM、不检索知识库。
+2. **补全 `knowledgeStatus` 状态转换**：6 种状态完整转换表 + 每种后端测试要求。
+3. **规定禁止调用第二次 LLM 的状态**：`out_of_scope`/`no_match`/`insufficient`/`external_fail` 由后端固定模板返回；仅当有已确认 reviewed 知识或可靠 external 来源时才组织回答。
+4. **解决 provisional UI 矛盾**：新增独立字段 `pendingKnowledgeNotice`，不渲染 `KnowledgeAdviceCard`，不含任何产品建议/步骤/比例/时间/化学操作。
 > 上游：`docs/product/知识库优先的家庭化学品助手流程.md`（Stage 1，已确认）
 > 前置决策（已锁定）：
 > - 现有 Stage 4 安全编排在**现有基础上演进**，不重写
@@ -16,12 +23,20 @@
 
 ```text
 用户问题/照片
+→ 输入标准化
+→ SafetyScopeClassifier（超范围判定，前置）
+     ├─ 涉及误食/中毒/吸入/身体不适/急救 → outOfScope=true
+     │    立即返回，不调用意图提取 LLM、不检索知识库、不调用回答组织 LLM
+     │    清空 knowledge / inventoryAdvice / generalAdvice / safetyWarnings
+     └─ 未超范围 → 进入下面流程
+
+未超范围时：
 → 调用① 意图提取：LLM → KnowledgeIntentDraft（污渍/材质/场景，不生成结论、不决定 entry_id）
-→ 后端确定性层：SafetyScopeClassifier（超范围？）
-   → LocalKnowledgeProvider 检索（reviewed 高置信即止）
-   → 库存按类别筛选候选 → 标签/成分/危险性/信息完整性
-   → CompatibilityEngine 复核（critical 最高优先级）
-→ 调用② 组织回答：LLM 只接收后端已确认的知识/产品/规则/警告 → AssistantNarrativeDraft（answer）
+→ 本地知识库检索（reviewed 高置信即止）
+→ 库存按类别筛选候选 → 标签/成分/危险性/信息完整性
+→ CompatibilityEngine 复核（critical 最高优先级）
+→ knowledgeStatus 状态转换
+→ 满足条件时才调用② 组织回答：LLM 只接收后端已确认的知识/产品/规则/警告 → AssistantNarrativeDraft（answer）
 → 展示：回答 + 知识库建议 + 我的仓库 + 安全提醒 + 来源分层
 ```
 
@@ -174,7 +189,7 @@ class KnowledgeEvidence(BaseModel):
     confidence: Literal["reviewed"]                            # provisional 不进入
 ```
 
-> **provisional 安全**：`provisional` 不进入 `knowledge`，不返回可执行步骤；`knowledgeStatus=insufficient`；仅提示"存在待审核资料"（非操作候选字段或文案），不展示内容。
+> **provisional 安全（v1.4）**：`provisional` 一律**不进入** `knowledge`，不返回条目内容、步骤、警告或来源详情，不渲染 `KnowledgeAdviceCard`。仅通过独立字段 `pendingKnowledgeNotice`（或固定文案）显示："存在待审核资料，尚未通过审核，暂不提供操作建议"。该字段**不得包含**任何产品建议、清洁步骤、比例、时间或化学操作。
 
 ### 2.7 `AssistantResponse` 扩展（兼容旧字段）
 
@@ -197,6 +212,8 @@ class AssistantResponse(BaseModel):
     ] = Field("no_match", alias="knowledgeStatus")
     external_sources: list[SourceRef] = Field(default_factory=list, alias="externalSources")
     sources: list[SourceRef] = Field(default_factory=list)
+    # provisional 提示（v1.4）：仅文案，不含任何产品/步骤/比例/时间/化学操作
+    pending_knowledge_notice: str = Field(default="", alias="pendingKnowledgeNotice")
 ```
 
 `knowledgeStatus` 只表达"知识获取状态"；`critical`→`safetyWarnings`、`needs_info`→`needsClarification`/产品信息、`out_of_scope`→`outOfScope`。
@@ -218,17 +235,35 @@ class AssistantResponse(BaseModel):
 
 ## 4. 安全编排集成（`_assemble` 演进）
 
-**调用顺序固定，两次 LLM**：
+**调用顺序固定，超范围判定前置，两次 LLM**：
 
 ```text
+输入标准化
+→ SafetyScopeClassifier（前置）
+    ├─ 涉及误食/中毒/吸入/身体不适/急救 → outOfScope=true
+    │    立即返回，不调用意图提取 LLM、不检索知识库、不调用回答组织 LLM
+    │    清空 knowledge / inventoryAdvice / generalAdvice / safetyWarnings
+    └─ 未超范围 → 继续
 调用① LLM 提取意图 → KnowledgeIntentDraft
-  → SafetyScopeClassifier：是否误食/中毒/吸入/身体不适？outOfScope 由后端判定
   → LocalKnowledgeProvider.search(KnowledgeQuery) → KnowledgeRepository 回填
   → 库存候选：allowed_product_categories 只筛候选 → 标签/成分/危险性/信息完整性
   → CompatibilityEngine 复核（critical 最高优先级）
-  → 状态转换（§4.4）确定 knowledgeStatus
-调用② LLM 接收已确认上下文束 → AssistantNarrativeDraft（仅 answer）
+  → knowledgeStatus 状态转换（§4.4）
+  → 满足门槛时：调用② LLM 组织回答 → AssistantNarrativeDraft（仅 answer）
 ```
+
+### 4.5 第二次 LLM 调用门槛（v1.4）
+
+**禁止调用回答组织 LLM 的状态**（由后端固定模板返回）：
+
+- `out_of_scope`
+- `no_match`
+- `insufficient`
+- `external_fail`
+
+**允许调用第二次 LLM**：仅当存在已确认的 `reviewed` 知识或可靠 `external` 来源时。
+
+**越权测试要求**：第二次 LLM 即使返回未经来源支持的产品名、化学步骤、稀释比例、接触时间或危险结论，后端也**必须忽略**，不得进入最终响应。
 
 ### 4.1 `KnowledgeProvider` 接口
 
@@ -262,31 +297,34 @@ EXTERNAL_KNOWLEDGE_TIMEOUT_SECONDS=5
 
 否则不得访问任何外部服务。
 
-### 4.4 `knowledgeStatus` 状态转换规则（固定）
+### 4.4 `knowledgeStatus` 状态转换规则（固定，v1.4 补全）
 
-```text
-本地 reviewed 命中 + 库存有通过完整安全检查的产品  → local_hit
-本地 reviewed 命中 + 库存没有通过完整安全检查的产品 → local_hit_no_inventory
-仅 provisional 命中                                 → insufficient
-本地不足 + 外部开启且命中                          → external_hit
-本地不足 + 外部开启但失败/不可靠                   → external_fail
-本地无命中 + 外部关闭/未授权                       → no_match
-```
+| 前置条件 | 结果状态 | 后端测试要求 |
+|---|---|---|
+| 本地 reviewed 完整命中 + 有安全合格库存 | `local_hit` | 返回 `knowledge` + `sources` 含 `local_kb` + `inventory_advice` 非空 |
+| 本地 reviewed 完整命中 + 无安全合格库存 | `local_hit_no_inventory` | `inventory_advice` 为空 + 知识库建议仍返回 |
+| 本地部分匹配，或仅 provisional 命中 + 外部关闭/未授权 | `insufficient` | 无可执行步骤，仅 `pendingKnowledgeNotice` 或不展示 |
+| 本地完全无匹配 + 外部关闭/未授权 | `no_match` | 无 `knowledge`，无 `external_sources`，后端固定模板 |
+| 本地不足 + 外部授权、环境开启、白名单命中 | `external_hit` | 返回 `externalSources`（title/domain/url/retrieved_at） |
+| 本地不足 + 外部流程失败或来源不可靠 | `external_fail` | 无外部来源，LLM 不补全，固定模板 |
 
-对应测试：`local_hit`、`local_hit_no_inventory`、`insufficient`（仅 provisional）、`external_hit`、`external_fail`、`no_match` 各一条。
+> 状态转换是**确定性的**：由 `local_status`（来自 `KnowledgeResult`）+ 外部开关/结果共同推出，不依赖 LLM。
 
-### 4.5 SafetyScopeClassifier（`out_of_scope` 后端判定）
+### 4.5 SafetyScopeClassifier（`out_of_scope` 后端判定，前置）
+
+`SafetyScopeClassifier` 在**输入标准化之后、任何 LLM 调用与知识库检索之前**执行。判定命中即短路返回。
 
 ```python
 class SafetyScopeClassifier:
-    """判定是否超范围，不依赖 LLM 返回字段。"""
+    """判定是否超范围，不依赖 LLM 返回字段，且早于一切 LLM 调用。"""
     def is_out_of_scope(self, question: str, image_bytes: bytes | None) -> bool:
         # 关键词/规则：误食、误饮、中毒、吸入、身体不适、急救、洗胃、送医...
         ...
 ```
 
-- `outOfScope=true` → 清空 `knowledge`/`inventory_advice`/`general_advice`/`safety_warnings`。
-- 必须覆盖**医疗/中毒/误食/吸入/身体不适**测试用例，且与 LLM 返回值无关。
+- `is_out_of_scope()=True` → `outOfScope=true`，**立即返回**：不调用意图提取 LLM、不检索知识库、不调用回答组织 LLM；清空 `knowledge`/`inventory_advice`/`general_advice`/`safety_warnings`，由后端固定模板组织回复。
+- 只有未超范围才进入后续流程。
+- 必须覆盖**医疗/中毒/误食/吸入/身体不适/急救**测试用例，且与 LLM 返回值无关。
 
 ### 4.6 产品推荐判断链（类别 ≠ 推荐）
 
@@ -347,6 +385,7 @@ allow_external_photo_upload: bool = Field(False, alias="allowExternalPhotoUpload
 
 - 来源卡片不直接展示长 URL；外部资料经 `[打开来源]` 跳转，且**仅限 https 白名单域名**。
 - 知识条目 `entryId`/版本/审核日期放「查看依据」展开区。
+- **provisional（v1.4）**：不渲染 `KnowledgeAdviceCard`；仅当 `pendingKnowledgeNotice` 非空时显示其固定文案"存在待审核资料，尚未通过审核，暂不提供操作建议"。
 
 ### 5.3 新增组件
 
@@ -364,7 +403,8 @@ allow_external_photo_upload: bool = Field(False, alias="allowExternalPhotoUpload
 |---|---|
 | `local_hit` | 知识库 + 我的仓库 + 安全提醒 + 来源 |
 | `local_hit_no_inventory` | 知识库 +「库存无合适产品」+ 通用方法 |
-| `insufficient` / `no_match` | 「暂无足够依据」+ 追问（不开外部时） |
+| `insufficient` | 「暂无足够依据」+ 追问；若为 provisional 则显示 `pendingKnowledgeNotice` 文案（不渲染 KnowledgeAdviceCard） |
+| `no_match` | 「暂无足够依据」+ 追问（不开外部时） |
 | `external_hit` | 上述 + 外部资料卡片 |
 | `external_fail` | 「暂无足够依据」+ 追问 |
 
@@ -378,14 +418,16 @@ allow_external_photo_upload: bool = Field(False, alias="allowExternalPhotoUpload
 
 | 状态 | 断言 |
 |---|---|
-| 本地 reviewed 命中 | `knowledge` 非空 + `sources` 含 `local_kb` + `knowledgeStatus=local_hit` |
+| 本地 reviewed 命中 + 有安全合格库存 | `knowledge` 非空 + `sources` 含 `local_kb` + `knowledgeStatus=local_hit` |
 | 本地命中 + 无通过检查库存 | `knowledgeStatus=local_hit_no_inventory` |
-| 仅 provisional 命中 | `knowledgeStatus=insufficient`，无可执行步骤 |
-| 外部关闭/未授权 | `external_sources` 恒为空 |
-| 外部 Mock 白名单命中 | `externalSources`（title/domain/url/retrieved_at）+ `external_hit` |
-| 外部失败/不可靠（Mock） | `knowledgeStatus=external_fail`，LLM 不补全 |
+| 仅 provisional 命中 | `knowledgeStatus=insufficient`，无可执行步骤，仅 `pendingKnowledgeNotice` |
+| 本地无匹配 + 外部关闭/未授权 | `knowledgeStatus=no_match`，后端固定模板 |
+| 外部 Mock 白名单命中 | `externalSources`（title/domain/url/retrieved_at）+ `knowledgeStatus=external_hit` |
+| 外部失败/不可靠（Mock） | `knowledgeStatus=external_fail`，LLM 不补全，固定模板 |
 | LLM 越权被忽略 | 两次调用产物被后端校验，夹带内容不进入响应 |
-| `out_of_scope` 后端判定 | 误食/中毒/吸入/身体不适 → `outOfScope=true`，清空各层，且不依赖 LLM |
+| 第二次 LLM 越权 | 调用② 返回未经来源支持的产品名/步骤/比例/时间/危险结论 → 一律忽略 |
+| 禁止第二次 LLM 的状态 | `out_of_scope`/`no_match`/`insufficient`/`external_fail` 不调用调用②，固定模板 |
+| 超范围前置短路 | 误食/中毒/吸入/身体不适/急救 → 不调用任何 LLM、不检索知识库，直接 `outOfScope=true` 清空各层 |
 | 相容性 critical | `safetyWarnings` critical，剥离混用步骤（`sources` 含 `rule`） |
 | 知识 warnings | 进入 `safetyWarnings`，`generalAdvice` 为空 |
 | 来源去重 | `(type, ref)` 去重 + 固定展示顺序 |
