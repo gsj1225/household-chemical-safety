@@ -98,8 +98,9 @@ class AssistantService:
         allow_external_photo_upload: bool = False,
     ) -> AssistantResponse:
         """执行问答编排，返回安全的结构化回答。"""
-        # 1. 超范围前置短路：不调用任何 LLM、不检索知识库（方案 B，传入文字+图片）
-        if self._classifier.is_out_of_scope(question, image_bytes):
+        # 1. 超范围前置短路（方案 A）：仅文字判定，不调用任何 LLM、不检索知识库；
+        #    图片首期只用于污渍/材质/场景识别，不参与事故视觉判定。
+        if self._classifier.is_out_of_scope(question):
             return self._out_of_scope_response()
 
         # 2. 读取库存和相容性关系

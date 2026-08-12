@@ -316,8 +316,10 @@ EXTERNAL_KNOWLEDGE_TIMEOUT_SECONDS=5
 
 ```python
 class SafetyScopeClassifier:
-    """判定是否超范围，不依赖 LLM 返回字段，且早于一切 LLM 调用。"""
-    def is_out_of_scope(self, question: str, image_bytes: bytes | None) -> bool:
+    """判定是否超范围，不依赖 LLM 返回字段，且早于一切 LLM 调用。
+    方案 A：仅接收文字 question，不做图片视觉判定。
+    图片首期只用于污渍/材质/场景识别，不用于事故视觉判定。"""
+    def is_out_of_scope(self, question: str) -> bool:
         # 关键词/规则：误食、误饮、中毒、吸入、身体不适、急救、洗胃、送医...
         ...
 ```

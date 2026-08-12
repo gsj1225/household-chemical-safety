@@ -747,13 +747,23 @@ class TestP1_2UnknownMaterial:
 
 
 class TestP1_3ImageSafety:
-    def test_classifier_accepts_image_bytes(self):
+    def test_classifier_text_only(self):
+        # 方案 A：分类器只接收文字 question，不接收 image_bytes
         c = SafetyScopeClassifier()
-        assert c.is_out_of_scope("误食了洁厕剂", b"\x89PNG") is True
-        assert c.is_out_of_scope("怎么清理马桶", b"\x89PNG") is False
+        assert c.is_out_of_scope("误食了洁厕剂") is True
+        assert c.is_out_of_scope("怎么清理马桶") is False
+        import inspect as _inspect
+        sig = _inspect.signature(c.is_out_of_scope)
+        assert "image_bytes" not in sig.parameters
 
-    def test_image_accident_out_of_scope_before_llm(self):
-        # 图片 + 事故文字：在任意 LLM 与知识检索前短路
+    def test_text_accident_short_circuit(self):
+        # 文字含误食/中毒/吸入 → 前置短路，不返回知识/产品
+        for q in ["误食了洁厕剂", "中毒了怎么办", "吸入有害气体"]:
+            c = SafetyScopeClassifier()
+            assert c.is_out_of_scope(q) is True
+
+    def test_image_accident_before_llm_no_llm(self):
+        # 带图片 + 事故文字：文字命中 → 在任意 LLM 与知识检索前短路，不调用任何 LLM
         svc, _ = _build_service(
             [_entry("lime", "水垢", aliases=["马桶"], surfaces=["马桶"], steps=["s"])],
             [_prod("p-jc", "洁厕灵", ProductCategory.toilet_cleaner)],
@@ -763,7 +773,8 @@ class TestP1_3ImageSafety:
         assert resp.knowledge == []
         assert resp.inventory_advice == []
 
-    def test_image_normal_question_not_out_of_scope(self):
+    def test_normal_text_with_image_enters_intent(self):
+        # 文字正常但带图片 → 正常进入意图提取（图片不触发事故判定）
         svc, _ = _build_service(
             [_entry("lime", "水垢", aliases=["马桶"], surfaces=["马桶"], cats=["toilet_cleaner"], steps=["s"])],
             [_prod("p-jc", "洁厕灵", ProductCategory.toilet_cleaner, ingredients=["盐酸"])],
