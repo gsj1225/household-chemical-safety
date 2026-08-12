@@ -20,6 +20,11 @@ from app.models.assistant import (
     AssistantProductAdvice,
     AssistantSafetyWarning,
 )
+from app.models.knowledge import (
+    AssistantNarrativeDraft,
+    KnowledgeIntent,
+    KnowledgeIntentDraft,
+)
 from app.core.risk_engine import RiskEngine
 from app.utils.reporting import build_report
 
@@ -281,3 +286,66 @@ class MockAI(AIProvider):
             general_advice=["通用建议：使用前请阅读产品标签，注意通风。"],
             safety_warnings=warnings,
         )
+
+    # ── 两次 LLM 调用（知识库优先）────────────────────
+
+    # 关键词 → 标准别名（与知识库条目 aliases 对齐）
+    _KEYWORD_ALIASES: list[tuple[str, list[str]]] = [
+        ("油污", ["油污", "油渍"]), ("油渍", ["油污", "油渍"]), ("机油", ["油污", "油渍"]),
+        ("血", ["血渍", "蛋白污渍"]), ("奶", ["奶渍", "蛋白污渍"]), ("蛋", ["蛋渍", "蛋白污渍"]),
+        ("咖啡", ["咖啡渍", "咖啡"]), ("茶", ["茶渍", "茶"]),
+        ("墨水", ["墨水", "墨水渍"]), ("圆珠笔", ["圆珠笔渍"]),
+        ("口红", ["口红渍"]), ("粉底", ["粉底渍"]), ("化妆品", ["化妆品"]), ("彩妆", ["彩妆"]),
+        ("胶带", ["胶渍", "胶带残留"]), ("贴纸", ["胶渍", "贴纸残留"]), ("胶渍", ["胶渍"]),
+        ("水垢", ["水垢", "皂垢"]), ("皂垢", ["水垢", "皂垢"]),
+        ("马桶", ["马桶", "水垢", "皂垢"]), ("水龙头", ["水龙头", "水垢", "皂垢"]),
+        ("霉斑", ["霉斑", "霉菌", "发霉"]), ("霉菌", ["霉斑", "霉菌", "发霉"]), ("发霉", ["霉斑", "霉菌", "发霉"]),
+        ("铁锈", ["铁锈", "锈渍"]), ("锈渍", ["铁锈", "锈渍"]),
+        ("厨房台面", ["厨房台面"]), ("台面", ["厨房台面"]), ("玻璃", ["玻璃"]), ("瓷砖", ["瓷砖"]),
+    ]
+
+    async def extract_knowledge_intent(
+        self,
+        question: str,
+        history: list[dict],
+        image_bytes: bytes | None,
+        inventory_context: list[dict],
+        compatibility_context: list[dict],
+        context_product_id: str | None = None,
+    ) -> KnowledgeIntentDraft:
+        """Mock 调用①：按关键词提取意图别名，不决定 entry_id/产品/结论。"""
+        q = question or ""
+        aliases: list[str] = []
+        for kw, al in self._KEYWORD_ALIASES:
+            if kw in q:
+                for a in al:
+                    if a not in aliases:
+                        aliases.append(a)
+        if not aliases:
+            return KnowledgeIntentDraft()
+        return KnowledgeIntentDraft(knowledge_intent=KnowledgeIntent(aliases=aliases))
+
+    async def generate_narrative(
+        self,
+        context_bundle: dict,
+        question: str,
+        history: list[dict],
+        context_product_id: str | None = None,
+    ) -> AssistantNarrativeDraft:
+        """Mock 调用②：仅依据后端已确认的上下文束组织 answer。"""
+        lines = []
+        kb = context_bundle.get("knowledge", [])
+        inv = context_bundle.get("inventory_advice", [])
+        warnings = context_bundle.get("safety_warnings", [])
+        if kb:
+            lines.append(f"根据知识库，针对「{kb[0].get('topic','')}」可按以下步骤处理。")
+        if inv:
+            names = "、".join(a.get("productName") for a in inv[:3])
+            lines.append(f"结合你家仓库，可考虑使用：{names}。")
+        elif kb:
+            lines.append("你家的库存中暂无通过安全校验的适用产品。")
+        if warnings:
+            lines.append("请注意查看下方的安全提醒。")
+        if not lines:
+            lines.append("暂无足够依据给出具体建议。")
+        return AssistantNarrativeDraft(answer="".join(lines))

@@ -1,0 +1,58 @@
+{
+  "id": "protein-stain",
+  "topic": "蛋白污渍",
+  "aliases": [
+    "血渍",
+    "奶渍",
+    "蛋渍",
+    "蛋白污渍"
+  ],
+  "surfaces": [
+    "可水洗织物"
+  ],
+  "excluded_surfaces": [
+    "热水易固化的面料"
+  ],
+  "scene": [
+    "衣物"
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "text": "用冷水先冲淋，避免热水使蛋白凝固"
+    },
+    {
+      "order": 2,
+      "text": "选择标注可处理蛋白类污渍的产品"
+    },
+    {
+      "order": 3,
+      "text": "局部测试后处理"
+    }
+  ],
+  "allowed_product_categories": [
+    "laundry",
+    "stain_remover"
+  ],
+  "warnings": [
+    "避免热水",
+    "先确认面料"
+  ],
+  "prohibited_actions": [
+    "不得在蛋白污渍上直接使用热水"
+  ],
+  "stop_conditions": [
+    "若面料变色或破损立即停止"
+  ],
+  "tag_condition": "处理前核对产品标签与面料标识",
+  "sources": [
+    {
+      "type": "local_kb",
+      "title": "家庭安全知识库",
+      "url": ""
+    }
+  ],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed"
+}

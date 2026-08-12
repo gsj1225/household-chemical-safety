@@ -10,6 +10,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.models.knowledge import (
+    KnowledgeEvidence,
+    KnowledgeStatus,
+    SourceRef,
+)
+
 # ── 会话消息 ──────────────────────────────────────
 
 class AssistantHistoryMessage(BaseModel):
@@ -61,6 +67,12 @@ class AssistantResponse(BaseModel):
     )
     out_of_scope: bool = Field(False, alias="outOfScope")
     evidence: list[str] = Field(default_factory=list)
+    # ── 知识库优先（Stage 3）新增 ──
+    knowledge: list[KnowledgeEvidence] = Field(default_factory=list, alias="knowledge")
+    knowledge_status: KnowledgeStatus = Field("no_match", alias="knowledgeStatus")
+    external_sources: list[SourceRef] = Field(default_factory=list, alias="externalSources")
+    sources: list[SourceRef] = Field(default_factory=list)
+    pending_knowledge_notice: str = Field(default="", alias="pendingKnowledgeNotice")
 
 # ── AI 候选草稿（未经验证，不能直接作为安全结论）──
 

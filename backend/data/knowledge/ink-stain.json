@@ -1,0 +1,58 @@
+{
+  "id": "ink-stain",
+  "topic": "墨水渍",
+  "aliases": [
+    "墨水",
+    "墨水渍",
+    "圆珠笔渍"
+  ],
+  "surfaces": [
+    "可水洗织物",
+    "硬质桌面"
+  ],
+  "excluded_surfaces": [
+    "多孔易扩散的浅色面料"
+  ],
+  "scene": [
+    "衣物",
+    "桌面"
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "text": "先在不显眼处测试"
+    },
+    {
+      "order": 2,
+      "text": "选择标注可用于墨水渍的清洁产品"
+    },
+    {
+      "order": 3,
+      "text": "按说明短时处理并冲洗"
+    }
+  ],
+  "allowed_product_categories": [
+    "laundry",
+    "stain_remover"
+  ],
+  "warnings": [
+    "墨水渍扩散快，先测试"
+  ],
+  "prohibited_actions": [
+    "不得长时间浸泡不明面料"
+  ],
+  "stop_conditions": [
+    "扩散或变色立即停止"
+  ],
+  "tag_condition": "使用前核对产品与面料适用性",
+  "sources": [
+    {
+      "type": "local_kb",
+      "title": "家庭安全知识库",
+      "url": ""
+    }
+  ],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed"
+}

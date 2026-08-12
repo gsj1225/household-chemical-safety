@@ -1,0 +1,58 @@
+{
+  "id": "adhesive-stain",
+  "topic": "胶渍",
+  "aliases": [
+    "胶渍",
+    "胶带残留",
+    "贴纸残留"
+  ],
+  "surfaces": [
+    "硬质表面",
+    "可水洗织物"
+  ],
+  "excluded_surfaces": [
+    "易被溶剂损伤的塑料"
+  ],
+  "scene": [
+    "桌面",
+    "厨房"
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "text": "先确认表面材质"
+    },
+    {
+      "order": 2,
+      "text": "选择标注可去除胶渍的清洁产品"
+    },
+    {
+      "order": 3,
+      "text": "局部测试后处理"
+    }
+  ],
+  "allowed_product_categories": [
+    "stain_remover",
+    "kitchen_cleaner"
+  ],
+  "warnings": [
+    "部分塑料会被溶剂损伤"
+  ],
+  "prohibited_actions": [
+    "不得在未确认塑料上用强溶剂"
+  ],
+  "stop_conditions": [
+    "表面发白或变形立即停止"
+  ],
+  "tag_condition": "使用前核对表面材质与产品标签",
+  "sources": [
+    {
+      "type": "local_kb",
+      "title": "家庭安全知识库",
+      "url": ""
+    }
+  ],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed"
+}

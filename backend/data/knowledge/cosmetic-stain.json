@@ -1,0 +1,57 @@
+{
+  "id": "cosmetic-stain",
+  "topic": "化妆品污渍",
+  "aliases": [
+    "口红渍",
+    "粉底渍",
+    "化妆品",
+    "彩妆"
+  ],
+  "surfaces": [
+    "可水洗织物"
+  ],
+  "excluded_surfaces": [
+    "需干洗的丝绸等"
+  ],
+  "scene": [
+    "衣物"
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "text": "先局部测试"
+    },
+    {
+      "order": 2,
+      "text": "选择标注可用于化妆品渍的清洁产品"
+    },
+    {
+      "order": 3,
+      "text": "按标签处理并清水漂洗"
+    }
+  ],
+  "allowed_product_categories": [
+    "laundry",
+    "stain_remover"
+  ],
+  "warnings": [
+    "先确认面料"
+  ],
+  "prohibited_actions": [
+    "不得在丝绸等干洗面料上用水处理"
+  ],
+  "stop_conditions": [
+    "出现渗色立即停止"
+  ],
+  "tag_condition": "处理前核对面料标识与产品标签",
+  "sources": [
+    {
+      "type": "local_kb",
+      "title": "家庭安全知识库",
+      "url": ""
+    }
+  ],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed"
+}

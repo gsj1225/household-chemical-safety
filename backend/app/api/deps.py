@@ -3,6 +3,10 @@
 from app.config import settings
 from app.core.ai_provider import AIProvider
 from app.core.compatibility_engine import CompatibilityEngine
+from app.core.knowledge_provider import (
+    ExternalKnowledgeProvider,
+    LocalKnowledgeProvider,
+)
 from app.core.mock_ai import MockAI
 from app.core.qwen_ai import QwenAI
 from app.data.inventory_repository import InventoryRepository
@@ -79,5 +83,10 @@ def get_assistant_service() -> AssistantService:
     if _assistant_service_instance is None:
         repo = get_inventory_repository()
         engine = get_compatibility_engine()
-        _assistant_service_instance = AssistantService(repo, engine)
+        _assistant_service_instance = AssistantService(
+            repo,
+            engine,
+            local_provider=LocalKnowledgeProvider(),
+            external_provider=ExternalKnowledgeProvider(),
+        )
     return _assistant_service_instance

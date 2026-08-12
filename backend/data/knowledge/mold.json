@@ -1,0 +1,60 @@
+{
+  "id": "mold",
+  "topic": "霉斑",
+  "aliases": [
+    "霉斑",
+    "霉菌",
+    "发霉"
+  ],
+  "surfaces": [
+    "瓷砖",
+    "浴室墙面",
+    "洗衣机胶圈"
+  ],
+  "excluded_surfaces": [
+    "多孔石膏板"
+  ],
+  "scene": [
+    "浴室",
+    "卫生间"
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "text": "保持通风并佩戴手套"
+    },
+    {
+      "order": 2,
+      "text": "选择标注可除霉的浴室/消毒类产品"
+    },
+    {
+      "order": 3,
+      "text": "局部处理并晾干"
+    }
+  ],
+  "allowed_product_categories": [
+    "bathroom_cleaner",
+    "disinfectant"
+  ],
+  "warnings": [
+    "保持通风",
+    "避免与其他清洁产品混用"
+  ],
+  "prohibited_actions": [
+    "不得与酸性产品混用含氯除霉剂"
+  ],
+  "stop_conditions": [
+    "出现刺激症状立即停止并通风"
+  ],
+  "tag_condition": "处理前核对表面与产品标签",
+  "sources": [
+    {
+      "type": "local_kb",
+      "title": "家庭安全知识库",
+      "url": ""
+    }
+  ],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed"
+}

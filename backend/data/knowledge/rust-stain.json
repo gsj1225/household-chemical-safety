@@ -1,0 +1,58 @@
+{
+  "id": "rust-stain",
+  "topic": "铁锈渍",
+  "aliases": [
+    "铁锈",
+    "锈渍"
+  ],
+  "surfaces": [
+    "硬质表面"
+  ],
+  "excluded_surfaces": [
+    "漆面",
+    "未防护金属"
+  ],
+  "scene": [
+    "厨房",
+    "卫生间"
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "text": "先确认表面"
+    },
+    {
+      "order": 2,
+      "text": "选择标注可除锈的产品"
+    },
+    {
+      "order": 3,
+      "text": "局部测试"
+    }
+  ],
+  "allowed_product_categories": [
+    "stain_remover",
+    "toilet_cleaner"
+  ],
+  "warnings": [
+    "除锈剂通常含酸",
+    "避免与含氯产品混用"
+  ],
+  "prohibited_actions": [
+    "不得与含氯产品混用"
+  ],
+  "stop_conditions": [
+    "表面损伤立即停止"
+  ],
+  "tag_condition": "使用前核对表面材质与产品标签",
+  "sources": [
+    {
+      "type": "local_kb",
+      "title": "家庭安全知识库",
+      "url": ""
+    }
+  ],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed"
+}

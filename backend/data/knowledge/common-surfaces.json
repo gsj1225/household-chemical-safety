@@ -1,0 +1,62 @@
+{
+  "id": "common-surfaces",
+  "topic": "常见表面清洁",
+  "aliases": [
+    "厨房台面",
+    "玻璃",
+    "瓷砖",
+    "台面"
+  ],
+  "surfaces": [
+    "厨房台面",
+    "玻璃",
+    "瓷砖",
+    "不锈钢"
+  ],
+  "excluded_surfaces": [
+    "木地板",
+    "未密封石材"
+  ],
+  "scene": [
+    "厨房",
+    "浴室"
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "text": "选择与该表面匹配的清洁产品"
+    },
+    {
+      "order": 2,
+      "text": "按标签使用"
+    },
+    {
+      "order": 3,
+      "text": "用干净布擦拭"
+    }
+  ],
+  "allowed_product_categories": [
+    "kitchen_cleaner",
+    "bathroom_cleaner"
+  ],
+  "warnings": [
+    "不同表面用不同产品"
+  ],
+  "prohibited_actions": [
+    "不得在未密封石材上使用酸性产品"
+  ],
+  "stop_conditions": [
+    "出现腐蚀立即停止"
+  ],
+  "tag_condition": "使用前核对表面材质与产品标签",
+  "sources": [
+    {
+      "type": "local_kb",
+      "title": "家庭安全知识库",
+      "url": ""
+    }
+  ],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed"
+}

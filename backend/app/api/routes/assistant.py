@@ -78,6 +78,8 @@ async def ask(
     question: str = Form(...),
     history: str | None = Form(None),
     context_product_id: str | None = Form(None, alias="contextProductId"),
+    allow_external_search: bool = Form(False, alias="allowExternalSearch"),
+    allow_external_photo_upload: bool = Form(False, alias="allowExternalPhotoUpload"),
     image: UploadFile | None = File(None),
     ai_provider: AIProvider = Depends(get_ai_provider),
     service: AssistantService = Depends(get_assistant_service),
@@ -143,6 +145,8 @@ async def ask(
             image_bytes=image_bytes,
             context_product_id=context_product_id,
             ai_provider=ai_provider,
+            allow_external_search=allow_external_search,
+            allow_external_photo_upload=allow_external_photo_upload,
         )
     except AIProviderTimeoutError:
         raise HTTPException(

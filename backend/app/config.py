@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     # 助手问答限流（独立于通用限流）
     ASSISTANT_RATE_LIMIT_PER_MINUTE: int = 8
 
+    # 外部知识检索（Stage 3，首期默认关闭，仅接口 + Mock，不连真实网络）
+    EXTERNAL_KNOWLEDGE_ENABLED: bool = False
+    EXTERNAL_KNOWLEDGE_ALLOWLIST: list[str] = []
+    EXTERNAL_KNOWLEDGE_TIMEOUT_SECONDS: float = 5.0
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @model_validator(mode="after")

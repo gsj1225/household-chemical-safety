@@ -1,7 +1,7 @@
-"""Assistant 问答接口测试 — Stage 4
+"""Assistant 问答接口测试 — Stage 3（知识库优先）
 
-覆盖 Mock 模式文字/照片、history 截断、productId 校验、
-critical 相容性兜底、needs_information、超范围、限流、AI 错误映射。
+覆盖路由契约（鉴权/限流/Form/图片/历史/错误映射）与知识库优先基础行为。
+详细知识库行为（命中/状态转换/外部/provisional/越权等）见 test_assistant_knowledge.py。
 """
 
 import pytest
@@ -15,11 +15,6 @@ from app.core.mock_ai import MockAI
 from app.core.rate_limit import rate_limiter
 from app.data.inventory_repository import InventoryRepository
 from app.main import app
-from app.models.assistant import (
-    AssistantDraft,
-    AssistantProductAdvice,
-    AssistantSafetyWarning,
-)
 from app.models.inventory import (
     ConfirmedFact,
     InformationStatus,
@@ -31,7 +26,6 @@ from app.services.assistant_service import AssistantService
 TOKEN = "assistant-test-token"
 AUTH = {"Authorization": f"Bearer {TOKEN}"}
 
-# 1x1 透明 PNG
 TINY_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
     b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01"
@@ -40,7 +34,6 @@ TINY_PNG = (
 
 
 def _seed(repo: InventoryRepository) -> None:
-    """写入 3 个产品：含氯消毒剂、酸性洁厕剂、信息待补充产品。"""
     repo.create(ProductCreate(
         productId="p-84",
         operationId="op-84",
@@ -58,10 +51,18 @@ def _seed(repo: InventoryRepository) -> None:
         ingredients=[ConfirmedFact(display_value="盐酸")],
     ))
     repo.create(ProductCreate(
+        productId="p-laundry",
+        operationId="op-laundry",
+        name="蓝月亮洗衣液",
+        category=ProductCategory.laundry,
+        information_status=InformationStatus.complete,
+        ingredients=[ConfirmedFact(display_value="表面活性剂")],
+    ))
+    repo.create(ProductCreate(
         productId="p-need",
         operationId="op-need",
-        name="未知品牌清洁剂",
-        category=ProductCategory.other,
+        name="未知品牌洗衣液",
+        category=ProductCategory.laundry,
         information_status=InformationStatus.needs_information,
         ingredients=[],
     ))
@@ -82,7 +83,6 @@ def _build_client(db_path, ai_provider, seed=True):
 
 @pytest.fixture(autouse=True)
 def _restore_state():
-    """每个测试后恢复全局状态，避免污染其他测试模块。"""
     orig_debug = settings.DEBUG
     orig_token = settings.DEMO_ACCESS_TOKEN
     orig_max_image = settings.MAX_IMAGE_SIZE_MB
@@ -96,7 +96,6 @@ def _restore_state():
 
 @pytest.fixture
 def client():
-    """种子库存 + MockAI 客户端。"""
     import tempfile
     import os
     tmp = tempfile.mkdtemp()
@@ -109,55 +108,29 @@ def client():
     settings.DEMO_ACCESS_TOKEN = ""
 
 
-class _UnknownAI(MockAI):
-    """返回一个库存中不存在的 productId + 一个真实 productId。"""
-
-    async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context, context_product_id=None):
-        return AssistantDraft(
-            answer="测试未知产品过滤",
-            product_advice=[
-                AssistantProductAdvice(product_id="unknown-id-xyz", recommendation="recommended", reason="x", steps=["s"], cautions=[]),
-                AssistantProductAdvice(product_id="p-jc", recommendation="recommended", reason="y", steps=["s"], cautions=[]),
-            ],
-        )
-
-
 class _TimeoutAI(MockAI):
-    async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context, context_product_id=None):
+    async def extract_knowledge_intent(self, *a, **k):
         raise AIProviderTimeoutError("timeout")
 
 
 class _ErrorAI(MockAI):
-    async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context, context_product_id=None):
+    async def extract_knowledge_intent(self, *a, **k):
         raise AIProviderError("error")
-
-class _OutOfScopeWithAdviceAI(MockAI):
-    """LLM 误返回 outOfScope + 产品建议/通用建议，后端必须兜底清空。"""
-
-    async def answer_household_question(self, question, history, image_bytes, inventory_context, compatibility_context, context_product_id=None):
-        return AssistantDraft(
-            answer="该问题超出我的回答范围。",
-            out_of_scope=True,
-            product_advice=[
-                AssistantProductAdvice(product_id="p-84", recommendation="recommended", reason="x", steps=["使用"], cautions=[]),
-            ],
-            general_advice=["通用建议：注意通风。"],
-            safety_warnings=[
-                AssistantSafetyWarning(severity="attention", title="注意", description="d", relation_id=None, recommended_action="a")
-            ],
-        )
 
 
 class TestAssistantApi:
-    def test_text_question_returns_structured_answer(self, client):
+    def test_text_question_returns_knowledge_first(self, client):
         resp = client.post("/api/assistant/ask", data={"question": "怎么清理马桶"}, headers=AUTH)
         assert resp.status_code == 200
         body = resp.json()
         assert body["answer"]
+        assert body["knowledge"], "应返回知识库条目"
+        assert body["knowledgeStatus"] == "local_hit"
         assert body["inventoryAdvice"]
-        known = {"p-84", "p-jc", "p-need"}
-        assert all(a["productId"] in known for a in body["inventoryAdvice"])
-        assert body["generalAdvice"]
+        ids = {a["productId"] for a in body["inventoryAdvice"]}
+        assert "p-jc" in ids  # 马桶 → 水垢知识 → 洁厕灵
+        # 新知识库流程 generalAdvice 为空
+        assert body["generalAdvice"] == []
 
     def test_photo_multipart_request(self, client):
         files = {"image": ("test.png", TINY_PNG, "image/png")}
@@ -167,11 +140,11 @@ class TestAssistantApi:
         )
         assert resp.status_code == 200
         body = resp.json()
-        assert body["answer"]
+        assert "answer" in body
 
     def test_history_truncated_to_12(self, client):
-        long_history = [{"role": "user", "text": f"消息{i}"} for i in range(20)]
         import json as _json
+        long_history = [{"role": "user", "text": f"消息{i}"} for i in range(20)]
         resp = client.post(
             "/api/assistant/ask",
             data={"question": "怎么清理", "history": _json.dumps(long_history)},
@@ -179,54 +152,19 @@ class TestAssistantApi:
         )
         assert resp.status_code == 200
 
-    def test_unknown_product_id_filtered(self, client):
-        import tempfile, os
-        tmp = tempfile.mkdtemp()
-        c, _, _ = _build_client(os.path.join(tmp, "u.db"), _UnknownAI())
-        resp = c.post("/api/assistant/ask", data={"question": "测试"}, headers=AUTH)
-        body = resp.json()
-        ids = [a["productId"] for a in body["inventoryAdvice"]]
-        assert "unknown-id-xyz" not in ids
-        assert "p-jc" in ids
-        app.dependency_overrides.clear()
-        rate_limiter.clear()
-
     def test_only_references_inventory_products(self, client):
-        resp = client.post("/api/assistant/ask", data={"question": "怎么清理"}, headers=AUTH)
+        resp = client.post("/api/assistant/ask", data={"question": "怎么清理马桶"}, headers=AUTH)
         body = resp.json()
-        known = {"p-84", "p-jc", "p-need"}
+        known = {"p-84", "p-jc", "p-laundry", "p-need"}
         for a in body["inventoryAdvice"]:
             assert a["productId"] in known
 
-    def test_critical_mixing_forced_warning_and_stripped(self, client):
-        resp = client.post("/api/assistant/ask", data={"question": "84消毒液和洁厕灵可以混用吗"}, headers=AUTH)
-        body = resp.json()
-        # 必须有 critical 安全警告
-        assert any(w["severity"] == "critical" for w in body["safetyWarnings"])
-        # 库存建议中不能残留混用步骤
-        for a in body["inventoryAdvice"]:
-            for s in a["steps"]:
-                assert "混" not in s and "混合" not in s and "一起" not in s
-        # 证据记录 critical 关系
-        assert body["evidence"]
-
     def test_needs_information_not_recommended(self, client):
-        resp = client.post("/api/assistant/ask", data={"question": "清理厨房"}, headers=AUTH)
+        resp = client.post("/api/assistant/ask", data={"question": "洗衣液能去油污吗"}, headers=AUTH)
         body = resp.json()
         for a in body["inventoryAdvice"]:
             if a["productId"] == "p-need":
                 assert a["recommendation"] == "needs_information"
-
-    def test_no_inventory_candidate_general_advice_only(self):
-        import tempfile, os
-        tmp = tempfile.mkdtemp()
-        c, _, _ = _build_client(os.path.join(tmp, "e.db"), MockAI(), seed=False)
-        resp = c.post("/api/assistant/ask", data={"question": "怎么清理"}, headers=AUTH)
-        body = resp.json()
-        assert body["inventoryAdvice"] == []
-        assert body["generalAdvice"]
-        app.dependency_overrides.clear()
-        rate_limiter.clear()
 
     def test_out_of_scope_returns_200_rejection(self, client):
         resp = client.post("/api/assistant/ask", data={"question": "误食了洁厕剂怎么办"}, headers=AUTH)
@@ -234,6 +172,9 @@ class TestAssistantApi:
         body = resp.json()
         assert body["outOfScope"] is True
         assert body["inventoryAdvice"] == []
+        assert body["knowledge"] == []
+        assert body["generalAdvice"] == []
+        assert body["safetyWarnings"] == []
 
     def test_empty_question_400(self, client):
         resp = client.post("/api/assistant/ask", data={"question": "   "}, headers=AUTH)
@@ -268,9 +209,9 @@ class TestAssistantApi:
 
     def test_rate_limit_429(self, client):
         for _ in range(8):
-            r = client.post("/api/assistant/ask", data={"question": "怎么清理"}, headers=AUTH)
+            r = client.post("/api/assistant/ask", data={"question": "怎么清理马桶"}, headers=AUTH)
             assert r.status_code == 200
-        resp = client.post("/api/assistant/ask", data={"question": "怎么清理"}, headers=AUTH)
+        resp = client.post("/api/assistant/ask", data={"question": "怎么清理马桶"}, headers=AUTH)
         assert resp.status_code == 429
         assert resp.json()["error"]["code"] == "RATE_LIMITED"
         assert "Retry-After" in resp.headers
@@ -279,7 +220,7 @@ class TestAssistantApi:
         import tempfile, os
         tmp = tempfile.mkdtemp()
         c, _, _ = _build_client(os.path.join(tmp, "t.db"), _TimeoutAI())
-        resp = c.post("/api/assistant/ask", data={"question": "怎么清理"}, headers=AUTH)
+        resp = c.post("/api/assistant/ask", data={"question": "怎么清理马桶"}, headers=AUTH)
         assert resp.status_code == 504
         assert resp.json()["error"]["code"] == "AI_PROVIDER_TIMEOUT"
         app.dependency_overrides.clear()
@@ -289,101 +230,8 @@ class TestAssistantApi:
         import tempfile, os
         tmp = tempfile.mkdtemp()
         c, _, _ = _build_client(os.path.join(tmp, "e2.db"), _ErrorAI())
-        resp = c.post("/api/assistant/ask", data={"question": "怎么清理"}, headers=AUTH)
+        resp = c.post("/api/assistant/ask", data={"question": "怎么清理马桶"}, headers=AUTH)
         assert resp.status_code == 502
         assert resp.json()["error"]["code"] == "AI_PROVIDER_ERROR"
         app.dependency_overrides.clear()
         rate_limiter.clear()
-
-
-class TestAssistantDraftContract:
-    def test_qwen_json_contract_validates(self):
-        """Qwen 结构化输出契约可被 AssistantDraft 校验。"""
-        payload = {
-            "answer": "建议",
-            "needs_clarification": False,
-            "clarification_questions": [],
-            "product_advice": [
-                {
-                    "productId": "p-jc",
-                    "recommendation": "recommended",
-                    "reason": "合适",
-                    "steps": ["佩戴手套"],
-                    "cautions": [],
-                }
-            ],
-            "general_advice": ["通用建议"],
-            "safety_warnings": [
-                {
-                    "severity": "critical",
-                    "title": "禁止混用",
-                    "description": "描述",
-                    "relationId": "rel-1",
-                    "recommended_action": "分开使用",
-                }
-            ],
-            "out_of_scope": False,
-        }
-        draft = AssistantDraft.model_validate(payload)
-        assert draft.product_advice[0].product_id == "p-jc"
-        assert draft.safety_warnings[0].severity == "critical"
-
-    def test_product_name_backfilled_from_db(self, client):
-        """productName 必须由库存回填，不依赖 LLM。"""
-        resp = client.post(
-            "/api/assistant/ask",
-            data={"question": "洁厕灵能和84一起用吗"},
-            headers=AUTH,
-        )
-        assert resp.status_code == 200
-        body = resp.json()
-        names = {a["productName"] for a in body["inventoryAdvice"]}
-        assert "84消毒液" in names
-        assert "威猛先生洁厕灵" in names
-        for a in body["inventoryAdvice"]:
-            assert a["productName"], "productName 不允许为空"
-
-    def test_context_product_id_participates_in_compat(self, client):
-        """contextProductId 参与：当前产品与其他产品的 critical 关系进入证据。"""
-        resp = client.post(
-            "/api/assistant/ask",
-            data={
-                "question": "我能用84消毒液清洁吗",
-                "contextProductId": "p-84",
-            },
-            headers=AUTH,
-        )
-        assert resp.status_code == 200
-        body = resp.json()
-        # 结合当前产品的说明
-        assert "已结合当前产品「84消毒液」" in body["answer"]
-        # p-84(次氯酸钠) 与 p-jc(盐酸) 存在 critical 关系，应进入证据
-        assert any("混" in e or "混合" in e or "氯" in e for e in body["evidence"])
-        assert any(w["severity"] == "critical" for w in body["safetyWarnings"])
-
-    def test_context_product_unknown_id_safe(self, client):
-        """contextProductId 不在库存时不应报错，正常返回。"""
-        resp = client.post(
-            "/api/assistant/ask",
-            data={"question": "怎么清理", "contextProductId": "p-not-exist"},
-            headers=AUTH,
-        )
-        assert resp.status_code == 200
-
-    def test_out_of_scope_clears_llm_advice(self, tmp_path):
-        """LLM 返回 outOfScope=true 且同时带产品建议时，后端必须清空产品/通用建议。"""
-        c, _, _ = _build_client(
-            str(tmp_path / "oos.db"), _OutOfScopeWithAdviceAI()
-        )
-        resp = c.post(
-            "/api/assistant/ask",
-            data={"question": "某种异常情况"},
-            headers=AUTH,
-        )
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["outOfScope"] is True
-        assert body["inventoryAdvice"] == []
-        assert body["generalAdvice"] == []
-        assert body["safetyWarnings"] == []
-        assert body["clarificationQuestions"] == []

@@ -9,6 +9,10 @@ from app.models.scan import PanoramaResult, ProductIdentification
 from app.models.risk import RiskAssessment
 from app.models.report import ReportData
 from app.models.assistant import AssistantDraft
+from app.models.knowledge import (
+    AssistantNarrativeDraft,
+    KnowledgeIntentDraft,
+)
 
 
 class AIProvider(ABC):
@@ -60,9 +64,39 @@ class AIProvider(ABC):
         compatibility_context: list[dict],
         context_product_id: str | None = None,
     ) -> AssistantDraft:
-        """回答家庭化学品库内的问题。
+        """[legacy] 回答家庭化学品库内的问题（单次调用，用于旧接口兼容）。
 
-        返回结构化候选（AssistantDraft），只允许引用传入的 productId。
-        输出仅视为候选回答，不能直接作为安全结论；由 AssistantService 校验。
+        返回结构化候选（AssistantDraft）。新知识库优先流程使用
+        extract_knowledge_intent + generate_narrative 两次调用。
+        """
+        pass
+
+    @abstractmethod
+    async def extract_knowledge_intent(
+        self,
+        question: str,
+        history: list[dict],
+        image_bytes: bytes | None,
+        inventory_context: list[dict],
+        compatibility_context: list[dict],
+        context_product_id: str | None = None,
+    ) -> KnowledgeIntentDraft:
+        """调用①：提取知识意图（污渍/材质/场景）。
+
+        只产出意图，不得决定知识条目 ID、产品推荐、安全结论或 outOfScope。
+        """
+        pass
+
+    @abstractmethod
+    async def generate_narrative(
+        self,
+        context_bundle: dict,
+        question: str,
+        history: list[dict],
+        context_product_id: str | None = None,
+    ) -> AssistantNarrativeDraft:
+        """调用②：仅接收后端已确认的上下文束，组织最终 answer 文字。
+
+        不得重新生成知识/产品/规则/警告。
         """
         pass

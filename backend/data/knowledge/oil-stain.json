@@ -1,0 +1,63 @@
+{
+  "id": "oil-stain",
+  "topic": "油污",
+  "aliases": [
+    "油污",
+    "油渍",
+    "食用油",
+    "机油"
+  ],
+  "surfaces": [
+    "可水洗织物",
+    "厨房台面",
+    "玻璃"
+  ],
+  "excluded_surfaces": [
+    "需干洗面料",
+    "未确认的特殊面料"
+  ],
+  "scene": [
+    "厨房",
+    "衣物"
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "text": "先吸附或轻按，不要反复摩擦"
+    },
+    {
+      "order": 2,
+      "text": "按洗涤标签选择适用清洁产品"
+    },
+    {
+      "order": 3,
+      "text": "在不显眼处局部测试"
+    }
+  ],
+  "allowed_product_categories": [
+    "laundry",
+    "stain_remover",
+    "kitchen_cleaner"
+  ],
+  "warnings": [
+    "先确认材质与产品标签",
+    "局部测试后再扩大范围"
+  ],
+  "prohibited_actions": [
+    "不得混合不同清洁产品"
+  ],
+  "stop_conditions": [
+    "若出现变色或破损立即停止"
+  ],
+  "tag_condition": "使用前必须核对产品标签的适用材质",
+  "sources": [
+    {
+      "type": "local_kb",
+      "title": "家庭安全知识库",
+      "url": ""
+    }
+  ],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed"
+}

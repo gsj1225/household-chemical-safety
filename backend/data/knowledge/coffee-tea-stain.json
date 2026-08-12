@@ -1,0 +1,61 @@
+{
+  "id": "coffee-tea-stain",
+  "topic": "咖啡茶渍",
+  "aliases": [
+    "咖啡渍",
+    "茶渍",
+    "咖啡",
+    "茶"
+  ],
+  "surfaces": [
+    "可水洗织物",
+    "桌面",
+    "杯具"
+  ],
+  "excluded_surfaces": [
+    "需干洗面料"
+  ],
+  "scene": [
+    "桌面",
+    "衣物"
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "text": "尽快用干净布吸干"
+    },
+    {
+      "order": 2,
+      "text": "选择适用织物/表面的清洁产品"
+    },
+    {
+      "order": 3,
+      "text": "局部测试"
+    }
+  ],
+  "allowed_product_categories": [
+    "laundry",
+    "stain_remover",
+    "kitchen_cleaner"
+  ],
+  "warnings": [
+    "先确认表面材质"
+  ],
+  "prohibited_actions": [
+    "不得用力搓擦易损表面"
+  ],
+  "stop_conditions": [
+    "出现变色立即停止"
+  ],
+  "tag_condition": "先核对产品与表面材质是否匹配",
+  "sources": [
+    {
+      "type": "local_kb",
+      "title": "家庭安全知识库",
+      "url": ""
+    }
+  ],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed"
+}

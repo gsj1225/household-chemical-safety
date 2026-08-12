@@ -19,6 +19,11 @@ from app.models.assistant import (
     AssistantProductAdvice,
     AssistantSafetyWarning,
 )
+from app.models.knowledge import (
+    AssistantNarrativeDraft,
+    KnowledgeIntent,
+    KnowledgeIntentDraft,
+)
 from app.models.scan import PanoramaArea, PanoramaResult, ProductIdentification
 from app.utils.image import image_bytes_to_data_url
 from app.utils.reporting import build_report
@@ -298,6 +303,52 @@ class QwenAI(AIProvider):
             )
 
         return self._validate(payload, AssistantDraft, "assistant_ask")
+
+    async def extract_knowledge_intent(
+        self,
+        question: str,
+        history: list[dict],
+        image_bytes: bytes | None,
+        inventory_context: list[dict],
+        compatibility_context: list[dict],
+        context_product_id: str | None = None,
+    ) -> KnowledgeIntentDraft:
+        """调用①：提取知识意图（污渍/材质/场景）。只产出意图，不决定任何安全结论。"""
+        prompt = (
+            "你是家庭清洁问题意图提取助手。从用户问题与照片中只提取："
+            "污渍类型(topic)、材质/表面(surface)、场景(scene)、别名(aliases)。\n"
+            "约束：不得输出知识条目ID、不得输出产品推荐、不得输出安全警告、不得输出outOfScope。\n"
+            "只返回JSON，形如 {\"knowledge_intent\": {\"topic\": \"\", \"surface\": \"\", \"scene\": \"\", \"aliases\": []}}.\n"
+            f"用户问题: {question}\n"
+        )
+        payload = await self._chat_json(
+            "assistant_intent", settings.QWEN_TEXT_MODEL,
+            [{"role": "user", "content": prompt}],
+        )
+        return self._validate(payload, KnowledgeIntentDraft, "assistant_intent")
+
+    async def generate_narrative(
+        self,
+        context_bundle: dict,
+        question: str,
+        history: list[dict],
+        context_product_id: str | None = None,
+    ) -> AssistantNarrativeDraft:
+        """调用②：仅依据后端已确认的上下文束组织 answer。"""
+        bundle_text = self._json_dumps_safe(context_bundle)
+        prompt = (
+            "你是家庭化学品助手的回答组织助手。基于下方已确认的上下文束，用自然语言组织一段"
+            "简洁、安全的回答。\n"
+            "约束：不得新增知识库之外的产品名、化学步骤、稀释比例、接触时间或危险结论；"
+            "不得覆盖任何安全警告；只输出一个JSON对象{\"answer\": \"...\"}。\n"
+            f"上下文束: {bundle_text}\n"
+            f"用户问题: {question}\n"
+        )
+        payload = await self._chat_json(
+            "assistant_narrative", settings.QWEN_TEXT_MODEL,
+            [{"role": "user", "content": prompt}],
+        )
+        return self._validate(payload, AssistantNarrativeDraft, "assistant_narrative")
 
     @staticmethod
     def _json_dumps_safe(data) -> str:

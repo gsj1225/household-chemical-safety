@@ -1,52 +1,91 @@
-"""AssistantService — 家庭化学品助手安全编排层
+"""AssistantService — 家庭化学品助手安全编排层（Stage 3 知识库优先）
 
 固定处理顺序：
-  校验输入与范围 → 读取库存和相容性关系 → LLM 生成结构化候选
-  → 校验 productId 属于库存 → CompatibilityEngine 复核
-  → 过滤危险步骤/混用建议 → 组装 AssistantResponse
+  输入标准化 → SafetyScopeClassifier（前置，命中即短路）
+  → LLM 调用① extract_knowledge_intent（只提取意图）
+  → 本地知识库检索 → 权威回填（仅 reviewed 进入 knowledge）
+  → 库存候选筛选（类别只筛候选 → 标签/成分/危险性/信息完整性）
+  → CompatibilityEngine 复核（critical 最高优先级）
+  → knowledgeStatus 状态转换
+  → 满足门槛时 LLM 调用② generate_narrative（仅组织 answer）
 
-安全编排规则：
-1. 误食/中毒/吸入/身体不适等关键词 → out_of_scope=true，不生成化学操作步骤；
-2. 关系为 critical 时强制生成 safetyWarnings，删除任何混合或连续使用步骤；
-3. information_status=needs_information 的产品只能返回 needs_information；
-4. LLM 返回未知 productId 时丢弃对应字段并追加不确定性说明；
-5. generalAdvice 必须标记为非库存建议；
-6. 没有库存候选时仍可给有限的通用建议，但必须明确边界。
+安全编排规则（沿用 Stage 4 并扩展）：
+1. 误食/中毒/吸入/身体不适等 → outOfScope=true，前置短路，不调用任何 LLM/知识库；
+2. 知识库 reviewed 才可生成知识步骤；provisional 不进入 knowledge；
+3. allowed_product_categories 只筛候选，不能仅凭类别推荐；
+4. needs_information 产品只能返回 needs_information；
+5. CompatibilityEngine critical 覆盖所有普通建议并剥离混用步骤；
+6. LLM 不决定 entry_id、产品推荐、safetyWarnings、outOfScope、知识步骤、比例、接触时间；
+7. out_of_scope/no_match/insufficient/external_fail 使用固定模板，不调用调用②。
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from app.config import settings
 from app.core.ai_provider import AIProvider
 from app.core.compatibility_engine import CompatibilityEngine
+from app.core.knowledge_provider import (
+    ExternalKnowledgeProvider,
+    ExternalSearchResult,
+    LocalKnowledgeProvider,
+)
+from app.core.safety_scope_classifier import SafetyScopeClassifier
 from app.data.inventory_repository import InventoryRepository
+from app.data.knowledge_repository import HIT_THRESHOLD, KnowledgeRepository
 from app.models.assistant import (
-    AssistantDraft,
     AssistantProductAdvice,
     AssistantResponse,
     AssistantSafetyWarning,
 )
 from app.models.compatibility import Severity
 from app.models.inventory import InformationStatus, InventoryFilters
+from app.models.knowledge import (
+    KnowledgeEvidence,
+    KnowledgeIntent,
+    KnowledgeQuery,
+    KnowledgeStatus,
+    SourceRef,
+)
 
-_OUT_OF_SCOPE_KEYWORDS = [
-    "误食", "中毒", "吸入", "身体不适", "急救", "呕吐", "晕厥", "昏迷", "就医",
-]
 _MIX_KEYWORDS = ("混", "混合", "一起用", "同时用", "连用")
+
+_OUT_OF_SCOPE_ANSWER = (
+    "抱歉，关于误食、中毒、吸入或身体不适等意外情况，"
+    "我无法提供处理建议。请立即联系急救或前往医院。"
+)
+_PROVISIONAL_NOTICE = "存在待审核资料，尚未通过审核，暂不提供操作建议。"
+
+_FIXED_ANSWERS: dict[str, str] = {
+    "no_match": "暂无足够依据给出具体建议。你可以补充更多信息，例如污渍类型、材质或使用场景。",
+    "insufficient": "现有信息不足，暂无法给出可靠建议。可以补充污渍类型、材质或场景后重试。",
+    "external_fail": "暂时无法获取可靠的参考资料，暂不提供操作建议。",
+}
+
+# 允许调用调用② 的状态
+_NARRATIVE_ALLOWED = {"local_hit", "local_hit_no_inventory", "external_hit"}
 
 
 class AssistantService:
-    """助手问答编排服务"""
+    """助手问答编排服务（知识库优先）。"""
 
-    def __init__(self, repo: InventoryRepository, engine: CompatibilityEngine):
+    def __init__(
+        self,
+        repo: InventoryRepository,
+        engine: CompatibilityEngine,
+        classifier: SafetyScopeClassifier | None = None,
+        local_provider: LocalKnowledgeProvider | None = None,
+        external_provider: ExternalKnowledgeProvider | None = None,
+    ):
         self._repo = repo
         self._engine = engine
+        self._classifier = classifier or SafetyScopeClassifier()
+        self._local = local_provider or LocalKnowledgeProvider()
+        self._external = external_provider or ExternalKnowledgeProvider()
+        self._kb: KnowledgeRepository = self._local.repository
 
-    def is_out_of_scope(self, question: str) -> bool:
-        """判断问题是否涉及意外事故处置（返回 True 则拒答）。"""
-        q = question or ""
-        return any(k in q for k in _OUT_OF_SCOPE_KEYWORDS)
+    # ── 主入口 ─────────────────────────────────────
 
     async def ask(
         self,
@@ -55,32 +94,28 @@ class AssistantService:
         image_bytes: bytes | None,
         context_product_id: str | None,
         ai_provider: AIProvider,
+        allow_external_search: bool = False,
+        allow_external_photo_upload: bool = False,
     ) -> AssistantResponse:
         """执行问答编排，返回安全的结构化回答。"""
-        # 1. 范围检查
-        if self.is_out_of_scope(question):
-            return AssistantResponse(
-                answer=(
-                    "抱歉，关于误食、中毒、吸入或身体不适等意外情况，"
-                    "我无法提供处理建议。请立即联系急救或前往医院。"
-                ),
-                needs_clarification=False,
-                out_of_scope=True,
-            )
+        # 1. 超范围前置短路：不调用任何 LLM、不检索知识库
+        if self._classifier.is_out_of_scope(question):
+            return self._out_of_scope_response()
 
         # 2. 读取库存和相容性关系
         products, _ = self._repo.list(InventoryFilters(limit=500))
         relations = self._repo.get_all_relations()
+        by_id = {p.id: p for p in products}
+        context_product = by_id.get(context_product_id) if context_product_id else None
 
-        # 3. 构建 LLM 上下文（含当前关注产品）
         inventory_context = [self._product_context(p) for p in products]
         compatibility_context = [self._relation_context(r) for r in relations]
         focus_ctx = self._focus_product_context(context_product_id, products)
         if focus_ctx:
             inventory_context.append(focus_ctx)
 
-        # 4. LLM 生成结构化候选
-        draft = await ai_provider.answer_household_question(
+        # 3. 调用① 意图提取（LLM 只产出意图）
+        intent_draft = await ai_provider.extract_knowledge_intent(
             question=question,
             history=history or [],
             image_bytes=image_bytes,
@@ -88,108 +123,305 @@ class AssistantService:
             compatibility_context=compatibility_context,
             context_product_id=context_product_id,
         )
+        intent = intent_draft.knowledge_intent
 
-        # 5-7. 校验、复核、组装
-        return self._assemble(draft, products, context_product_id)
+        # 4. 本地知识库检索
+        query = self._build_query(intent)
+        local_result = await self._local.search(query)
 
-    # ── 组装 ──────────────────────────────────────
+        # 5. 权威回填（仅 reviewed）
+        knowledge_evidence = self._build_knowledge_evidence(local_result)
 
-    def _assemble(
-        self,
-        draft: AssistantDraft,
-        products: list[Any],
-        context_product_id: str | None = None,
-    ) -> AssistantResponse:
-        by_id = {p.id: p for p in products}
-        context_product = by_id.get(context_product_id) if context_product_id else None
-
-        # 5a. 超范围兜底：LLM 返回 outOfScope 时必须清空所有产品/通用建议与操作。
-        #     安全边界由后端保证，不依赖移动端隐藏卡片。
-        if draft.out_of_scope:
-            return AssistantResponse(
-                answer=draft.answer
-                or "抱歉，关于误食、中毒、吸入或身体不适等意外情况，"
-                "我无法提供处理建议。请立即联系急救或前往医院。",
-                needs_clarification=False,
-                clarification_questions=[],
-                inventory_advice=[],
-                general_advice=[],
-                safety_warnings=[],
-                out_of_scope=True,
-                evidence=[],
-            )
-
-        # 5. 校验 productId 属于库存 + 回填 productName + needs_information 兜底
-        valid_advice: list[AssistantProductAdvice] = []
-        dropped_unknown = False
-        for adv in draft.product_advice:
-            product = by_id.get(adv.product_id)
-            if product is None:
-                dropped_unknown = True
-                continue  # 丢弃 LLM 编造的未知 productId
-            updates: dict[str, Any] = {"product_name": product.name}
-            if (
-                product.information_status == InformationStatus.needs_information
-                and adv.recommendation == "recommended"
-            ):
-                updates.update({
-                    "recommendation": "needs_information",
-                    "steps": [],
-                    "cautions": list(adv.cautions)
-                    + ["成分信息不完整，暂无法确认是否适合使用。"],
-                })
-            valid_advice.append(adv.model_copy(update=updates))
-
-        # 6. CompatibilityEngine 复核：
-        #    - 推荐产品两两之间
-        #    - 上下文产品与库存中所有其他产品（含推荐产品）
-        #    critical 关系强制警告 + 剥离混用步骤
-        recommended = [
-            a for a in valid_advice if a.recommendation == "recommended"
-        ]
-        pairs: list[tuple[Any, Any]] = []
-        for i in range(len(recommended)):
-            for j in range(i + 1, len(recommended)):
-                pairs.append((
-                    by_id[recommended[i].product_id],
-                    by_id[recommended[j].product_id],
-                ))
-        if context_product is not None:
-            for other in products:
-                if other.id != context_product.id:
-                    pairs.append((context_product, other))
-
-        engine_warnings, evidence = self._check_critical_pairs(
-            pairs, valid_advice, by_id
+        # 6. 库存候选筛选 + 引擎复核
+        inventory_advice, safety_warnings, engine_evidence = (
+            self._build_inventory_and_warnings(knowledge_evidence, products, context_product, by_id)
         )
 
-        # 合并 LLM 警告 + 引擎警告，按标题去重
-        warnings = list(draft.safety_warnings)
-        seen_titles = {w.title for w in warnings}
-        for w in engine_warnings:
-            if w.title not in seen_titles:
-                warnings.append(w)
-                seen_titles.add(w.title)
+        # 7. 外部决策
+        external_state = await self._external_decision(
+            local_result, query, allow_external_search, allow_external_photo_upload
+        )
 
-        answer = draft.answer
-        if dropped_unknown:
-            answer = (
-                answer
-                + "（部分提到的产品不在当前库存中，已忽略，仅保留仓库内已有产品的建议。）"
+        # 8. 状态转换
+        status = self._transition(local_result.local_status, inventory_advice, external_state)
+        external_sources = external_state["sources"]
+
+        # 9. 组装 knowledge / sources / notice
+        provisional = self._provisional_hint(local_result)
+        sources = self._collect_sources(knowledge_evidence, inventory_advice, safety_warnings, external_sources)
+        knowledge_models = [e for e in knowledge_evidence]  # already KnowledgeEvidence
+
+        # 10. 回答：满足门槛才调用②，否则固定模板
+        if status in _NARRATIVE_ALLOWED:
+            bundle = {
+                "knowledge": [e.model_dump(by_alias=True) for e in knowledge_models],
+                "inventory_advice": [a.model_dump(by_alias=True) for a in inventory_advice],
+                "safety_warnings": [w.model_dump(by_alias=True) for w in safety_warnings],
+                "external_sources": [s.model_dump(by_alias=True) for s in external_sources],
+            }
+            narrative = await ai_provider.generate_narrative(
+                context_bundle=bundle,
+                question=question,
+                history=history or [],
+                context_product_id=context_product_id,
             )
+            answer = narrative.answer or _FIXED_ANSWERS.get(status, "")
+        else:
+            answer = _FIXED_ANSWERS.get(status, "")
+
         if context_product is not None:
             answer = answer + f"（已结合当前产品「{context_product.name}」的相容性进行核验。）"
 
         return AssistantResponse(
             answer=answer,
-            needs_clarification=draft.needs_clarification,
-            clarification_questions=draft.clarification_questions,
-            inventory_advice=valid_advice,
-            general_advice=draft.general_advice,
-            safety_warnings=warnings,
-            out_of_scope=draft.out_of_scope,
-            evidence=evidence,
+            needs_clarification=False,
+            clarification_questions=[],
+            inventory_advice=inventory_advice,
+            general_advice=[],
+            safety_warnings=safety_warnings,
+            out_of_scope=False,
+            evidence=engine_evidence,
+            knowledge=knowledge_models,
+            knowledge_status=status,
+            external_sources=external_sources,
+            sources=sources,
+            pending_knowledge_notice=provisional,
         )
+
+    # ── 辅助 ───────────────────────────────────────
+
+    def _out_of_scope_response(self) -> AssistantResponse:
+        return AssistantResponse(
+            answer=_OUT_OF_SCOPE_ANSWER,
+            needs_clarification=False,
+            clarification_questions=[],
+            inventory_advice=[],
+            general_advice=[],
+            safety_warnings=[],
+            out_of_scope=True,
+            evidence=[],
+            knowledge=[],
+            knowledge_status="no_match",
+            external_sources=[],
+            sources=[],
+            pending_knowledge_notice="",
+        )
+
+    @staticmethod
+    def _build_query(intent: KnowledgeIntent | None) -> KnowledgeQuery:
+        if intent is None:
+            return KnowledgeQuery()
+        return KnowledgeQuery(
+            topic=intent.topic,
+            aliases=list(intent.aliases),
+            surface=intent.surface,
+            scene=intent.scene,
+        )
+
+    def _build_knowledge_evidence(self, local_result) -> list[KnowledgeEvidence]:
+        evidence: list[KnowledgeEvidence] = []
+        for match in local_result.matches:
+            entry = match.entry
+            if entry.confidence != "reviewed":
+                continue
+            if match.score < HIT_THRESHOLD:
+                continue
+            evidence.append(KnowledgeEvidence(
+                entry_id=entry.id,
+                topic=entry.topic,
+                surfaces=list(entry.surfaces),
+                excluded_surfaces=list(entry.excluded_surfaces),
+                steps=entry.ordered_steps(),
+                warnings=list(entry.warnings),
+                prohibited_actions=list(entry.prohibited_actions),
+                stop_conditions=list(entry.stop_conditions),
+                tag_condition=entry.tag_condition,
+                sources=list(entry.sources),
+                confidence="reviewed",
+            ))
+        return evidence
+
+    @staticmethod
+    def _provisional_hint(local_result) -> str:
+        """provisional 命中时返回固定文案，不含任何内容。"""
+        if local_result.local_status != "insufficient":
+            return ""
+        for match in local_result.matches:
+            if match.entry.confidence == "provisional" and match.score >= HIT_THRESHOLD:
+                return _PROVISIONAL_NOTICE
+        return ""
+
+    def _build_inventory_and_warnings(
+        self,
+        knowledge_evidence: list[KnowledgeEvidence],
+        products: list[Any],
+        context_product: Any,
+        by_id: dict[str, Any],
+    ) -> tuple[list[AssistantProductAdvice], list[AssistantSafetyWarning], list[str]]:
+        allowed: set[str] = set()
+        for k in knowledge_evidence:
+            entry = self._kb.get(k.entry_id)
+            if entry:
+                allowed.update(entry.allowed_product_categories)
+
+        safe_advice: list[AssistantProductAdvice] = []
+        needs_advice: list[AssistantProductAdvice] = []
+        steps = self._top_knowledge_steps(knowledge_evidence)
+
+        for p in products:
+            if p.category.value not in allowed:
+                continue
+            if p.information_status == InformationStatus.needs_information:
+                needs_advice.append(AssistantProductAdvice(
+                    product_id=p.id,
+                    product_name=p.name,
+                    recommendation="needs_information",
+                    reason="成分信息不完整，暂无法确认是否适合使用。",
+                    steps=[],
+                    cautions=["成分信息不完整，暂无法确认是否适合使用。"],
+                ))
+            else:
+                safe_advice.append(AssistantProductAdvice(
+                    product_id=p.id,
+                    product_name=p.name,
+                    recommendation="recommended",
+                    reason=f"该产品类别适用于当前问题。",
+                    steps=list(steps),
+                    cautions=[],
+                ))
+
+        inventory_advice = safe_advice + needs_advice
+
+        # 引擎复核：推荐产品两两 + 上下文产品 vs 所有其他
+        recommended = [a for a in safe_advice if a.recommendation == "recommended"]
+        pairs: list[tuple[Any, Any]] = []
+        for i in range(len(recommended)):
+            for j in range(i + 1, len(recommended)):
+                pairs.append((by_id[recommended[i].product_id], by_id[recommended[j].product_id]))
+        if context_product is not None:
+            for other in products:
+                if other.id != context_product.id:
+                    pairs.append((context_product, other))
+
+        engine_warnings, evidence = self._check_critical_pairs(pairs, inventory_advice, by_id)
+
+        # 知识条目警告 → safetyWarnings（attention 级别）
+        warnings: list[AssistantSafetyWarning] = []
+        seen_titles: set[str] = set()
+        for k in knowledge_evidence:
+            for text in k.warnings + k.prohibited_actions + k.stop_conditions:
+                if text in seen_titles:
+                    continue
+                seen_titles.add(text)
+                warnings.append(AssistantSafetyWarning(
+                    severity="attention",
+                    title=text,
+                    description=text,
+                    relation_id=None,
+                    recommended_action=text,
+                ))
+        for w in engine_warnings:
+            if w.title not in seen_titles:
+                warnings.append(w)
+                seen_titles.add(w.title)
+
+        return inventory_advice, warnings, evidence
+
+    @staticmethod
+    def _top_knowledge_steps(knowledge_evidence: list[KnowledgeEvidence]) -> list[str]:
+        if not knowledge_evidence:
+            return []
+        return list(knowledge_evidence[0].steps)
+
+    async def _external_decision(
+        self,
+        local_result,
+        query: KnowledgeQuery,
+        allow_external_search: bool,
+        allow_external_photo_upload: bool,
+    ) -> dict[str, Any]:
+        """外部检索决策：返回 {attempted, failed, sources}。"""
+        sources: list[SourceRef] = []
+        attempted = False
+        failed = False
+
+        if local_result.local_status in ("insufficient", "no_match"):
+            eligible = (
+                allow_external_search
+                and settings.EXTERNAL_KNOWLEDGE_ENABLED
+            )
+            if eligible:
+                attempted = True
+                try:
+                    result: ExternalSearchResult = await self._external.search(query)
+                    if result.failed:
+                        failed = True
+                    else:
+                        sources = self._external.filter_allowed(result.sources)
+                        if not sources:
+                            failed = True
+                except Exception:
+                    failed = True
+
+        return {"attempted": attempted, "failed": failed, "sources": sources}
+
+    @staticmethod
+    def _transition(
+        local_status: str,
+        inventory_advice: list[AssistantProductAdvice],
+        external_state: dict[str, Any],
+    ) -> KnowledgeStatus:
+        """确定性状态转换。"""
+        has_safe = any(a.recommendation == "recommended" for a in inventory_advice)
+
+        if local_status == "local_hit":
+            return "local_hit" if has_safe else "local_hit_no_inventory"
+
+        # insufficient / no_match
+        if external_state["attempted"]:
+            if external_state["failed"]:
+                return "external_fail"
+            if external_state["sources"]:
+                return "external_hit"
+            return "no_match"
+        return "insufficient" if local_status == "insufficient" else "no_match"
+
+    def _collect_sources(
+        self,
+        knowledge_evidence: list[KnowledgeEvidence],
+        inventory_advice: list[AssistantProductAdvice],
+        safety_warnings: list[AssistantSafetyWarning],
+        external_sources: list[SourceRef],
+    ) -> list[SourceRef]:
+        sources: list[SourceRef] = []
+        seen: set[tuple[str, str]] = set()
+
+        def _add(s: SourceRef):
+            key = (s.type, s.ref)
+            if key in seen:
+                return
+            seen.add(key)
+            sources.append(s)
+
+        # 知识库来源
+        for k in knowledge_evidence:
+            for s in k.sources:
+                _add(s)
+        # 我的仓库来源
+        for a in inventory_advice:
+            _add(SourceRef(type="warehouse", title=a.product_name, ref=a.product_id))
+        # 安全规则来源
+        for w in safety_warnings:
+            if w.relation_id:
+                _add(SourceRef(type="rule", title=w.title, ref=w.relation_id))
+        # 外部来源
+        for s in external_sources:
+            _add(s)
+
+        # 固定展示顺序
+        order = {"local_kb": 0, "warehouse": 1, "rule": 2, "external": 3}
+        sources.sort(key=lambda s: order.get(s.type, 9))
+        return sources
 
     def _check_critical_pairs(
         self,
@@ -197,16 +429,11 @@ class AssistantService:
         valid_advice: list[AssistantProductAdvice],
         by_id: dict[str, Any],
     ) -> tuple[list[AssistantSafetyWarning], list[str]]:
-        """对给定产品对执行引擎复核，返回 critical 警告与证据标题。
-
-        命中 critical 时剥离对应产品的混用/连用步骤。
-        """
         engine_warnings: list[AssistantSafetyWarning] = []
         for pa, pb in pairs:
             if pa is None or pb is None:
                 continue
-            pair_relations = self._engine.check_pair(pa, pb)
-            for rel in pair_relations:
+            for rel in self._engine.check_pair(pa, pb):
                 if rel.severity != Severity.critical:
                     continue
                 engine_warnings.append(AssistantSafetyWarning(
@@ -236,18 +463,13 @@ class AssistantService:
             "brand": product.brand,
             "category": product.category.value,
             "informationStatus": product.information_status.value,
-            "ingredients": [
-                f.display_value for f in product.ingredients
-            ],
+            "ingredients": [f.display_value for f in product.ingredients],
             "hazards": [h.text for h in product.hazards],
             "storageRequirements": [s.text for s in product.storage_requirements],
         }
 
     @staticmethod
-    def _focus_product_context(
-        context_product_id: str | None, products: list[Any]
-    ) -> dict[str, Any] | None:
-        """提取当前关注产品作为 LLM 焦点上下文（focusProduct）。"""
+    def _focus_product_context(context_product_id: str | None, products: list[Any]) -> dict[str, Any] | None:
         if not context_product_id:
             return None
         for p in products:
