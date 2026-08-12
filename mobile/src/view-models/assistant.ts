@@ -12,6 +12,9 @@ import type {
   AssistantHistoryMessage,
   AssistantMessage,
   AssistantResponse,
+  AssistantWarningSeverity,
+  KnowledgeStatus,
+  SourceRef,
 } from '../types/assistant.ts';
 
 // ── 会话状态 ──────────────────────────────────────
@@ -50,12 +53,109 @@ export function buildUserMessage(
 export function buildAssistantMessage(
   response: AssistantResponse,
 ): AssistantMessage {
+  // 归一化：旧后端缺失 Stage 3 字段时补齐安全默认值
+  const normalized = normalizeAssistantResponse(response);
   return {
     id: createMessageId(),
     role: 'assistant',
-    text: response.answer,
-    response,
+    text: normalized.answer,
+    response: normalized,
   };
+}
+
+// ── Stage 3 字段安全降级 ─────────────────────────
+
+/** 旧后端缺少 knowledge 等字段时的默认状态 */
+export const DEFAULT_KNOWLEDGE_STATUS: KnowledgeStatus = 'no_match';
+
+/** 安全警告展示优先级：critical → attention → unknown */
+const WARNING_RANK: Record<AssistantWarningSeverity, number> = {
+  critical: 0,
+  attention: 1,
+  unknown: 2,
+};
+
+/** 安全警告按优先级排序（critical 优先显示，稳定排序） */
+export function sortWarningsBySeverity<T extends { severity: AssistantWarningSeverity }>(
+  warnings: T[],
+): T[] {
+  return [...warnings].sort(
+    (a, b) => (WARNING_RANK[a.severity] ?? 9) - (WARNING_RANK[b.severity] ?? 9),
+  );
+}
+
+/** 归一化后字段必填的响应类型（Stage 3 字段均已补齐） */
+export type NormalizedAssistantResponse = AssistantResponse & {
+  knowledge: NonNullable<AssistantResponse['knowledge']>;
+  knowledgeStatus: NonNullable<AssistantResponse['knowledgeStatus']>;
+  externalSources: NonNullable<AssistantResponse['externalSources']>;
+  sources: NonNullable<AssistantResponse['sources']>;
+  pendingKnowledgeNotice: string;
+};
+
+/**
+ * 归一化助手响应：补齐 Stage 3 新增字段的安全默认值。
+ * 旧后端没有这些字段时，移动端使用默认值而非崩溃。
+ */
+export function normalizeAssistantResponse(
+  response: AssistantResponse,
+): NormalizedAssistantResponse {
+  return {
+    ...response,
+    knowledge: response.knowledge ?? [],
+    knowledgeStatus: response.knowledgeStatus ?? DEFAULT_KNOWLEDGE_STATUS,
+    externalSources: response.externalSources ?? [],
+    sources: response.sources ?? [],
+    pendingKnowledgeNotice: response.pendingKnowledgeNotice ?? '',
+    // critical 警告优先显示
+    safetyWarnings: sortWarningsBySeverity(response.safetyWarnings),
+  };
+}
+
+// ── 来源分层（SourceLayersCard）───────────────────
+
+/** 来源固定展示顺序：local_kb → warehouse → rule → external */
+export const SOURCE_ORDER: SourceRef['type'][] = [
+  'local_kb',
+  'warehouse',
+  'rule',
+  'external',
+];
+
+/**
+ * 按 (type, ref) 去重，保持首次出现顺序。
+ * 不同知识条目的来源 ref 不同，去重不会丢失。
+ */
+export function dedupeSources(sources: SourceRef[]): SourceRef[] {
+  const seen = new Set<string>();
+  const out: SourceRef[] = [];
+  for (const s of sources) {
+    const key = `${s.type}:${s.ref}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(s);
+  }
+  return out;
+}
+
+/**
+ * 去重 + 按固定顺序排序（local_kb → warehouse → rule → external）。
+ * 同类型内保持原相对顺序。
+ */
+export function orderedSources(sources: SourceRef[]): SourceRef[] {
+  const order = new Map(SOURCE_ORDER.map((t, i) => [t, i]));
+  return dedupeSources(sources).sort((a, b) => {
+    const ai = order.get(a.type) ?? 99;
+    const bi = order.get(b.type) ?? 99;
+    return ai - bi;
+  });
+}
+
+// ── 外部来源安全 ──────────────────────────────────
+
+/** 仅 https 的外部来源允许打开跳转 */
+export function canOpenExternalSource(url: string): boolean {
+  return typeof url === 'string' && url.startsWith('https://');
 }
 
 // ── 可发送判定 ────────────────────────────────────

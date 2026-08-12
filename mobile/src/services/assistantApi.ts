@@ -61,6 +61,10 @@ export interface AssistantAskInput {
   history: AssistantHistoryMessage[];
   contextProductId?: string;
   imageUri?: string;
+  /** 是否允许外部搜索（首期 UI 默认 false，不主动开启） */
+  allowExternalSearch?: boolean;
+  /** 是否允许将照片上传到外部服务（首期 UI 默认 false） */
+  allowExternalPhotoUpload?: boolean;
 }
 
 /** 从响应体中提取错误详情（对齐后端 error.message 契约） */
@@ -80,6 +84,9 @@ export function buildTextFields(input: AssistantAskInput): Record<string, string
     history: JSON.stringify(input.history),
   };
   if (input.contextProductId) fields.contextProductId = input.contextProductId;
+  // 默认 false：首期不主动开启外部搜索，也不默认上传照片到外部服务
+  if (input.allowExternalSearch) fields.allowExternalSearch = 'true';
+  if (input.allowExternalPhotoUpload) fields.allowExternalPhotoUpload = 'true';
   return fields;
 }
 

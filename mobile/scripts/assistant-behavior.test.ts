@@ -34,6 +34,11 @@ import {
   setContext,
   toHistoryPayload,
   retryRequest,
+  normalizeAssistantResponse,
+  dedupeSources,
+  orderedSources,
+  canOpenExternalSource,
+  DEFAULT_KNOWLEDGE_STATUS,
   MAX_HISTORY,
   type AssistantUiState,
 } from '../src/view-models/assistant.ts';
@@ -45,6 +50,8 @@ import {
 import type {
   AssistantMessage,
   AssistantResponse,
+  KnowledgeEvidence,
+  SourceRef,
 } from '../src/types/assistant.ts';
 
 // 编译期校验：Assistant 导航参数接受可选 contextProductId（item 1 / 14）
@@ -329,5 +336,236 @@ describe('上传模块 web 路径', () => {
       uploadAssistantQuestion({ question: 'q', history: [] }, webDeps(fakeFetch)),
       (err: any) => err.status === 429 && err.message.includes('提问过于频繁'),
     );
+  });
+});
+
+// ── Stage 3 知识状态与来源分层 ────────────────────
+
+const localKbRef: SourceRef = {
+  type: 'local_kb',
+  title: '家庭安全知识库',
+  domain: '',
+  url: '',
+  retrievedAt: null,
+  ref: 'lime',
+  version: '1.0',
+};
+const warehouseRef: SourceRef = {
+  type: 'warehouse',
+  title: '洁厕灵',
+  domain: '',
+  url: '',
+  retrievedAt: null,
+  ref: 'p-jc',
+  version: '',
+};
+const ruleRef: SourceRef = {
+  type: 'rule',
+  title: '禁止混用',
+  domain: '',
+  url: '',
+  retrievedAt: null,
+  ref: 'r-1',
+  version: '',
+};
+const externalRef: SourceRef = {
+  type: 'external',
+  title: 'CDC',
+  domain: 'example.com',
+  url: 'https://example.com/bleach',
+  retrievedAt: '2026-08-12',
+  ref: 'c-1',
+  version: '',
+};
+
+const reviewedKnowledge: KnowledgeEvidence = {
+  entryId: 'lime',
+  topic: '水垢',
+  surfaces: ['马桶'],
+  excludedSurfaces: ['铝制表面'],
+  steps: ['保持通风', '按标签使用'],
+  warnings: ['避免接触皮肤'],
+  prohibitedActions: [],
+  stopConditions: ['若变色立即停止'],
+  tagCondition: '',
+  sources: [localKbRef],
+  confidence: 'reviewed',
+};
+
+function kbResponse(over: Partial<AssistantResponse> = {}): AssistantResponse {
+  return {
+    ...sampleResponse,
+    knowledgeStatus: 'local_hit',
+    knowledge: [reviewedKnowledge],
+    sources: [warehouseRef, localKbRef],
+    externalSources: [],
+    pendingKnowledgeNotice: '',
+    ...over,
+  };
+}
+
+describe('知识状态渲染数据', () => {
+  test('local_hit 携带 reviewed 知识（渲染知识卡）', () => {
+    const msg = buildAssistantMessage(kbResponse());
+    assert.ok(msg.response);
+    assert.equal(msg.response.knowledgeStatus, 'local_hit');
+    assert.equal(msg.response.knowledge?.length, 1);
+    assert.equal(msg.response.knowledge?.[0].entryId, 'lime');
+    assert.equal(msg.response.knowledge?.[0].confidence, 'reviewed');
+  });
+
+  test('local_hit_no_inventory 无库存但有知识', () => {
+    const r = kbResponse({ knowledgeStatus: 'local_hit_no_inventory', inventoryAdvice: [] });
+    const msg = buildAssistantMessage(r);
+    assert.equal(msg.response?.knowledgeStatus, 'local_hit_no_inventory');
+    assert.ok(msg.response?.knowledge?.length, '应有知识');
+    assert.equal(msg.response?.inventoryAdvice.length, 0);
+  });
+
+  test('insufficient 无 knowledge、可携带 pendingKnowledgeNotice', () => {
+    const r = kbResponse({
+      knowledgeStatus: 'insufficient',
+      knowledge: [],
+      inventoryAdvice: [],
+      pendingKnowledgeNotice: '存在待审核资料，尚未通过审核，暂不提供操作建议。',
+    });
+    const msg = buildAssistantMessage(r);
+    assert.equal(msg.response?.knowledgeStatus, 'insufficient');
+    assert.equal(msg.response?.knowledge?.length, 0);
+    assert.ok(msg.response?.pendingKnowledgeNotice);
+  });
+
+  test('provisional 只显示 pendingKnowledgeNotice（不渲染知识卡）', () => {
+    // provisional 不进入 knowledge；仅 pendingNotice 固定文案
+    const r = kbResponse({
+      knowledgeStatus: 'insufficient',
+      knowledge: [],
+      inventoryAdvice: [],
+      pendingKnowledgeNotice: '存在待审核资料，尚未通过审核，暂不提供操作建议。',
+    });
+    const msg = buildAssistantMessage(r);
+    assert.equal(msg.response?.knowledge?.length, 0, 'provisional 不应进入 knowledge');
+    assert.ok(msg.response?.pendingKnowledgeNotice);
+  });
+
+  test('no_match 不渲染产品建议', () => {
+    const r = kbResponse({ knowledgeStatus: 'no_match', knowledge: [], inventoryAdvice: [], externalSources: [] });
+    const msg = buildAssistantMessage(r);
+    assert.equal(msg.response?.inventoryAdvice.length, 0);
+    assert.equal(msg.response?.knowledge?.length, 0);
+  });
+
+  test('external_hit 携带 externalSources', () => {
+    const r = kbResponse({ knowledgeStatus: 'external_hit', knowledge: [], inventoryAdvice: [], externalSources: [externalRef] });
+    const msg = buildAssistantMessage(r);
+    assert.equal(msg.response?.knowledgeStatus, 'external_hit');
+    assert.equal(msg.response?.externalSources?.length, 1);
+    assert.equal(msg.response?.externalSources?.[0].domain, 'example.com');
+  });
+
+  test('external_fail 不显示外部来源', () => {
+    const r = kbResponse({ knowledgeStatus: 'external_fail', knowledge: [], inventoryAdvice: [], externalSources: [] });
+    const msg = buildAssistantMessage(r);
+    assert.equal(msg.response?.knowledgeStatus, 'external_fail');
+    assert.equal(msg.response?.externalSources?.length, 0);
+  });
+
+  test('outOfScope 隐藏所有产品与操作建议', () => {
+    const r = kbResponse({
+      outOfScope: true,
+      inventoryAdvice: [],
+      knowledge: [],
+      generalAdvice: [],
+      externalSources: [],
+      safetyWarnings: [],
+    });
+    const msg = buildAssistantMessage(r);
+    assert.equal(msg.response?.outOfScope, true);
+    assert.equal(msg.response?.inventoryAdvice.length, 0);
+    assert.equal(msg.response?.knowledge?.length, 0);
+  });
+
+  test('critical 警告优先（存在且排在 attention 前）', () => {
+    const r = kbResponse({
+      safetyWarnings: [
+        { severity: 'attention', title: '注意', description: 'x', relationId: null, recommendedAction: '' },
+        { severity: 'critical', title: '禁止混用', description: 'y', relationId: 'r-2', recommendedAction: '分开' },
+      ],
+    });
+    const msg = buildAssistantMessage(r);
+    assert.ok(msg.response);
+    const critIdx = msg.response.safetyWarnings.findIndex((w) => w.severity === 'critical');
+    const attnIdx = msg.response.safetyWarnings.findIndex((w) => w.severity === 'attention');
+    assert.ok(critIdx !== -1);
+    assert.ok(critIdx < attnIdx, 'critical 应优先显示');
+  });
+});
+
+describe('来源去重与排序', () => {
+  test('按 (type, ref) 去重', () => {
+    const sources: SourceRef[] = [localKbRef, warehouseRef, localKbRef, localKbRef];
+    const deduped = dedupeSources(sources);
+    assert.equal(deduped.length, 2);
+  });
+
+  test('顺序 local_kb → warehouse → rule → external', () => {
+    const sources: SourceRef[] = [externalRef, warehouseRef, ruleRef, localKbRef];
+    const ordered = orderedSources(sources);
+    assert.deepEqual(
+      ordered.map((s) => s.type),
+      ['local_kb', 'warehouse', 'rule', 'external'],
+    );
+  });
+
+  test('非 HTTPS 外部 URL 不可打开', () => {
+    assert.equal(canOpenExternalSource('https://example.com/x'), true);
+    assert.equal(canOpenExternalSource('http://example.com/x'), false);
+    assert.equal(canOpenExternalSource(''), false);
+    assert.equal(canOpenExternalSource('javascript:alert(1)'), false);
+  });
+});
+
+describe('旧后端字段安全降级', () => {
+  test('缺失 Stage 3 字段时使用安全默认值', () => {
+    // 模拟旧后端响应（无 knowledge/knowledgeStatus/externalSources/sources/pendingNotice）
+    const legacy: AssistantResponse = {
+      answer: '根据库存回答。',
+      needsClarification: false,
+      clarificationQuestions: [],
+      inventoryAdvice: [],
+      generalAdvice: [],
+      safetyWarnings: [],
+      outOfScope: false,
+      evidence: [],
+    };
+    const normalized = normalizeAssistantResponse(legacy);
+    assert.deepEqual(normalized.knowledge, []);
+    assert.equal(normalized.knowledgeStatus, DEFAULT_KNOWLEDGE_STATUS);
+    assert.deepEqual(normalized.externalSources, []);
+    assert.deepEqual(normalized.sources, []);
+    assert.equal(normalized.pendingKnowledgeNotice, '');
+  });
+});
+
+describe('外部搜索/照片上传开关', () => {
+  test('allowExternalSearch 默认 false（不发送字段）', () => {
+    const fields = buildTextFields({ question: 'q', history: [] });
+    assert.equal(fields.allowExternalSearch, undefined);
+  });
+
+  test('allowExternalPhotoUpload 默认 false（不发送字段）', () => {
+    const fields = buildTextFields({ question: 'q', history: [] });
+    assert.equal(fields.allowExternalPhotoUpload, undefined);
+  });
+
+  test('显式开启时发送 true', () => {
+    const fields = buildTextFields({
+      question: 'q',
+      history: [],
+      allowExternalSearch: true,
+      allowExternalPhotoUpload: true,
+    });
+    assert.equal(fields.allowExternalSearch, 'true');
+    assert.equal(fields.allowExternalPhotoUpload, 'true');
   });
 });
