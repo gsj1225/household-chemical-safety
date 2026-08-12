@@ -1,0 +1,23 @@
+{
+  "id": "grass-stain",
+  "topic": "草渍",
+  "aliases": ["草渍", "青草渍", "花渍", "草汁"],
+  "surfaces": ["可水洗织物"],
+  "excluded_surfaces": ["需干洗面料", "未确认的特殊面料"],
+  "scene": ["衣物", "户外"],
+  "steps": [
+    {"order": 1, "text": "先用冷水从污渍背面冲洗或轻轻吸除，不要用力揉搓"},
+    {"order": 2, "text": "按护理标签选择洗衣液或含酶洗涤产品预处理"},
+    {"order": 3, "text": "在不显眼处做褪色测试，再按标签允许的温度完整洗涤"}
+  ],
+  "allowed_product_categories": ["laundry", "stain_remover"],
+  "warnings": ["先确认织物可水洗并核对产品标签", "含酶产品不一定适用于所有面料"],
+  "prohibited_actions": ["不要在未确认面料时使用强氧化性漂白剂"],
+  "stop_conditions": ["出现褪色、变形或纤维损伤立即停止"],
+  "tag_condition": "产品标签应明确适用于该织物及污渍预处理",
+  "sources": [{"type": "local_kb", "title": "UGA Cooperative Extension Stain Removal", "url": "https://site.extension.uga.edu/textiles/care/stain-removal/", "ref": "grass-stain", "version": "1.0"}],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed",
+  "forbidden_terms": ["强酸清洁剂", "洁厕灵", "含氯消毒剂"]
+}

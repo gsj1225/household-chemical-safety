@@ -1,0 +1,23 @@
+{
+  "id": "chocolate-stain",
+  "topic": "巧克力污渍",
+  "aliases": ["巧克力渍", "可可渍", "冰淇淋渍"],
+  "surfaces": ["可水洗织物"],
+  "excluded_surfaces": ["需干洗面料", "未确认的特殊面料"],
+  "scene": ["衣物", "儿童用品"],
+  "steps": [
+    {"order": 1, "text": "先用钝器轻轻刮除表面残留，避免把污渍压进纤维"},
+    {"order": 2, "text": "用冷水浸润，再按护理标签用预洗去渍产品处理"},
+    {"order": 3, "text": "按面料允许的最高温度洗涤，洗后确认污渍已去除再烘干"}
+  ],
+  "allowed_product_categories": ["laundry", "stain_remover"],
+  "warnings": ["先确认织物可水洗并做局部测试", "污渍未去除前不要烘干"],
+  "prohibited_actions": ["不要用力刷洗或直接使用强漂白剂"],
+  "stop_conditions": ["出现褪色、变形或纤维损伤立即停止"],
+  "tag_condition": "产品标签应适用于该织物和食品类污渍",
+  "sources": [{"type": "local_kb", "title": "American Cleaning Institute Stain Removal Guide", "url": "https://www.cleaninginstitute.org/cleaning-tips/clothes/stain-removal-guide", "ref": "chocolate-stain", "version": "1.0"}],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed",
+  "forbidden_terms": ["洁厕灵", "强酸清洁剂"]
+}

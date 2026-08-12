@@ -1,0 +1,23 @@
+{
+  "id": "nail-polish-stain",
+  "topic": "指甲油污渍",
+  "aliases": ["指甲油", "甲油胶", "指甲油渍", "美甲胶"],
+  "surfaces": ["可水洗织物", "硬质表面"],
+  "excluded_surfaces": ["需干洗面料", "未确认的特殊面料", "涂层表面"],
+  "scene": ["衣物", "桌面"],
+  "steps": [
+    {"order": 1, "text": "先轻轻吸除或刮除未干残留，不要来回摩擦扩大污渍"},
+    {"order": 2, "text": "查看护理标签和产品说明；只有在明确兼容时才做局部溶剂测试"},
+    {"order": 3, "text": "在通风处按产品标签处理，随后用适用的洗涤产品完整清洗"}
+  ],
+  "allowed_product_categories": ["stain_remover", "laundry", "kitchen_cleaner"],
+  "warnings": ["指甲油溶剂可能损伤染料、涂层和合成纤维", "未知材质或贵重衣物应交给专业清洁人员"],
+  "prohibited_actions": ["不要在未确认兼容性时直接使用丙酮、酒精或强溶剂"],
+  "stop_conditions": ["出现掉色、溶解、发黏或表面失光立即停止"],
+  "tag_condition": "必须同时满足材质护理标签与去渍产品标签的兼容要求",
+  "sources": [{"type": "local_kb", "title": "UGA Cooperative Extension Stain Removal", "url": "https://site.extension.uga.edu/textiles/care/stain-removal/", "ref": "nail-polish-stain", "version": "1.0"}],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed",
+  "forbidden_terms": ["洁厕灵", "管道疏通剂", "含氯消毒剂"]
+}

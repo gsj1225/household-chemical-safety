@@ -141,9 +141,9 @@ def _run(coro):
 # ── 知识库加载与校验 ─────────────────────────────
 
 class TestKnowledgeLoading:
-    def test_loads_10_real_entries(self):
+    def test_loads_reviewed_knowledge_entries(self):
         kb = KnowledgeRepository()
-        assert len(kb.entries) == 10
+        assert len(kb.entries) == 17
         assert all(e.confidence == "reviewed" for e in kb.entries)
 
     @pytest.mark.parametrize("mutate,label", [
@@ -641,7 +641,7 @@ class TestLegacyIsolation:
 class TestSourceTraceability:
     def test_real_entries_source_has_ref_and_version(self):
         kb = KnowledgeRepository()
-        assert len(kb.entries) == 10
+        assert len(kb.entries) == 17
         for e in kb.entries:
             local = [s for s in e.sources if s.type == "local_kb"]
             assert local, f"{e.id} 缺少 local_kb 来源"

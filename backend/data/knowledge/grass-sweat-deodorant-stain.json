@@ -1,0 +1,23 @@
+{
+  "id": "grass-sweat-deodorant-stain",
+  "topic": "汗渍和除臭剂残留",
+  "aliases": ["汗渍", "腋下黄渍", "止汗剂残留", "除臭剂渍"],
+  "surfaces": ["可水洗织物"],
+  "excluded_surfaces": ["需干洗面料", "未确认的特殊面料"],
+  "scene": ["衣物"],
+  "steps": [
+    {"order": 1, "text": "先确认护理标签，并在不显眼处测试洗衣液或预洗产品"},
+    {"order": 2, "text": "按产品标签对污渍处预处理或浸泡，不要用力刷磨纤维"},
+    {"order": 3, "text": "按面料允许的温度完整洗涤，洗后检查再决定是否重复处理"}
+  ],
+  "allowed_product_categories": ["laundry", "stain_remover"],
+  "warnings": ["汗液与产品残留的成分可能不同，先做小范围测试", "白色和有色织物的漂白要求不同"],
+  "prohibited_actions": ["不要在未确认面料时使用含氯漂白剂"],
+  "stop_conditions": ["出现褪色、纤维脆化或异味加重立即停止"],
+  "tag_condition": "产品标签应适用于可水洗织物并说明是否可用于汗渍/有色织物",
+  "sources": [{"type": "local_kb", "title": "UGA Cooperative Extension Stain Removal", "url": "https://site.extension.uga.edu/textiles/care/stain-removal/", "ref": "grass-sweat-deodorant-stain", "version": "1.0"}],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed",
+  "forbidden_terms": ["洁厕灵", "强酸清洁剂"]
+}

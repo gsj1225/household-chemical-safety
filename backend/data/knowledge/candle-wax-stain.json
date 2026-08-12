@@ -1,0 +1,23 @@
+{
+  "id": "candle-wax-stain",
+  "topic": "蜡渍",
+  "aliases": ["蜡烛油", "蜡烛渍", "石蜡渍", "地板蜡"],
+  "surfaces": ["可水洗织物", "硬质表面"],
+  "excluded_surfaces": ["需干洗面料", "未确认的特殊面料"],
+  "scene": ["衣物", "桌面", "地面"],
+  "steps": [
+    {"order": 1, "text": "待蜡变硬后用钝器轻轻刮除表面蜡，不要撕扯材料"},
+    {"order": 2, "text": "织物按护理标签选择吸油纸与适当温度处理，不能熨烫的面料跳过加热步骤"},
+    {"order": 3, "text": "残留部分只使用标签明确适用的预洗去渍产品，并先做局部测试"}
+  ],
+  "allowed_product_categories": ["laundry", "stain_remover", "kitchen_cleaner"],
+  "warnings": ["不同面料对热和溶剂敏感，必须先看护理标签", "硬质表面先确认涂层是否耐受"],
+  "prohibited_actions": ["不要在未知材质上直接使用溶剂、强酸或强碱"],
+  "stop_conditions": ["表面发黏、失光、变色或软化立即停止"],
+  "tag_condition": "仅使用产品标签明确适用于该材质的去渍产品",
+  "sources": [{"type": "local_kb", "title": "UGA Cooperative Extension Stain Removal", "url": "https://site.extension.uga.edu/textiles/care/stain-removal/", "ref": "candle-wax-stain", "version": "1.0"}],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed",
+  "forbidden_terms": ["洁厕灵", "管道疏通剂"]
+}

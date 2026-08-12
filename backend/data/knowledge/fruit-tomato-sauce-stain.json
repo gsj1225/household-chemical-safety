@@ -1,0 +1,23 @@
+{
+  "id": "fruit-tomato-sauce-stain",
+  "topic": "水果和酱汁污渍",
+  "aliases": ["水果渍", "果汁渍", "番茄汁渍", "酱油渍", "番茄酱"],
+  "surfaces": ["可水洗织物", "桌面"],
+  "excluded_surfaces": ["需干洗面料", "未确认的特殊面料"],
+  "scene": ["衣物", "厨房", "桌面"],
+  "steps": [
+    {"order": 1, "text": "尽快用冷水轻拍或从污渍背面冲洗，避免把色素压入纤维"},
+    {"order": 2, "text": "按材质选择洗衣液或预洗去渍产品，并先做局部测试"},
+    {"order": 3, "text": "按护理标签洗涤，污渍未去除前不要烘干或高温熨烫"}
+  ],
+  "allowed_product_categories": ["laundry", "stain_remover", "kitchen_cleaner"],
+  "warnings": ["有色织物和涂层桌面需先测试", "即使污渍暂时变淡也应尽快完整洗涤"],
+  "prohibited_actions": ["不要在未知表面直接使用漂白剂或强酸清洁剂"],
+  "stop_conditions": ["出现褪色、涂层发白或表面损伤立即停止"],
+  "tag_condition": "产品标签应适用于该材质和食品/饮料污渍",
+  "sources": [{"type": "local_kb", "title": "American Cleaning Institute Stain Removal Guide", "url": "https://www.cleaninginstitute.org/cleaning-tips/clothes/stain-removal-guide", "ref": "fruit-tomato-sauce-stain", "version": "1.0"}],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed",
+  "forbidden_terms": ["洁厕灵", "强酸清洁剂"]
+}

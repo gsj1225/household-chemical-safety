@@ -1,0 +1,23 @@
+{
+  "id": "wine-stain",
+  "topic": "酒渍",
+  "aliases": ["红酒渍", "葡萄酒渍", "啤酒渍", "饮料渍"],
+  "surfaces": ["可水洗织物", "桌面"],
+  "excluded_surfaces": ["需干洗面料", "未确认的特殊面料"],
+  "scene": ["衣物", "桌面"],
+  "steps": [
+    {"order": 1, "text": "先用冷水轻拍或冲洗污渍，避免来回摩擦"},
+    {"order": 2, "text": "按护理标签选择洗衣液或预洗去渍产品处理"},
+    {"order": 3, "text": "局部测试不褪色后，按标签允许的温度洗涤并检查污渍是否去除"}
+  ],
+  "allowed_product_categories": ["laundry", "stain_remover", "kitchen_cleaner"],
+  "warnings": ["先确认表面材质与产品标签", "浅色饮料渍即使暂时看不见也应尽快洗涤"],
+  "prohibited_actions": ["不要直接使用洁厕灵、强酸或含氯消毒剂处理织物"],
+  "stop_conditions": ["出现褪色、发硬或表面损伤立即停止"],
+  "tag_condition": "产品标签应明确适用于该织物或桌面材质",
+  "sources": [{"type": "local_kb", "title": "American Cleaning Institute Stain Removal Guide", "url": "https://www.cleaninginstitute.org/cleaning-tips/clothes/stain-removal-guide", "ref": "wine-stain", "version": "1.0"}],
+  "reviewed_at": "2026-08-12",
+  "version": "1.0",
+  "confidence": "reviewed",
+  "forbidden_terms": ["洁厕灵", "强酸清洁剂", "含氯消毒剂"]
+}
