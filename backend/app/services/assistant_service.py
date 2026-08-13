@@ -26,6 +26,11 @@ from typing import Any
 from app.config import settings
 from app.core.ai_provider import AIProvider
 from app.core.compatibility_engine import CompatibilityEngine
+from app.core.compatibility_question import (
+    build_relevant_pairs,
+    is_compatibility_question,
+    match_products_from_question,
+)
 from app.core.knowledge_provider import (
     ExternalKnowledgeProvider,
     ExternalSearchResult,
@@ -48,6 +53,20 @@ from app.models.knowledge import (
     KnowledgeStatus,
     SourceRef,
 )
+
+from urllib.parse import urlparse
+
+
+def _extract_domain(url: str) -> str:
+    """从 URL 中提取域名。"""
+    if not url:
+        return ""
+    try:
+        parsed = urlparse(url)
+        return parsed.hostname or ""
+    except Exception:
+        return ""
+
 
 _MIX_KEYWORDS = ("混", "混合", "一起用", "同时用", "连用")
 
@@ -108,6 +127,14 @@ class AssistantService:
         relations = self._repo.get_all_relations()
         by_id = {p.id: p for p in products}
         context_product = by_id.get(context_product_id) if context_product_id else None
+
+        # 2a. 兼容性问题前置检查：在任何 LLM 调用之前，读取真实库存并调用
+        #     CompatibilityEngine.check_pair() 检查产品组合安全性。
+        #     若发现 critical/attention 关系，直接返回安全结论，不调用 LLM。
+        if is_compatibility_question(question):
+            return self._handle_compatibility_question(
+                question, products, context_product_id
+            )
 
         inventory_context = [self._product_context(p) for p in products]
         compatibility_context = [self._relation_context(r) for r in relations]
@@ -187,6 +214,239 @@ class AssistantService:
             external_sources=external_sources,
             sources=sources,
             pending_knowledge_notice=provisional,
+        )
+
+    # ── 兼容性问题处理 ─────────────────────────────
+
+    def _handle_compatibility_question(
+        self,
+        question: str,
+        products: list[Any],
+        context_product_id: str | None,
+    ) -> AssistantResponse:
+        """处理直接混用安全问题。
+
+        在任何 LLM 调用之前执行：
+        1. 从问题文本匹配产品名称，匹配不足时全库组合扫描
+        2. 对相关产品对调用真实 CompatibilityEngine.check_pair()
+        3. critical 关系直接返回安全结论（不调用 LLM）
+        4. 成分缺失返回 needs_information（说明哪些产品需补充成分）
+        5. 无关系返回无已知风险
+        """
+        pairs = build_relevant_pairs(question, products)
+        matched_products = match_products_from_question(question, products)
+        by_id = {p.id: p for p in products}
+
+        # 收集所有命中的关系
+        all_relations: list[tuple[Any, Any, Any]] = []  # (product_a, product_b, relation)
+        for pa, pb in pairs:
+            for rel in self._engine.check_pair(pa, pb):
+                all_relations.append((pa, pb, rel))
+
+        # 分类：critical / attention / needs_information
+        critical_relations = [
+            (pa, pb, r) for pa, pb, r in all_relations
+            if r.severity == Severity.critical
+        ]
+        attention_relations = [
+            (pa, pb, r) for pa, pb, r in all_relations
+            if r.severity == Severity.attention
+        ]
+        needs_info_relations = [
+            (pa, pb, r) for pa, pb, r in all_relations
+            if r.relation_type.value == "needs_information"
+        ]
+
+        # 1. critical 最高优先级
+        if critical_relations:
+            return self._build_compatibility_response(
+                critical_relations, matched_products, by_id, question
+            )
+
+        # 2. attention 次优先级
+        if attention_relations:
+            return self._build_compatibility_response(
+                attention_relations, matched_products, by_id, question
+            )
+
+        # 3. 成分缺失 → needs_information
+        if needs_info_relations:
+            return self._build_needs_ingredients_response(
+                needs_info_relations, matched_products, by_id
+            )
+
+        # 4. 无关系命中
+        if len(products) < 2:
+            return AssistantResponse(
+                answer="仓库中产品不足，无法进行相容性检查。请先添加至少两件产品。",
+                needs_clarification=False,
+                clarification_questions=[],
+                inventory_advice=[],
+                general_advice=[],
+                safety_warnings=[],
+                out_of_scope=False,
+                evidence=[],
+                knowledge=[],
+                knowledge_status="no_match",
+                external_sources=[],
+                sources=[],
+                pending_knowledge_notice="",
+            )
+
+        return AssistantResponse(
+            answer="未发现已知相容性风险。当前仓库中的产品组合未命中已知禁忌规则。",
+            needs_clarification=False,
+            clarification_questions=[],
+            inventory_advice=[],
+            general_advice=[],
+            safety_warnings=[],
+            out_of_scope=False,
+            evidence=[],
+            knowledge=[],
+            knowledge_status="no_match",
+            external_sources=[],
+            sources=[],
+            pending_knowledge_notice="",
+        )
+
+    def _build_compatibility_response(
+        self,
+        relations: list[tuple[Any, Any, Any]],
+        matched_products: list[Any],
+        by_id: dict[str, Any],
+        question: str,
+    ) -> AssistantResponse:
+        """从 critical/attention 关系构建安全响应。"""
+        warnings: list[AssistantSafetyWarning] = []
+        evidence: list[str] = []
+        sources: list[SourceRef] = []
+        seen_titles: set[str] = set()
+        seen_rule_ids: set[str] = set()
+
+        for pa, pb, rel in relations:
+            if rel.title in seen_titles:
+                continue
+            seen_titles.add(rel.title)
+
+            severity = "critical" if rel.severity == Severity.critical else "attention"
+            warnings.append(AssistantSafetyWarning(
+                severity=severity,
+                title=rel.title,
+                description=rel.rationale,
+                relation_id=rel.id,
+                rule_id=rel.rule_id,
+                recommended_action=rel.recommended_action,
+            ))
+            evidence.append(rel.title)
+
+            # 来源：规则来源
+            if rel.rule_id and rel.rule_id not in seen_rule_ids:
+                seen_rule_ids.add(rel.rule_id)
+                sources.append(SourceRef(
+                    type="rule",
+                    title=rel.title,
+                    ref=rel.id,
+                ))
+                # 规则自带的权威来源（如 CDC）
+                for s in rel.sources:
+                    sources.append(SourceRef(
+                        type="external",
+                        title=s.title,
+                        domain=_extract_domain(s.url) if s.url else "",
+                        url=s.url or "",
+                        retrieved_at=s.reviewed_at or "",
+                    ))
+
+            # 来源：仓库产品来源
+            for p in (pa, pb):
+                sources.append(SourceRef(
+                    type="warehouse",
+                    title=p.name,
+                    ref=p.id,
+                ))
+
+        # 构建 answer 文本
+        has_critical = any(w.severity == "critical" for w in warnings)
+        if has_critical:
+            answer = "不能混用。"
+        else:
+            answer = "请注意安全风险。"
+
+        for w in warnings:
+            answer += f"\n\n{w.title}：{w.description}"
+            if w.recommended_action:
+                answer += f" 建议：{w.recommended_action}"
+
+        # 状态：有规则命中即为 local_hit（本地规则库命中）
+        status: KnowledgeStatus = "local_hit"
+
+        return AssistantResponse(
+            answer=answer,
+            needs_clarification=False,
+            clarification_questions=[],
+            inventory_advice=[],
+            general_advice=[],
+            safety_warnings=warnings,
+            out_of_scope=False,
+            evidence=evidence,
+            knowledge=[],
+            knowledge_status=status,
+            external_sources=[],
+            sources=sources,
+            pending_knowledge_notice="",
+        )
+
+    def _build_needs_ingredients_response(
+        self,
+        relations: list[tuple[Any, Any, Any]],
+        matched_products: list[Any],
+        by_id: dict[str, Any],
+    ) -> AssistantResponse:
+        """成分缺失时返回 needs_information，说明哪些产品需补充成分。"""
+        warnings: list[AssistantSafetyWarning] = []
+        sources: list[SourceRef] = []
+        needs_products: list[tuple[str, str]] = []  # (product_id, product_name)
+        seen_product_ids: set[str] = set()
+
+        for pa, pb, rel in relations:
+            warnings.append(AssistantSafetyWarning(
+                severity="unknown",
+                title=rel.title,
+                description=rel.rationale,
+                relation_id=rel.id,
+                rule_id=rel.rule_id,
+                recommended_action=rel.recommended_action,
+            ))
+            for p in (pa, pb):
+                if p.id not in seen_product_ids:
+                    seen_product_ids.add(p.id)
+                    needs_products.append((p.id, p.name))
+                    sources.append(SourceRef(
+                        type="warehouse",
+                        title=p.name,
+                        ref=p.id,
+                    ))
+
+        product_names = "、".join(name for _, name in needs_products)
+        answer = (
+            f"无法确认相容性。需要补充以下产品的成分信息：{product_names}。"
+            "补充完成后系统将自动重新检查相容性。"
+        )
+
+        return AssistantResponse(
+            answer=answer,
+            needs_clarification=False,
+            clarification_questions=[],
+            inventory_advice=[],
+            general_advice=[],
+            safety_warnings=warnings,
+            out_of_scope=False,
+            evidence=[w.title for w in warnings],
+            knowledge=[],
+            knowledge_status="insufficient",
+            external_sources=[],
+            sources=sources,
+            pending_knowledge_notice="",
         )
 
     # ── 辅助 ───────────────────────────────────────
@@ -527,6 +787,7 @@ class AssistantService:
                     title=rel.title,
                     description=rel.rationale,
                     relation_id=rel.id,
+                    rule_id=rel.rule_id,
                     recommended_action=rel.recommended_action,
                 ))
                 for pid in (pa.id, pb.id):

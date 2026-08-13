@@ -46,6 +46,7 @@ class AssistantSafetyWarning(BaseModel):
     title: str
     description: str
     relation_id: str | None = Field(None, alias="relationId")
+    rule_id: str | None = Field(None, alias="ruleId")
     recommended_action: str
 
 # ── 最终响应 ──────────────────────────────────────
